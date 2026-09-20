@@ -1,0 +1,30 @@
+{
+  // Same tasks as .zed/tasks.json. Run via Terminal → Run Task… (Ctrl+Shift+P → "Run Task").
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "mix phx.server",
+      "type": "shell",
+      "command": "mix phx.server",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "mix test",
+      "type": "shell",
+      "command": "mix test",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "mix precommit",
+      "type": "shell",
+      "command": "mix precommit",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}

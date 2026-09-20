@@ -1,0 +1,20 @@
+[
+  {
+    "label": "mix phx.server",
+    "command": "mix phx.server",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "hide": "never"
+  },
+  {
+    "label": "mix test",
+    "command": "mix test",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "hide": "on_success"
+  },
+  {
+    "label": "mix precommit",
+    "command": "mix precommit",
+    "cwd": "$ZED_WORKTREE_ROOT",
+    "hide": "on_success"
+  }
+]

@@ -1,0 +1,584 @@
+# AttendanceTracker — Code Tour
+
+An attendance kiosk for a club (e.g. judo): participants tap their photo on a
+check-in screen, trainings recur weekly ("every Monday 19:00–21:30"), and an
+admin PIN guards corrections. Built with Phoenix 1.8, LiveView, Ecto + SQLite.
+
+This document walks the codebase layer by layer and calls out the important
+**Elixir and Phoenix idioms** it relies on.
+
+```
+Browser(s)  ◄── WebSocket ──►  LiveViews (one process per connected client)
+                                    │
+                                    ▼
+                            Tracker context          ◄── the only API the web
+                             (lib/attendancetracker/      layer talks to
+                              tracker.ex)
+                                    │
+                    ┌───────────────┼────────────────┐
+                    ▼               ▼                ▼
+                 Ecto Repo      Phoenix.PubSub    File system
+                  (SQLite)     (real-time sync)   (uploaded photos)
+```
+
+---
+
+## 1. Directory map
+
+```
+lib/
+  attendancetracker/
+    tracker.ex                    # The Tracker context — all business logic entry points
+    tracker/
+      participant.ex              # Ecto schemas + changesets + pure domain logic
+      training_day.ex
+      training_session.ex
+      check_in.ex
+      setting.ex
+  attendancetracker_web/
+    router.ex                     # Routes (all LiveView)
+    components/
+      layouts.ex                  # App shell: navbar, theme toggle, flash group
+      core_components.ex          # <.button>, <.input>, <.table>, <.icon>, …
+      participant_components.ex   # Domain components: <.avatar>
+    live/
+      check_in_live.ex            # The kiosk: photo grid, check-in, PIN, camera
+      participant_live/           # Generated-style CRUD: index/form/show
+      training_day_live/          # Weekly schedule config: index/form
+      admin_live.ex               # PIN-gated admin area
+priv/
+  repo/migrations/                # Database history
+  repo/seeds.exs                  # Demo data
+  static/uploads/                 # Participant photos served at /uploads/...
+test/
+  support/fixtures/               # TrackerFixtures — test data helpers
+  attendancetracker/              # Context tests
+  attendancetracker_web/live/     # LiveView tests
+```
+
+**Idiom: contexts as boundaries.** Everything the web layer needs goes through
+one module, `AttendanceTracker.Tracker`. LiveViews never call `Repo` directly.
+This is the "context" concept from `phx.gen.context`: a plain module grouping
+related operations — no framework magic, just a convention that keeps the web
+and persistence layers decoupled.
+
+---
+
+## 2. The domain layer
+
+### 2.1 Schemas and changesets (`tracker/*.ex`)
+
+```elixir
+schema "training_days" do
+  field :name, :string
+  field :weekday, :integer
+  field :starts_at, :time
+  field :ends_at, :time
+
+  has_many :training_sessions, AttendanceTracker.Tracker.TrainingSession
+
+  timestamps(type: :utc_datetime)
+end
+```
+
+**Idiom: schema ≠ model.** An Ecto schema is just a typed struct plus a
+*changeset* function. Validation is a pure data pipeline — nothing touches the
+database until a `Repo` call:
+
+```elixir
+def changeset(training_day, attrs) do
+  training_day
+  |> cast(attrs, [:name, :weekday, :starts_at, :ends_at])  # whitelist + type-cast external input
+  |> validate_required([:weekday, :starts_at, :ends_at])
+  |> validate_inclusion(:weekday, 1..7)
+  |> validate_ends_after_start()                            # custom, cross-field
+end
+```
+
+Key points:
+
+- **`cast/3` is the security boundary**: only listed fields are accepted from
+  user input. `training_day_id` on `TrainingSession` is set programmatically,
+  but still cast because sessions are only created server-side.
+- **Custom validation** reads other fields with `get_field/2` (you must not
+  pattern-match the changeset for values — changes wrap the data):
+
+  ```elixir
+  defp validate_ends_after_start(changeset) do
+    starts_at = get_field(changeset, :starts_at)
+    ends_at = get_field(changeset, :ends_at)
+
+    if starts_at && ends_at && Time.compare(ends_at, starts_at) != :gt do
+      add_error(changeset, :ends_at, "must be after the start time")
+    else
+      changeset
+    end
+  end
+  ```
+
+- **Database-backed constraints** are declared but enforced by SQLite;
+  Ecto converts the violation into a changeset error:
+
+  ```elixir
+  |> unique_constraint(:date)                        # ad-hoc sessions (partial index)
+  |> unique_constraint([:training_day_id, :date])    # one session per training per date
+  ```
+
+### 2.2 Pure domain logic lives in the schema module (`training_day.ex`)
+
+The recurring-schedule math is side-effect free and trivially testable:
+
+```elixir
+def occurrence_on_or_before(%__MODULE__{weekday: weekday}, %Date{} = date) do
+  days_back = rem(Date.day_of_week(date) - weekday + 7, 7)
+  Date.add(date, -days_back)
+end
+```
+
+**Idioms highlighted:**
+
+- **Pattern matching in the argument list** destructures the struct — no
+  accessor calls needed.
+- **Standard-library date/time**: `Date.day_of_week/1` (ISO, Monday = 1, which
+  is exactly what we store), `Time.compare/2` returning `:lt | :eq | :gt`,
+  `NaiveDateTime` arithmetic. No date library dependency.
+- **Guard-free arithmetic with `rem/2`** — the `+ 7` keeps the modulo positive.
+
+### 2.3 Pattern matching as control flow (`Tracker.current_training_day/3`)
+
+"Which training is current?" is expressed as **multiple function clauses** and
+a clear priority chain:
+
+```elixir
+def current_training_day(training_days, date, time)
+
+def current_training_day([], _date, _time), do: nil          # empty list clause
+
+def current_training_day(training_days, %Date{} = date, %Time{} = time) do
+  in_progress = ...   # Enum.max_by(& &1.starts_at, Time, fn -> nil end)
+  upcoming_today = ... # Enum.min_by(& &1.starts_at, Time, fn -> nil end)
+
+  in_progress ||
+    upcoming_today ||
+    Enum.max_by(training_days, &TrainingDay.most_recent_start(&1, date, time), NaiveDateTime)
+end
+```
+
+**Idioms highlighted:**
+
+- **Function head with docs, clauses below** — the `def f(...)` line without a
+  body holds the `@doc`, clauses follow.
+- **`Enum.max_by/4` with a module sorter** (`Time`, `NaiveDateTime`) — Elixir
+  ≥ 1.14 lets you pass any module with `compare/2` instead of a comparator
+  function, plus an **empty fallback** (`fn -> nil end`) instead of crashing on
+  empty lists.
+- **`||` chains** work because nil is falsy — a common, readable alternative to
+  nested `case`.
+
+### 2.4 Get-or-create and race safety (`Tracker.todays_session/0`)
+
+```elixir
+def todays_session do
+  today = local_today()
+
+  %TrainingSession{}
+  |> TrainingSession.changeset(%{date: today})
+  |> Repo.insert(on_conflict: :nothing)      # insert, ignore if it already exists
+
+  Repo.one!(from s in TrainingSession,
+    where: s.date == ^today and is_nil(s.training_day_id))
+end
+```
+
+**Idiom: "upsert then read".** Two kiosks opening the app at the same time can
+race to create today's session. The **unique index makes the race safe**:
+the loser inserts nothing and both read the same row. The migration even keeps
+ad-hoc sessions unique with a **partial index** (`where: "training_day_id IS
+NULL"`), because SQLite treats `NULL`s as distinct in unique indexes.
+
+**Idiom: `is_nil/1` in queries** — `Repo.get_by(training_day_id: nil)` is a
+compile error; Ecto forces you to write the NULL-safe `is_nil/1` explicitly.
+
+### 2.5 Shaped preloads (`Tracker.list_participants_with_check_ins/1`)
+
+```elixir
+check_in_query = from c in CheckIn, where: c.training_session_id == ^session.id
+
+Repo.all(
+  from p in Participant,
+    where: p.active,
+    order_by: p.name,
+    preload: [check_ins: ^check_in_query]
+)
+```
+
+**Idiom: preload a filtered association.** Each participant comes back with
+`check_ins` containing *at most the one check-in for this session* — the
+template can then just do `List.first(@participant.check_ins)` to know the
+status. One query for participants + one for check-ins, no N+1, and no loading
+of irrelevant history.
+
+### 2.6 Schemaless changesets (`Tracker.change_admin_pin/1`)
+
+Not every form maps to a table. The "change PIN" form validates a virtual
+shape:
+
+```elixir
+types = %{new_pin: :string, new_pin_confirmation: :string}
+
+{%{}, types}
+|> Ecto.Changeset.cast(params, [:new_pin, :new_pin_confirmation])
+|> Ecto.Changeset.validate_required([:new_pin])
+|> Ecto.Changeset.validate_format(:new_pin, ~r/^\d{4,12}$/, message: "must be 4 to 12 digits")
+|> Ecto.Changeset.validate_confirmation(:new_pin, message: "does not match")
+```
+
+**Idiom: `{data, types}` changesets.** You get casting, errors, and form
+integration for free without a schema. `validate_confirmation/3` is built-in —
+it compares `new_pin` with `new_pin_confirmation`.
+
+The PIN itself lives in a generic key-value `settings` table, defaulting to
+`"1234"` when no row exists (`admin_pin/0`), updated via
+`Repo.insert_or_update/1` (upsert by primary key presence).
+
+### 2.7 Erlang interop (`Tracker.local_today/0`)
+
+```elixir
+def local_today do
+  {date, _time} = :calendar.local_time()
+  Date.from_erl!(date)
+end
+```
+
+**Idiom: zero-cost Erlang interop.** `:calendar.local_time/0` is the Erlang
+standard library, called directly with atom module names. It gives us local
+wall-clock time (training times are local!) without a timezone-database
+dependency.
+
+---
+
+## 3. Real-time: Phoenix.PubSub (`tracker.ex`, kiosk section)
+
+```elixir
+def subscribe(%TrainingSession{} = session),
+  do: Phoenix.PubSub.subscribe(@pubsub, topic(session.id))
+
+def check_in(%Participant{} = participant, %TrainingSession{} = session) do
+  # ...insert...
+  {:ok, check_in} ->
+    Phoenix.PubSub.broadcast(@pubsub, topic(session.id), {:checked_in, check_in})
+```
+
+**Idioms highlighted:**
+
+- **Module attributes as constants**: `@pubsub AttendanceTracker.PubSub`.
+- **Every LiveView is a separate process** (one per connected client). PubSub
+  is how they stay in sync: the context broadcasts domain events
+  (`{:checked_in, ...}`, `{:checked_out, ...}`), and each process updates its
+  own UI in `handle_info/2`. The *context* owns the topic naming
+  (`"training_session:#{id}"`) — callers never build topic strings.
+- **The sender also receives the broadcast** — that's why `handle_event` for
+  check-in doesn't touch the UI at all; the UI update happens in exactly one
+  place: `handle_info`.
+
+---
+
+## 4. The web layer
+
+### 4.1 Router with verified routes (`router.ex`)
+
+```elixir
+live "/", CheckInLive, :index
+live "/training_days/:id/edit", TrainingDayLive.Form, :edit
+```
+
+In templates, paths are written as `~p"/training_days"` — **verified routes**:
+the compiler checks them against the router, so a typo is a compile error, not
+a 404 at runtime.
+
+### 4.2 LiveView lifecycle (`check_in_live.ex`)
+
+A LiveView is an Elixir process holding state in `socket.assigns`. Three
+callbacks matter here:
+
+```
+mount/3        ── runs TWICE: once for the initial HTTP render, once when the
+                  WebSocket connects → side effects are guarded:
+                  `if connected?(socket), do: Tracker.subscribe(session)`
+
+handle_event/3 ── user interactions ("check_in", "select_training_day", ...)
+
+handle_info/3  ── PubSub messages from other clients
+```
+
+**Idiom: immutability means rebinding.** `assign/3` returns a *new* socket;
+you always thread it through pipelines and return it:
+
+```elixir
+{:noreply,
+ socket
+ |> assign(:checked_in_count, Tracker.check_in_count(session))
+ |> stream(:participants, participants, reset: true)}
+```
+
+### 4.3 Streams for collections
+
+Participants are assigned as a **stream**, not a list:
+
+```elixir
+|> stream(:participants, participants)                 # initial
+|> stream_insert(:participants, participant)           # one changed item
+|> stream(:participants, participants, reset: true)    # full replace
+```
+
+```heex
+<div id="participants" phx-update="stream">
+  <div :for={{id, participant} <- @streams.participants} id={id}>
+    <.participant_card participant={participant} />
+  </div>
+</div>
+```
+
+**Why:** streams keep only DOM IDs server-side — memory stays flat for large
+collections, and updates are surgical DOM patches.
+
+**Consequences (and how the code handles them):**
+
+- *Streams are not enumerable* → counts are separate assigns
+  (`@checked_in_count`), incremented/decremented in `handle_info`.
+- *No empty state* → pure-CSS trick: a `.hidden only:block` div that only
+  displays when it's the sole child of the grid.
+- *Changing collections* (switching training day) → refetch + `reset: true`.
+
+### 4.4 Forms: `to_form/2` everywhere
+
+Two flavors are used:
+
+**Changeset-backed** (training day form):
+
+```elixir
+assign(:form, to_form(Tracker.change_training_day(training_day)))
+```
+
+```heex
+<.form for={@form} id="training-day-form" phx-change="validate" phx-submit="save">
+  <.input field={@form[:weekday]} type="select" options={TrainingDay.weekday_options()} />
+```
+
+Validation on every change (`phx-change`) re-assigns
+`to_form(changeset, action: :validate)` — errors only render once the changeset
+has an **action**, which is how a fresh form shows no errors.
+
+**Param-map-backed** (PIN prompts, training day selector):
+
+```elixir
+to_form(%{"pin" => ""}, errors: [pin: {"Wrong PIN", []}])
+```
+
+No changeset needed — server-pushed errors are passed via the `:errors` option.
+Used for the unlock forms where validation is a single DB read
+(`Tracker.admin_pin_valid?/1`).
+
+### 4.5 HEEx components
+
+**Function components with typed attrs** (`participant_components.ex`):
+
+```elixir
+attr :participant, :map, required: true
+attr :dim, :boolean, default: false, doc: "render the avatar greyed out"
+
+def avatar(assigns) do ... end
+```
+
+Compile-time-checked, self-documenting, and reusable across LiveViews
+(`import AttendanceTrackerWeb.ParticipantComponents`).
+
+**Slots** (`core_components.ex` `<.header>`):
+
+```heex
+<.header>
+  Training days
+  <:subtitle>Configure the weekly training schedule…</:subtitle>
+  <:actions><.button variant="primary" …>New training day</.button></:actions>
+</.header>
+```
+
+**Class lists with conditionals** — HEEx attributes accept lists; `&&` picks a
+class only when truthy:
+
+```elixir
+class={[
+  "group relative flex w-full cursor-pointer …",
+  if(checked_in, do: "border-emerald-500 …", else: "border-base-300 …")
+]}
+```
+
+**Directives**: `:if` (conditional render), `:for` (comprehension),
+`phx-value-id` (event payload), `phx-click` (event binding). Text uses
+`{@assign}`; blocks use `<%= if … do %>`.
+
+### 4.6 JS commands without JavaScript (`participant_live/index.ex`)
+
+```heex
+<.link phx-click={JS.push("delete", value: %{id: participant.id}) |> hide("##{id}")}
+       data-confirm="Are you sure?">Delete</.link>
+```
+
+`Phoenix.LiveView.JS` composes **server-encoded client commands**: the row
+hides instantly (optimistic UI) while the delete event round-trips. No custom
+JS written.
+
+### 4.7 Colocated hooks: the camera capture (`check_in_live.ex`)
+
+When you *do* need JavaScript (webcam access), Phoenix 1.8 colocated hooks keep
+it next to the markup:
+
+```heex
+<div id="camera-capture" phx-hook=".CameraCapture" phx-update="ignore">
+  <video autoplay playsinline muted …></video>
+  <button data-capture>Capture photo</button>
+</div>
+
+<script :type={Phoenix.LiveView.ColocatedHook} name=".CameraCapture">
+  export default {
+    async mounted() { /* getUserMedia, wire up [data-capture] */ },
+    destroyed() { this.stream?.getTracks().forEach(t => t.stop()) }
+  }
+</script>
+```
+
+**Idioms highlighted:**
+
+- **`phx-update="ignore"` + unique DOM id** — mandatory when a hook manages its
+  own DOM (the `<video>` stream); LiveView skips patching that subtree.
+- **Colocated hook naming** starts with `.` (`.CameraCapture`); the compiler
+  extracts it into the app bundle (`app.js` imports
+  `phoenix-colocated/attendancetracker`).
+- **Client → server events** with `this.pushEvent("captured_photo", …)`; the
+  captured JPEG travels as a data URL — for a downscaled snapshot this is
+  simpler than the upload pipeline (used elsewhere, see 4.8).
+- **Cleanup in `destroyed()`** — the camera stream stops when the modal
+  disappears from the DOM, regardless of how it closed.
+
+### 4.8 Classic file uploads (`participant_live/form.ex`)
+
+The other photo path uses LiveView's built-in upload machinery:
+
+```elixir
+|> allow_upload(:photo, accept: ~w(.jpg .jpeg .png .webp), max_entries: 1, max_file_size: 5_000_000)
+```
+
+`consume_uploaded_entries/3` runs at save time and copies the file into
+`priv/static/uploads/`; only the path (`/uploads/<uuid>.jpg`) is stored in the
+DB. Drag-and-drop, progress, and validation come free.
+
+### 4.9 PIN-gated actions (undo check-in, `/admin`)
+
+The check-out flow shows how LiveView state machines read:
+
+```elixir
+def handle_event("prompt_check_out", %{"id" => id}, socket) do
+  if socket.assigns.admin_unlocked do
+    check_out_participant(socket, id)               # already unlocked this session
+  else
+    {:noreply, assign(socket, :toggle_participant, Tracker.get_participant!(id))}
+  end                                                # → modal renders (:if)
+end
+```
+
+The modal is plain markup toggled by `:if={@toggle_participant}` — modals need
+no JS framework in LiveView, just assigns. `AdminLive` uses the same pattern:
+one boolean (`@unlocked`) swaps the whole page between PIN prompt and settings.
+
+---
+
+## 5. End-to-end flows
+
+**Check-in (multi-client):**
+tap → `handle_event("check_in")` → `Tracker.check_in/2` (idempotent thanks to
+the unique constraint — double taps are safe) → broadcast → every connected
+kiosk (including the sender) receives `{:checked_in, …}` → `handle_info`
+re-preloads that one participant and `stream_insert`s it → emerald card, count
++1.
+
+**Auto-selecting the training:**
+mount → `list_training_days/0` → `current_training_day/3` (in progress →
+upcoming today → most recent) → `occurrence_on_or_before/2` gives the concrete
+date → `session_for_training_day/2` get-or-creates the session. No training
+days configured → fall back to one ad-hoc session per day (`[]` clause).
+
+**Switching training day:**
+`phx-change` → unsubscribe old PubSub topic, subscribe new → refetch →
+`stream(..., reset: true)`. Check-ins stay separated per (training day, date).
+
+**Undo a check-in:**
+tap checked-in card → PIN modal → `admin_pin_valid?/1` (fresh DB read, so PIN
+changes apply instantly) → `Tracker.check_out/2` → `{:checked_out, …}`
+broadcast → badge disappears everywhere.
+
+**Camera photo:**
+camera icon → modal + hook starts webcam → capture → data URL →
+`store_captured_photo/1` (a `with` chain: base64 decode → write file) →
+`Tracker.update_participant/2` → `stream_insert` shows the new avatar.
+
+---
+
+## 6. Testing
+
+- **`DataCase` / `ConnCase`** wrap every test in a SQL sandbox transaction —
+  tests run concurrently (`max_cases`) and never see each other's data.
+- **Fixtures** (`TrackerFixtures`) create valid entities with overridable
+  defaults: `training_day_fixture(%{weekday: 3})`.
+- **LiveView tests** drive the real process:
+
+  ```elixir
+  {:ok, view, _html} = live(conn, ~p"/")
+  view |> element("#check-in-btn-#{participant.id}") |> render_click()
+  view |> form("#pin-form", %{pin: "1234"}) |> render_submit()
+  assert has_element?(view, "#checked-in-badge-#{participant.id}")
+  ```
+
+  Assertions target **element IDs**, not copy — resilient to rewording.
+  `render_hook/3` simulates events pushed from JS hooks (the camera capture).
+- **PubSub is tested through the real thing**: `Tracker.subscribe(session)` in
+  the test process, then `assert_received {:checked_in, ^check_in}` — the `^`
+  pin operator asserts on the *value*, not rebinding.
+- Time-dependent logic is pure (`current_training_day(days, date, time)`), so
+  tests pass explicit dates (`~D[2026-09-14]` is a Monday) instead of sleeping
+  or mocking clocks.
+
+---
+
+## 7. Feature cheat sheet
+
+| Elixir / Phoenix feature | Where it shows up |
+|---|---|
+| Pipe operator `\|>` | changeset pipelines, socket threading, query building |
+| Pattern matching & function clauses | `current_training_day/3`, `store_captured_photo/1` (`"data:image/jpeg;base64," <> base64` matches the string prefix!) |
+| `with` (happy-path chaining) | `store_captured_photo/1` |
+| Immutability / rebinding | `socket = socket \|> assign(...) \|> stream(...)` |
+| Module attributes as constants | `@pubsub`, `@default_admin_pin`, `@weekday_names` |
+| Erlang interop | `:calendar.local_time()` |
+| Ecto changesets & constraints | all schemas; unique + partial indexes in migrations |
+| Filtered preloads | `list_participants_with_check_ins/1` |
+| Upserts | `on_conflict: :nothing` (sessions), `insert_or_update` (PIN) |
+| Schemaless changesets | `change_admin_pin/1` |
+| Phoenix.PubSub | check-in/check-out fan-out to all kiosks |
+| LiveView streams | participant grid (`reset: true` on training switch) |
+| `connected?/1` mount guard | PubSub subscribe only on the live socket |
+| Verified routes `~p` | every link/navigate |
+| `to_form/2` + `<.form>` + `<.input>` | all forms (changeset- and map-backed) |
+| Function components, attrs, slots | `avatar/1`, `header`, `core_components` |
+| `Phoenix.LiveView.JS` commands | optimistic row hide on delete |
+| Colocated JS hooks + `phx-update="ignore"` | webcam capture |
+| LiveView uploads | participant photo form |
+| HEEx `:if` / `:for` / class lists | all templates |
+
+## 8. Useful commands
+
+```bash
+mix setup          # install deps, create+migrate+seed the DB
+mix phx.server     # start (or: iex -S mix phx.server for a live shell)
+mix test           # test suite
+mix precommit      # compile --warnings-as-errors + deps.unlock --unused + format + test
+```

@@ -1,0 +1,21 @@
+{
+  // Format on save via mix format (handles .ex/.exs and .heex via the
+  // Phoenix.LiveView.HTMLFormatter plugin configured in .formatter.exs).
+  "editor.formatOnSave": true,
+  "[elixir]": {
+    "editor.defaultFormatter": "JakeBecker.elixir-ls"
+  },
+  "[phoenix-heex]": {
+    "editor.defaultFormatter": "JakeBecker.elixir-ls"
+  },
+  "files.associations": {
+    "*.heex": "phoenix-heex"
+  },
+  // Tailwind IntelliSense in templates and ~H sigils.
+  "tailwindCSS.includeLanguages": {
+    "phoenix-heex": "html",
+    "elixir": "html"
+  }
+  // If ElixirLS feels slow on first start (dialyzer PLT build), you can
+  // trade type warnings for speed by setting elixirLS.dialyzerEnabled to false.
+}

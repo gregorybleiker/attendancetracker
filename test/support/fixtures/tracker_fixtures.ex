@@ -1,0 +1,66 @@
+defmodule AttendanceTracker.TrackerFixtures do
+  @moduledoc """
+  This module defines test helpers for creating
+  entities via the `AttendanceTracker.Tracker` context.
+  """
+
+  @doc """
+  Generate a participant.
+  """
+  def participant_fixture(attrs \\ %{}) do
+    {:ok, participant} =
+      attrs
+      |> Enum.into(%{
+        active: true,
+        name: "some name",
+        photo: "some photo"
+      })
+      |> AttendanceTracker.Tracker.create_participant()
+
+    participant
+  end
+
+  @doc """
+  Generate a training_day.
+  """
+  def training_day_fixture(attrs \\ %{}) do
+    {:ok, training_day} =
+      attrs
+      |> Enum.into(%{
+        weekday: 1,
+        starts_at: ~T[19:00:00],
+        ends_at: ~T[21:30:00]
+      })
+      |> AttendanceTracker.Tracker.create_training_day()
+
+    training_day
+  end
+
+  @doc """
+  Generate a training_session.
+  """
+  def training_session_fixture(attrs \\ %{}) do
+    {:ok, training_session} =
+      attrs
+      |> Enum.into(%{
+        date: ~D[2026-09-14]
+      })
+      |> AttendanceTracker.Tracker.create_training_session()
+
+    training_session
+  end
+
+  @doc """
+  Generate a check_in (creating a participant and training session
+  on the fly unless given via attrs).
+  """
+  def check_in_fixture(attrs \\ %{}) do
+    participant = Map.get(attrs, :participant) || participant_fixture()
+    training_session = Map.get(attrs, :training_session) || training_session_fixture()
+
+    {:ok, check_in} =
+      AttendanceTracker.Tracker.check_in(participant, training_session)
+
+    check_in
+  end
+end

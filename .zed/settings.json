@@ -1,0 +1,16 @@
+{
+  "format_on_save": "on",
+  "lsp": {
+    "tailwindcss-language-server": {
+      "settings": {
+        "includeLanguages": {
+          "elixir": "html",
+          "heex": "html"
+        },
+        "experimental": {
+          "classRegex": ["class=\"([^\"]*)\"", "class='([^']*)'"]
+        }
+      }
+    }
+  }
+}

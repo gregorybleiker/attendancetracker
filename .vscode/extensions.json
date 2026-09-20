@@ -1,0 +1,11 @@
+{
+  // Recommended extensions for this Phoenix project.
+  "recommendations": [
+    // Elixir language server: completion, go-to-definition, diagnostics, debugger
+    "JakeBecker.elixir-ls",
+    // Phoenix Framework: HEEx grammar/snippets, complementary to ElixirLS
+    "phoenixframework.phoenix",
+    // Tailwind class completion inside .heex templates and ~H sigils
+    "bradlc.vscode-tailwindcss"
+  ]
+}

@@ -1,0 +1,29 @@
+# Project-level Helix config for this Phoenix app.
+# Docs: https://docs.helix-editor.com/languages.html
+#
+# ElixirLS is already installed on this machine (`elixir-ls` on PATH).
+# Alternative: Expert, the official Elixir language server — install it,
+# then replace "elixir-ls" with "expert" in the language-servers lists below
+# and uncomment the [language-server.expert] block.
+
+[language-server.elixir-ls]
+command = "elixir-ls"
+
+# [language-server.expert]
+# command = "expert"
+
+[[language]]
+name = "elixir"
+language-servers = ["elixir-ls"]
+# mix format needs a filename to match .formatter.exs inputs; the fake
+# "file.ex" makes stdin content be treated as Elixir source.
+formatter = { command = "mix", args = ["format", "--stdin-filename", "file.ex", "-"] }
+auto-format = true
+
+[[language]]
+name = "heex"
+language-servers = ["elixir-ls"]
+# "file.heex" matches the *.heex input, so Phoenix.LiveView.HTMLFormatter
+# (configured in .formatter.exs) formats the template.
+formatter = { command = "mix", args = ["format", "--stdin-filename", "file.heex", "-"] }
+auto-format = true
