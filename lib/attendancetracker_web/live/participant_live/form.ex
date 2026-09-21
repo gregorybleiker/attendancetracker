@@ -15,6 +15,13 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Form do
 
       <.form for={@form} id="participant-form" phx-change="validate" phx-submit="save">
         <.input field={@form[:name]} type="text" label="Name" />
+        <.input
+          field={@form[:emergency_number]}
+          type="text"
+          label="Notfallnummer"
+          inputmode="tel"
+          autocomplete="off"
+        />
         <.input field={@form[:active]} type="checkbox" label="Active" />
 
         <div>

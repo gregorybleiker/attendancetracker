@@ -43,9 +43,16 @@ lib/
       participant_components.ex   # Domain components: <.avatar>
     live/
       check_in_live.ex            # The kiosk: photo grid, check-in, PIN, camera
+      login_live.ex               # Login page: PIN form POSTed to the session controller
       participant_live/           # Generated-style CRUD: index/form/show
       training_day_live/          # Weekly schedule config: index/form
+      report_live.ex              # Year picker for the CSV attendance report
       admin_live.ex               # PIN-gated admin area
+    controllers/
+      session_controller.ex       # Login: checks the PIN, marks the session
+      report_controller.ex        # CSV download of a full year's attendance
+    plugs/
+      require_admin_pin.ex        # Redirects to /login until the client logs in
 priv/
   repo/migrations/                # Database history
   repo/seeds.exs                  # Demo data
@@ -296,6 +303,13 @@ In templates, paths are written as `~p"/training_days"` — **verified routes**:
 the compiler checks them against the router, so a typo is a compile error, not
 a 404 at runtime.
 
+**Everything except the check-in kiosk sits behind a login guard.** The
+`:authenticated` pipeline runs `Plugs.RequireAdminPin`, which redirects to
+`/login` until the client has entered the admin PIN once
+(`get_session(conn, :admin_pin_ok)`). The kiosk `/` (so participants can tap
+their photos), `/login` itself — a LiveView form and the `POST /login` it
+submits to `SessionController` — are exempt.
+
 ### 4.2 LiveView lifecycle (`check_in_live.ex`)
 
 A LiveView is an Elixir process holding state in `socket.assigns`. Three
@@ -472,7 +486,21 @@ The other photo path uses LiveView's built-in upload machinery:
 `priv/static/uploads/`; only the path (`/uploads/<uuid>.jpg`) is stored in the
 DB. Drag-and-drop, progress, and validation come free.
 
-### 4.9 PIN-gated actions (undo check-in, `/admin`)
+### 4.9 CSV report (`report_live.ex` + `report_controller.ex`)
+
+Reporting follows the login pattern: a LiveView renders the UI, a controller
+does the non-LiveView work. `ReportLive` offers a year select (years derived
+from the sessions in the DB via `Tracker.list_session_years/0`); the form is a
+*regular* GET form to `/reporting/download?year=…` — LiveView can't send file
+downloads. `ReportController.download/2` fetches
+`Tracker.list_sessions_for_report(year)` (one query, shaped preloads:
+`check_ins: :participant` in check-in order) and replies with
+`send_resp/3`, a `content-disposition: attachment` header, and a
+`text/csv` body — one file per full year, one row per session:
+`training,date,participants` (names joined with `"; "`), RFC-4180 quoting
+plus a UTF-8 BOM so spreadsheet tools pick the right encoding.
+
+### 4.10 PIN-gated actions (undo check-in, `/admin`)
 
 The check-out flow shows how LiveView state machines read:
 
@@ -490,9 +518,23 @@ The modal is plain markup toggled by `:if={@toggle_participant}` — modals need
 no JS framework in LiveView, just assigns. `AdminLive` uses the same pattern:
 one boolean (`@unlocked`) swaps the whole page between PIN prompt and settings.
 
+**Logging in (first connection).** Before any of that, every new client must
+enter the admin PIN once. `LoginLive` renders a plain `<.form
+action={~p"/login"} method="post">` — a *regular* HTTP POST, not a LiveView
+event, because only a controller can write the session. On success,
+`SessionController.create/2` renews the session and marks it
+(`put_session(:admin_pin_ok, true)`); on failure it redirects back with a
+flash error. The flag lives in the session cookie, so the login survives page
+reloads and navigation between LiveViews.
+
 ---
 
 ## 5. End-to-end flows
+
+**First connection (login):**
+any guarded URL → `RequireAdminPin` plug → 302 to `/login` → PIN form POST →
+`Tracker.admin_pin_valid?/1` → session marked → redirect to `/`. Wrong PIN →
+flash error, back to `/login`. The kiosk `/` itself never requires a login.
 
 **Check-in (multi-client):**
 tap → `handle_event("check_in")` → `Tracker.check_in/2` (idempotent thanks to
@@ -564,6 +606,8 @@ camera icon → modal + hook starts webcam → capture → data URL →
 | Upserts | `on_conflict: :nothing` (sessions), `insert_or_update` (PIN) |
 | Schemaless changesets | `change_admin_pin/1` |
 | Phoenix.PubSub | check-in/check-out fan-out to all kiosks |
+| Plug + session guard | `Plugs.RequireAdminPin` + `SessionController` (login) |
+| Binary download | `send_resp/3` + `content-disposition` (CSV report) |
 | LiveView streams | participant grid (`reset: true` on training switch) |
 | `connected?/1` mount guard | PubSub subscribe only on the live socket |
 | Verified routes `~p` | every link/navigate |

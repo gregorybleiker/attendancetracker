@@ -14,10 +14,21 @@ defmodule AttendanceTrackerWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :authenticated do
+    plug AttendanceTrackerWeb.Plugs.RequireAdminPin
+  end
+
   scope "/", AttendanceTrackerWeb do
     pipe_through :browser
 
     live "/", CheckInLive, :index
+
+    live "/login", LoginLive, :new
+    post "/login", SessionController, :create
+  end
+
+  scope "/", AttendanceTrackerWeb do
+    pipe_through [:browser, :authenticated]
 
     live "/participants", ParticipantLive.Index, :index
     live "/participants/new", ParticipantLive.Form, :new
@@ -27,6 +38,9 @@ defmodule AttendanceTrackerWeb.Router do
     live "/training_days", TrainingDayLive.Index, :index
     live "/training_days/new", TrainingDayLive.Form, :new
     live "/training_days/:id/edit", TrainingDayLive.Form, :edit
+
+    live "/reporting", ReportLive, :index
+    get "/reporting/download", ReportController, :download
 
     live "/admin", AdminLive, :index
   end

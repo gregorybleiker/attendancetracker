@@ -460,4 +460,32 @@ defmodule AttendanceTracker.TrackerTest do
       assert "does not match" in errors_on(changeset).new_pin_confirmation
     end
   end
+
+  describe "report" do
+    import AttendanceTracker.TrackerFixtures
+
+    test "list_sessions_for_report/1 returns the year's sessions with check-ins" do
+      in_year = training_session_fixture(%{date: ~D[2026-01-05]})
+      _other_year = training_session_fixture(%{date: ~D[2025-01-06]})
+      check_in = check_in_fixture(%{training_session: in_year})
+
+      assert [%{date: ~D[2026-01-05], check_ins: [loaded]}] =
+               Tracker.list_sessions_for_report(2026)
+
+      assert loaded.id == check_in.id
+      assert loaded.participant.name == "some name"
+    end
+
+    test "list_session_years/0 falls back to the current year without sessions" do
+      assert Tracker.list_session_years() == [Tracker.local_today().year]
+    end
+
+    test "list_session_years/0 lists session years up to the current year" do
+      training_session_fixture(%{date: ~D[2024-05-06]})
+      training_session_fixture(%{date: ~D[2026-01-05]})
+
+      assert Tracker.list_session_years() ==
+               Enum.to_list(Tracker.local_today().year..2024//-1)
+    end
+  end
 end

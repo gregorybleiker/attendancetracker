@@ -21,6 +21,16 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
     refute html =~ "Gone Person"
   end
 
+  test "shows the Notfallnummer on the participant tile", %{conn: conn} do
+    with_number = participant_fixture(%{name: "Has Number", emergency_number: "0151 234567"})
+    without = participant_fixture(%{name: "No Number", emergency_number: nil})
+
+    {:ok, view, _html} = live(conn, ~p"/")
+
+    assert has_element?(view, "#emergency-number-#{with_number.id}", "0151 234567")
+    refute has_element?(view, "#emergency-number-#{without.id}")
+  end
+
   test "tapping a photo checks the participant in", %{conn: conn} do
     participant = participant_fixture(%{name: "Tapper", active: true})
 

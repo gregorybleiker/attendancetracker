@@ -26,6 +26,7 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Show do
 
       <.list>
         <:item title="Name">{@participant.name}</:item>
+        <:item title="Notfallnummer">{@participant.emergency_number}</:item>
         <:item title="Active">{@participant.active}</:item>
       </.list>
     </Layouts.app>

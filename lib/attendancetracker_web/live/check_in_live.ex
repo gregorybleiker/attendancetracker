@@ -250,6 +250,14 @@ defmodule AttendanceTrackerWeb.CheckInLive do
 
         <span class="text-center text-sm leading-tight font-semibold">{@participant.name}</span>
 
+        <span
+          :if={@participant.emergency_number}
+          id={"emergency-number-#{@participant.id}"}
+          class="flex items-center gap-1 text-xs opacity-60"
+        >
+          <.icon name="hero-phone" class="size-3" /> {@participant.emergency_number}
+        </span>
+
         <span :if={checked_in} class="text-xs font-medium text-emerald-600 dark:text-emerald-400">
           {Calendar.strftime(checked_in.inserted_at, "%H:%M")}
         </span>

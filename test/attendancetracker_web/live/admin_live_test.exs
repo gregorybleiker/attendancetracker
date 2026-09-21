@@ -5,6 +5,10 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
 
   alias AttendanceTracker.Tracker
 
+  setup %{conn: conn} do
+    %{conn: log_in(conn)}
+  end
+
   test "requires the admin PIN", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin")
 

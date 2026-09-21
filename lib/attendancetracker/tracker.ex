@@ -619,4 +619,40 @@ defmodule AttendanceTracker.Tracker do
   def check_in_count(%TrainingSession{} = session) do
     Repo.one(from c in CheckIn, where: c.training_session_id == ^session.id, select: count())
   end
+
+  ## Reporting
+
+  @doc """
+  Returns all training sessions in the given calendar year (chronological),
+  with their training day and check-ins (participants, in check-in order)
+  preloaded. Used for the CSV report.
+  """
+  def list_sessions_for_report(year) when is_integer(year) do
+    first = Date.new!(year, 1, 1)
+    last = Date.new!(year + 1, 1, 1)
+
+    check_in_query = from c in CheckIn, order_by: c.inserted_at, preload: :participant
+
+    Repo.all(
+      from s in TrainingSession,
+        left_join: td in assoc(s, :training_day),
+        where: s.date >= ^first and s.date < ^last,
+        order_by: [asc: s.date, asc: td.starts_at],
+        preload: [:training_day, check_ins: ^check_in_query]
+    )
+  end
+
+  @doc """
+  Returns the years that have training sessions, most recent first.
+  Falls back to the current year when there are no sessions yet.
+  """
+  def list_session_years do
+    case Repo.one(from s in TrainingSession, select: {min(s.date), max(s.date)}) do
+      {nil, nil} ->
+        [local_today().year]
+
+      {%Date{} = min_date, %Date{} = max_date} ->
+        Enum.to_list(max(max_date.year, local_today().year)..min_date.year//-1)
+    end
+  end
 end

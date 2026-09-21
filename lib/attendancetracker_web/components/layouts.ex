@@ -53,6 +53,9 @@ defmodule AttendanceTrackerWeb.Layouts do
             <.link navigate={~p"/training_days"} class="btn btn-ghost">Training days</.link>
           </li>
           <li>
+            <.link navigate={~p"/reporting"} class="btn btn-ghost">Reporting</.link>
+          </li>
+          <li>
             <.link navigate={~p"/admin"} class="btn btn-ghost">Admin</.link>
           </li>
           <li>

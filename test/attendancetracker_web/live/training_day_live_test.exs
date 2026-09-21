@@ -4,6 +4,10 @@ defmodule AttendanceTrackerWeb.TrainingDayLiveTest do
   import Phoenix.LiveViewTest
   import AttendanceTracker.TrackerFixtures
 
+  setup %{conn: conn} do
+    %{conn: log_in(conn)}
+  end
+
   defp create_training_day(_context) do
     %{training_day: training_day_fixture()}
   end

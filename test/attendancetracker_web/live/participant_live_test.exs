@@ -4,9 +4,14 @@ defmodule AttendanceTrackerWeb.ParticipantLiveTest do
   import Phoenix.LiveViewTest
   import AttendanceTracker.TrackerFixtures
 
-  @create_attrs %{active: true, name: "some name"}
-  @update_attrs %{active: false, name: "some updated name"}
+  @create_attrs %{active: true, name: "some name", emergency_number: "0151 234567"}
+  @update_attrs %{active: false, name: "some updated name", emergency_number: "0160 987654"}
   @invalid_attrs %{active: false, name: nil}
+
+  setup %{conn: conn} do
+    %{conn: log_in(conn)}
+  end
+
   defp create_participant(_) do
     participant = participant_fixture()
 
@@ -120,6 +125,7 @@ defmodule AttendanceTrackerWeb.ParticipantLiveTest do
       html = render(show_live)
       assert html =~ "Participant updated successfully"
       assert html =~ "some updated name"
+      assert html =~ "0160 987654"
     end
   end
 end

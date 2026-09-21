@@ -5,6 +5,7 @@ defmodule AttendanceTracker.Tracker.Participant do
   schema "participants" do
     field :name, :string
     field :photo, :string
+    field :emergency_number, :string
     field :active, :boolean, default: true
 
     has_many :check_ins, AttendanceTracker.Tracker.CheckIn
@@ -15,7 +16,7 @@ defmodule AttendanceTracker.Tracker.Participant do
   @doc false
   def changeset(participant, attrs) do
     participant
-    |> cast(attrs, [:name, :photo, :active])
+    |> cast(attrs, [:name, :photo, :emergency_number, :active])
     |> validate_required([:name])
   end
 end

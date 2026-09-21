@@ -17,6 +17,10 @@ defmodule AttendanceTrackerWeb.ConnCase do
 
   use ExUnit.CaseTemplate
 
+  use AttendanceTrackerWeb, :verified_routes
+
+  import Phoenix.ConnTest, only: [post: 3]
+
   using do
     quote do
       # The default endpoint for testing
@@ -34,5 +38,13 @@ defmodule AttendanceTrackerWeb.ConnCase do
   setup tags do
     AttendanceTracker.DataCase.setup_sandbox(tags)
     {:ok, conn: Phoenix.ConnTest.build_conn()}
+  end
+
+  @doc """
+  Logs the client in with the default admin PIN and returns the
+  authenticated connection.
+  """
+  def log_in(conn) do
+    post(conn, ~p"/login", %{"pin" => "1234"})
   end
 end
