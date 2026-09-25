@@ -1,0 +1,31 @@
+# Production deployment: app + Caddy (automatic HTTPS). See DEPLOY.md.
+services:
+  app:
+    build: .
+    # Run pending migrations, then start the Phoenix server.
+    command: ["sh", "-c", "/app/bin/migrate && /app/bin/server"]
+    env_file:
+      - .env
+    environment:
+      PHX_SERVER: "true"
+      PORT: "4000"
+      DATABASE_PATH: /data/attendancetracker.db
+    volumes:
+      # SQLite database + uploaded photos (see the /data setup in Dockerfile).
+      - app-data:/data
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [app]
+    restart: unless-stopped
+
+volumes:
+  app-data:
+  caddy-data:
+  caddy-config:

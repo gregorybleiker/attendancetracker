@@ -39,5 +39,8 @@ npm-debug.log
 *.db
 *.db-*
 
+# Local deployment secrets (see .env.example and DEPLOY.md)
+.env
+
 /priv/static/uploads/*
 !/priv/static/uploads/.gitkeep

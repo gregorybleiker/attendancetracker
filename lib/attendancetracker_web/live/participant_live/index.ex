@@ -8,7 +8,7 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Index do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
+    <Layouts.app flash={@flash} admin_mode={@admin_mode}>
       <.header>
         Listing Participants
         <:actions>

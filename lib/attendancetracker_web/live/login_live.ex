@@ -4,7 +4,7 @@ defmodule AttendanceTrackerWeb.LoginLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
+    <Layouts.app flash={@flash} admin_mode={@admin_mode}>
       <.header>
         AttendanceTracker
         <:subtitle>Enter the admin PIN to continue.</:subtitle>

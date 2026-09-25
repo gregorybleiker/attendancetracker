@@ -21,14 +21,18 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
     refute html =~ "Gone Person"
   end
 
-  test "shows the Notfallnummer on the participant tile", %{conn: conn} do
+  test "shows the Notfallnummer on the participant tile only in admin mode", %{conn: conn} do
     with_number = participant_fixture(%{name: "Has Number", emergency_number: "0151 234567"})
     without = participant_fixture(%{name: "No Number", emergency_number: nil})
 
     {:ok, view, _html} = live(conn, ~p"/")
 
-    assert has_element?(view, "#emergency-number-#{with_number.id}", "0151 234567")
-    refute has_element?(view, "#emergency-number-#{without.id}")
+    refute has_element?(view, "#emergency-number-#{with_number.id}")
+
+    {:ok, admin_view, _html} = live(log_in(conn), ~p"/")
+
+    assert has_element?(admin_view, "#emergency-number-#{with_number.id}", "0151 234567")
+    refute has_element?(admin_view, "#emergency-number-#{without.id}")
   end
 
   test "tapping a photo checks the participant in", %{conn: conn} do
@@ -206,10 +210,28 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
   end
 
   describe "taking a photo" do
+    test "the camera button is hidden outside admin mode", %{conn: conn} do
+      participant = participant_fixture(%{name: "No Camera", active: true})
+
+      {:ok, view, _html} = live(conn, ~p"/")
+
+      refute has_element?(view, "#camera-btn-#{participant.id}")
+    end
+
+    test "the server ignores the open_camera event outside admin mode", %{conn: conn} do
+      participant = participant_fixture(%{name: "No Camera", active: true})
+
+      {:ok, view, _html} = live(conn, ~p"/")
+
+      render_click(view, "open_camera", %{"id" => to_string(participant.id)})
+
+      refute has_element?(view, "#camera-modal")
+    end
+
     test "the camera button opens the camera modal", %{conn: conn} do
       participant = participant_fixture(%{name: "Photo Person", active: true})
 
-      {:ok, view, _html} = live(conn, ~p"/")
+      {:ok, view, _html} = live(log_in(conn), ~p"/")
 
       view |> element("#camera-btn-#{participant.id}") |> render_click()
 
@@ -220,10 +242,23 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
       refute has_element?(view, "#camera-modal")
     end
 
+    test "unlocking with the PIN reveals the camera button", %{conn: conn} do
+      participant = participant_fixture(%{active: true})
+
+      {:ok, view, _html} = live(conn, ~p"/")
+      refute has_element?(view, "#camera-btn-#{participant.id}")
+
+      view |> element("#check-in-btn-#{participant.id}") |> render_click()
+      view |> element("#check-in-btn-#{participant.id}") |> render_click()
+      view |> form("#pin-form", %{pin: "1234"}) |> render_submit()
+
+      assert has_element?(view, "#camera-btn-#{participant.id}")
+    end
+
     test "a captured photo becomes the participant's photo", %{conn: conn} do
       participant = participant_fixture(%{name: "Snapshot", active: true, photo: nil})
 
-      {:ok, view, _html} = live(conn, ~p"/")
+      {:ok, view, _html} = live(log_in(conn), ~p"/")
       view |> element("#camera-btn-#{participant.id}") |> render_click()
 
       jpeg = Base.encode64(<<255, 216, 255, 224, 1, 2, 3, 255, 217>>)
@@ -240,7 +275,7 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
     test "invalid photo data shows an error", %{conn: conn} do
       participant = participant_fixture(%{name: "Bad Data", active: true})
 
-      {:ok, view, _html} = live(conn, ~p"/")
+      {:ok, view, _html} = live(log_in(conn), ~p"/")
       view |> element("#camera-btn-#{participant.id}") |> render_click()
 
       render_hook(view, "captured_photo", %{"data" => "data:text/plain;base64,aGVsbG8="})

@@ -6,7 +6,7 @@ defmodule AttendanceTrackerWeb.ReportLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
+    <Layouts.app flash={@flash} admin_mode={@admin_mode}>
       <.header>
         Reporting
         <:subtitle>Download the attendance report for a full year as a CSV file.</:subtitle>

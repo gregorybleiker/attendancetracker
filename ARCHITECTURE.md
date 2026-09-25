@@ -26,6 +26,9 @@ Browser(s)  ◄── WebSocket ──►  LiveViews (one process per connected 
 ## 1. Directory map
 
 ```
+Dockerfile / compose.yml / Caddyfile / DEPLOY.md / .env.example
+                              # Production deployment: OTP release in Docker
+                              # behind Caddy (TLS), SQLite + uploads on a volume
 lib/
   attendancetracker/
     tracker.ex                    # The Tracker context — all business logic entry points
@@ -500,7 +503,7 @@ downloads. `ReportController.download/2` fetches
 `training,date,participants` (names joined with `"; "`), RFC-4180 quoting
 plus a UTF-8 BOM so spreadsheet tools pick the right encoding.
 
-### 4.10 PIN-gated actions (undo check-in, `/admin`)
+### 4.10 PIN-gated actions (undo check-in, `/admin`, admin mode on the kiosk)
 
 The check-out flow shows how LiveView state machines read:
 
@@ -517,6 +520,27 @@ end
 The modal is plain markup toggled by `:if={@toggle_participant}` — modals need
 no JS framework in LiveView, just assigns. `AdminLive` uses the same pattern:
 one boolean (`@unlocked`) swaps the whole page between PIN prompt and settings.
+
+**Admin mode on the kiosk.** The same `@admin_unlocked` assign doubles as the
+kiosk's admin mode: it starts from the session flag
+(`lv_session["admin_pin_ok"]` in `mount/3`, set by the "Admin mode" menu item
+→ `/login` → `SessionController`) and is also set by the in-page PIN unlock
+above. Only in admin mode do the participant cards show the camera button and
+the emergency number; `open_camera` additionally ignores its event when not
+unlocked. Because those elements live inside the stream, flipping the assign
+in `submit_pin` re-streams the participants (`stream(..., reset: true)`) so the
+already rendered cards pick up the new UI.
+
+**Navbar toggle and logout.** A global `on_mount` hook
+(`AssignAdminMode`, attached in the `live_view` quote in `my_app_web.ex`)
+exposes the session flag to every LiveView as `@admin_mode`, and each
+template passes it to `<Layouts.app>`. The navbar shows "Admin mode" (→
+`/login`) when logged out and "Exit admin mode" when logged in — the latter
+is a `DELETE /logout` link (`SessionController.delete/2` drops
+`:admin_pin_ok` from the session and redirects to `/`). Note the two assigns
+stay separate on purpose: the transient in-page PIN unlock reveals the kiosk
+cards via `@admin_unlocked` but does not flip the session-backed `@admin_mode`
+in the navbar.
 
 **Logging in (first connection).** Before any of that, every new client must
 enter the admin PIN once. `LoginLive` renders a plain `<.form
@@ -535,6 +559,8 @@ reloads and navigation between LiveViews.
 any guarded URL → `RequireAdminPin` plug → 302 to `/login` → PIN form POST →
 `Tracker.admin_pin_valid?/1` → session marked → redirect to `/`. Wrong PIN →
 flash error, back to `/login`. The kiosk `/` itself never requires a login.
+Leaving admin mode works the same way in reverse: "Exit admin mode" →
+`DELETE /logout` → session flag cleared → redirect to `/`.
 
 **Check-in (multi-client):**
 tap → `handle_event("check_in")` → `Tracker.check_in/2` (idempotent thanks to
@@ -558,8 +584,9 @@ tap checked-in card → PIN modal → `admin_pin_valid?/1` (fresh DB read, so PI
 changes apply instantly) → `Tracker.check_out/2` → `{:checked_out, …}`
 broadcast → badge disappears everywhere.
 
-**Camera photo:**
-camera icon → modal + hook starts webcam → capture → data URL →
+**Camera photo (admin mode only):**
+camera icon (rendered only when unlocked, entry guarded in `open_camera`) →
+modal + hook starts webcam → capture → data URL →
 `store_captured_photo/1` (a `with` chain: base64 decode → write file) →
 `Tracker.update_participant/2` → `stream_insert` shows the new avatar.
 

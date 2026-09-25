@@ -31,6 +31,10 @@ defmodule AttendanceTrackerWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://phoenix.hexdocs.pm/scopes.html)"
 
+  attr :admin_mode, :boolean,
+    default: false,
+    doc: "whether the session is in admin mode (toggles the admin menu item)"
+
   slot :inner_block, required: true
 
   def app(assigns) do
@@ -57,6 +61,16 @@ defmodule AttendanceTrackerWeb.Layouts do
           </li>
           <li>
             <.link navigate={~p"/admin"} class="btn btn-ghost">Admin</.link>
+          </li>
+          <li :if={!@admin_mode}>
+            <.link navigate={~p"/login"} id="admin-mode-menu" class="btn btn-ghost">
+              <.icon name="hero-lock-closed" class="size-4" /> Admin mode
+            </.link>
+          </li>
+          <li :if={@admin_mode}>
+            <.link href={~p"/logout"} method="delete" id="exit-admin-mode-menu" class="btn btn-ghost">
+              <.icon name="hero-lock-open" class="size-4" /> Exit admin mode
+            </.link>
           </li>
           <li>
             <.theme_toggle />

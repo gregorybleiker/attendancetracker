@@ -7,7 +7,7 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Form do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
+    <Layouts.app flash={@flash} admin_mode={@admin_mode}>
       <.header>
         {@page_title}
         <:subtitle>Participants with a photo are easier to spot on the check-in screen.</:subtitle>

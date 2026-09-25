@@ -7,7 +7,8 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   alias AttendanceTracker.Tracker.TrainingDay
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, lv_session, socket) do
+    admin_unlocked = lv_session["admin_pin_ok"] == true
     training_days = Tracker.list_training_days()
     {session, selected_id} = resolve_session(training_days)
     participants = Tracker.list_participants_with_check_ins(session)
@@ -21,7 +22,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
      |> assign(:training_days, training_days)
      |> assign(:training_day_options, training_day_options(training_days))
      |> assign(:training_day_form, to_form(%{"training_day_id" => selected_id}))
-     |> assign(:admin_unlocked, false)
+     |> assign(:admin_unlocked, admin_unlocked)
      |> assign(:toggle_participant, nil)
      |> assign(:pin_form, to_form(%{"pin" => ""}))
      |> assign(:camera_participant, nil)
@@ -57,7 +58,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
+    <Layouts.app flash={@flash} admin_mode={@admin_mode}>
       <.form
         :if={@training_days != []}
         for={@training_day_form}
@@ -97,7 +98,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
         </div>
 
         <div :for={{id, participant} <- @streams.participants} id={id}>
-          <.participant_card participant={participant} />
+          <.participant_card participant={participant} admin_mode={@admin_unlocked} />
         </div>
       </div>
 
@@ -211,6 +212,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   end
 
   attr :participant, :map, required: true
+  attr :admin_mode, :boolean, required: true
 
   defp participant_card(assigns) do
     ~H"""
@@ -251,7 +253,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
         <span class="text-center text-sm leading-tight font-semibold">{@participant.name}</span>
 
         <span
-          :if={@participant.emergency_number}
+          :if={@admin_mode && @participant.emergency_number}
           id={"emergency-number-#{@participant.id}"}
           class="flex items-center gap-1 text-xs opacity-60"
         >
@@ -264,6 +266,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
       </button>
 
       <button
+        :if={@admin_mode}
         id={"camera-btn-#{@participant.id}"}
         phx-click="open_camera"
         phx-value-id={@participant.id}
@@ -319,9 +322,15 @@ defmodule AttendanceTrackerWeb.CheckInLive do
     if Tracker.admin_pin_valid?(pin) do
       participant_id = socket.assigns.toggle_participant.id
 
+      # Unlocking reveals the admin-only UI inside the streamed cards
+      # (camera buttons, phone numbers), so the stream must be reset for
+      # the toggled assign to take effect on already rendered items.
+      participants = Tracker.list_participants_with_check_ins(socket.assigns.session)
+
       socket
       |> assign(:admin_unlocked, true)
       |> assign(:toggle_participant, nil)
+      |> stream(:participants, participants, reset: true)
       |> check_out_participant(participant_id)
     else
       {:noreply, assign(socket, :pin_form, pin_form_with_error())}
@@ -333,10 +342,14 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   end
 
   def handle_event("open_camera", %{"id" => id}, socket) do
-    {:noreply,
-     socket
-     |> assign(:camera_participant, Tracker.get_participant!(id))
-     |> assign(:camera_error, nil)}
+    if socket.assigns.admin_unlocked do
+      {:noreply,
+       socket
+       |> assign(:camera_participant, Tracker.get_participant!(id))
+       |> assign(:camera_error, nil)}
+    else
+      {:noreply, socket}
+    end
   end
 
   def handle_event("close_camera", _params, socket) do

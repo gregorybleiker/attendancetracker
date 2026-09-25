@@ -15,4 +15,11 @@ defmodule AttendanceTrackerWeb.SessionController do
       |> redirect(to: ~p"/login")
     end
   end
+
+  def delete(conn, _params) do
+    conn
+    |> delete_session(:admin_pin_ok)
+    |> put_flash(:info, "Admin mode off")
+    |> redirect(to: ~p"/")
+  end
 end

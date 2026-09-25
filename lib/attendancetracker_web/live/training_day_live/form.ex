@@ -7,7 +7,7 @@ defmodule AttendanceTrackerWeb.TrainingDayLive.Form do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
+    <Layouts.app flash={@flash} admin_mode={@admin_mode}>
       <.header>
         {@page_title}
         <:subtitle>For example: every Monday from 19:00 to 21:30.</:subtitle>

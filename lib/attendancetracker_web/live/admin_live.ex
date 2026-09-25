@@ -8,7 +8,7 @@ defmodule AttendanceTrackerWeb.AdminLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
+    <Layouts.app flash={@flash} admin_mode={@admin_mode}>
       <.header>
         Admin
         <:subtitle>Restricted area — enter the admin PIN to continue.</:subtitle>
