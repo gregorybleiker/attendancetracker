@@ -1,0 +1,53 @@
+# Builds the production image and publishes it to GitHub Container Registry.
+#
+# - Push to `main` (or manual dispatch): build + push (`latest`, `main`,
+#   and `sha-<commit>` tags).
+# - Pull requests: build only, to validate the Dockerfile.
+#
+# No secrets to configure: the workflow logs in with the automatic
+# `GITHUB_TOKEN` (granted `packages: write` below). The VPS pulls the image
+# with `docker compose pull` — see DEPLOY.md.
+name: Publish Docker image
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: gregorybleiker/attendancetracker
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Log in to ghcr.io
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

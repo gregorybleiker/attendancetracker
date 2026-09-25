@@ -1,6 +1,10 @@
 # Production deployment: app + Caddy (automatic HTTPS). See DEPLOY.md.
 services:
   app:
+    # Published by the "Publish Docker image" workflow — `docker compose
+    # pull` fetches it, so the VPS never has to build. `build: .` stays so
+    # `docker compose up --build` still works from a source checkout.
+    image: ghcr.io/gregorybleiker/attendancetracker:latest
     build: .
     # Run pending migrations, then start the Phoenix server.
     command: ["sh", "-c", "/app/bin/migrate && /app/bin/server"]
