@@ -11,8 +11,19 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in {
       default = pkgs.mkShell {
+        shell = pkgs.fish;
+        shellHook = ''
+          case "$-" in
+            *i*)
+              SHELL=${pkgs.fish}/bin/fish
+              export SHELL
+              exec fish
+              ;;
+          esac
+        '';
         packages = with pkgs;
           [
+            fish
             # BEAM toolchain (elixir pulls in erlang)
             elixir
             # Language server, picked up by editors (e.g. Zed) from $PATH
