@@ -68,6 +68,9 @@ if config_env() == :prod do
 
   config :attendancetracker, AttendanceTrackerWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
+    # Allow the public host (behind Caddy) plus localhost, so the image can
+    # also be run/tested locally without changing PHX_HOST.
+    check_origin: ["//#{host}", "//localhost", "//127.0.0.1"],
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.

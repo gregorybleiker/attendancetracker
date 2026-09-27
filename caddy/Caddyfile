@@ -1,5 +1,5 @@
 # Replace with your domain, e.g. attendance.example.com.
 # Caddy fetches a Let's Encrypt certificate automatically on first start.
-attendance.example.com {
+localhost {
 	reverse_proxy app:4000
 }

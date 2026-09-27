@@ -4,10 +4,11 @@ services:
     # Published by the "Publish Docker image" workflow — `docker compose
     # pull` fetches it, so the VPS never has to build. `build: .` stays so
     # `docker compose up --build` still works from a source checkout.
-    image: ghcr.io/gregorybleiker/attendancetracker:latest
+    image: ghcr.io/gregorybleiker/attendancetracker:main
     build: .
     # Run pending migrations, then start the Phoenix server.
     command: ["sh", "-c", "/app/bin/migrate && /app/bin/server"]
+    ports: ["4000:4000"]
     env_file:
       - .env
     environment:
@@ -23,7 +24,9 @@ services:
     image: caddy:2-alpine
     ports: ["80:80", "443:443"]
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Mount the directory (not the file): single-file bind mounts break
+      # under rootless Podman/crun on WSL with "Not a directory".
+      - ./caddy:/etc/caddy:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on: [app]
