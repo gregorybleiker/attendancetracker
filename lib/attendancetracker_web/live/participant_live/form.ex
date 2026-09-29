@@ -26,7 +26,7 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Form do
 
         <div>
           <span class="label mb-1 block">Photo</span>
-          <div class="mt-2 flex items-center gap-4">
+          <div class="mt-2 flex flex-wrap items-center gap-4">
             <div
               :for={entry <- @uploads.photo.entries}
               class="relative size-24 shrink-0"

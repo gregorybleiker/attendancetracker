@@ -461,6 +461,69 @@ defmodule AttendanceTracker.TrackerTest do
     end
   end
 
+  describe "session pin" do
+    test "session_pin/0 is nil and the kiosk is open until configured" do
+      assert Tracker.session_pin() == nil
+      refute Tracker.session_pin_configured?()
+      refute Tracker.session_pin_valid?("1234")
+      assert Tracker.session_pin_fingerprint() == nil
+    end
+
+    test "update_session_pin/1 persists and validates the PIN" do
+      assert {:ok, _setting} = Tracker.update_session_pin("2468")
+
+      assert Tracker.session_pin() == "2468"
+      assert Tracker.session_pin_configured?()
+      assert Tracker.session_pin_valid?("2468")
+      refute Tracker.session_pin_valid?("0000")
+      refute Tracker.session_pin_valid?(nil)
+    end
+
+    test "session_pin_fingerprint/0 changes with the PIN" do
+      assert {:ok, _} = Tracker.update_session_pin("2468")
+      first = Tracker.session_pin_fingerprint()
+
+      assert is_binary(first)
+
+      assert {:ok, _} = Tracker.update_session_pin("1357")
+      refute Tracker.session_pin_fingerprint() == first
+    end
+
+    test "change_session_pin/1 validates the format and confirmation" do
+      assert Tracker.change_session_pin(%{new_pin: "2468", new_pin_confirmation: "2468"}).valid?
+
+      refute Tracker.change_session_pin(%{new_pin: "12", new_pin_confirmation: "12"}).valid?
+
+      refute Tracker.change_session_pin(%{
+               new_pin: "2468",
+               new_pin_confirmation: "1357"
+             }).valid?
+    end
+  end
+
+  describe "session expiry" do
+    test "session_expiry_days/0 defaults to 30" do
+      assert Tracker.session_expiry_days() == 30
+      assert Tracker.session_expiry_seconds() == 30 * 86_400
+    end
+
+    test "update_session_expiry_days/1 persists the value" do
+      assert {:ok, _setting} = Tracker.update_session_expiry_days(7)
+
+      assert Tracker.session_expiry_days() == 7
+      assert Tracker.session_expiry_seconds() == 7 * 86_400
+    end
+
+    test "change_session_expiry_days/1 requires a positive number of days" do
+      assert Tracker.change_session_expiry_days(%{days: 30}).valid?
+
+      for invalid <- [0, -1, 3651] do
+        refute Tracker.change_session_expiry_days(%{days: invalid}).valid?,
+               "expected #{invalid} to be invalid"
+      end
+    end
+  end
+
   describe "report" do
     import AttendanceTracker.TrackerFixtures
 

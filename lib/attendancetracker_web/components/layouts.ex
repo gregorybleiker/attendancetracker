@@ -39,47 +39,91 @@ defmodule AttendanceTrackerWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex w-fit items-center gap-2 text-lg font-bold tracking-tight">
-          <.icon name="hero-clipboard-document-check" class="size-6" /> AttendanceTracker
-        </a>
-      </div>
-      <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
-          <li>
-            <.link navigate={~p"/"} class="btn btn-ghost">Check-in</.link>
-          </li>
-          <li>
-            <.link navigate={~p"/participants"} class="btn btn-ghost">Participants</.link>
-          </li>
-          <li>
-            <.link navigate={~p"/training_days"} class="btn btn-ghost">Training days</.link>
-          </li>
-          <li>
-            <.link navigate={~p"/reporting"} class="btn btn-ghost">Reporting</.link>
-          </li>
-          <li>
-            <.link navigate={~p"/admin"} class="btn btn-ghost">Admin</.link>
-          </li>
-          <li :if={!@admin_mode}>
-            <.link navigate={~p"/login"} id="admin-mode-menu" class="btn btn-ghost">
-              <.icon name="hero-lock-closed" class="size-4" /> Admin mode
-            </.link>
-          </li>
-          <li :if={@admin_mode}>
-            <.link href={~p"/logout"} method="delete" id="exit-admin-mode-menu" class="btn btn-ghost">
-              <.icon name="hero-lock-open" class="size-4" /> Exit admin mode
-            </.link>
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
-        </ul>
+    <header class="sticky top-0 z-40 border-b border-base-300 bg-base-100/90 backdrop-blur">
+      <div class="navbar mx-auto max-w-7xl gap-2 px-4 sm:px-6 lg:px-8">
+        <div class="flex-1">
+          <a href="/" class="flex w-fit items-center gap-2 text-lg font-bold tracking-tight">
+            <.icon name="hero-clipboard-document-check" class="size-6" /> AttendanceTracker
+          </a>
+        </div>
+
+        <nav class="hidden items-center gap-1 lg:flex">
+          <.link navigate={~p"/"} class="btn btn-ghost">Check-in</.link>
+          <.link :if={@admin_mode} navigate={~p"/participants"} class="btn btn-ghost">
+            Participants
+          </.link>
+          <.link :if={@admin_mode} navigate={~p"/training_days"} class="btn btn-ghost">
+            Training days
+          </.link>
+          <.link :if={@admin_mode} navigate={~p"/reporting"} class="btn btn-ghost">
+            Reporting
+          </.link>
+          <.link :if={@admin_mode} navigate={~p"/admin"} class="btn btn-ghost">Admin</.link>
+          <.link :if={!@admin_mode} navigate={~p"/login"} id="admin-mode-menu" class="btn btn-ghost">
+            <.icon name="hero-lock-closed" class="size-4" /> Admin mode
+          </.link>
+          <.link
+            :if={@admin_mode}
+            href={~p"/logout"}
+            method="delete"
+            id="exit-admin-mode-menu"
+            class="btn btn-ghost"
+          >
+            <.icon name="hero-lock-open" class="size-4" /> Exit admin mode
+          </.link>
+          <.theme_toggle />
+        </nav>
+
+        <details class="dropdown dropdown-end lg:hidden">
+          <summary class="btn btn-ghost btn-square" aria-label="Open menu">
+            <.icon name="hero-bars-3" class="size-6" />
+          </summary>
+          <ul class="menu dropdown-content z-50 mt-2 w-60 rounded-box border border-base-300 bg-base-100 p-2 shadow-xl">
+            <li>
+              <.link navigate={~p"/"}><.icon name="hero-home" class="size-5" /> Check-in</.link>
+            </li>
+            <li :if={@admin_mode}>
+              <.link navigate={~p"/participants"}>
+                <.icon name="hero-user-group" class="size-5" /> Participants
+              </.link>
+            </li>
+            <li :if={@admin_mode}>
+              <.link navigate={~p"/training_days"}>
+                <.icon name="hero-calendar-days" class="size-5" /> Training days
+              </.link>
+            </li>
+            <li :if={@admin_mode}>
+              <.link navigate={~p"/reporting"}>
+                <.icon name="hero-chart-bar" class="size-5" /> Reporting
+              </.link>
+            </li>
+            <li :if={@admin_mode}>
+              <.link navigate={~p"/admin"}>
+                <.icon name="hero-cog-6-tooth" class="size-5" /> Admin
+              </.link>
+            </li>
+            <li :if={!@admin_mode}>
+              <.link navigate={~p"/login"}>
+                <.icon name="hero-lock-closed" class="size-5" /> Admin mode
+              </.link>
+            </li>
+            <li :if={@admin_mode}>
+              <.link href={~p"/logout"} method="delete">
+                <.icon name="hero-lock-open" class="size-5" /> Exit admin mode
+              </.link>
+            </li>
+            <li class="mt-1 border-t border-base-300 pt-1">
+              <div class="flex items-center justify-between gap-2 px-2 py-1">
+                <span class="text-sm opacity-70">Theme</span>
+                <.theme_toggle />
+              </div>
+            </li>
+          </ul>
+        </details>
       </div>
     </header>
 
-    <main class="px-4 py-10 sm:px-6 lg:px-8">
+    <main class="px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
       <div class="mx-auto max-w-5xl space-y-4">
         {render_slot(@inner_block)}
       </div>

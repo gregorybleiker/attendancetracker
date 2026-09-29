@@ -73,4 +73,59 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
     # still the default PIN
     assert Tracker.admin_pin_valid?("1234")
   end
+
+  test "sets the session PIN", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin")
+    view |> form("#admin-unlock-form", %{pin: "1234"}) |> render_submit()
+
+    view
+    |> form("#session-pin-form", %{
+      session_pin: %{new_pin: "2468", new_pin_confirmation: "2468"}
+    })
+    |> render_submit()
+
+    assert Tracker.session_pin() == "2468"
+    assert Tracker.session_pin_valid?("2468")
+  end
+
+  test "validates the new session PIN", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin")
+    view |> form("#admin-unlock-form", %{pin: "1234"}) |> render_submit()
+
+    html =
+      view
+      |> form("#session-pin-form", %{
+        session_pin: %{new_pin: "12", new_pin_confirmation: "12"}
+      })
+      |> render_submit()
+
+    assert html =~ "must be 4 to 12 digits"
+    refute Tracker.session_pin_configured?()
+  end
+
+  test "sets the session expiry", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin")
+    view |> form("#admin-unlock-form", %{pin: "1234"}) |> render_submit()
+
+    assert has_element?(view, "#session-expiry-form")
+
+    view
+    |> form("#session-expiry-form", %{session_expiry: %{days: 7}})
+    |> render_submit()
+
+    assert Tracker.session_expiry_days() == 7
+  end
+
+  test "validates the session expiry", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin")
+    view |> form("#admin-unlock-form", %{pin: "1234"}) |> render_submit()
+
+    html =
+      view
+      |> form("#session-expiry-form", %{session_expiry: %{days: 0}})
+      |> render_submit()
+
+    assert html =~ "must be between 1 and 3650 days"
+    assert Tracker.session_expiry_days() == 30
+  end
 end

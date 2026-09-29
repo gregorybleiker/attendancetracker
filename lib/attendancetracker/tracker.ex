@@ -438,6 +438,127 @@ defmodule AttendanceTracker.Tracker do
     |> Repo.insert_or_update()
   end
 
+  @session_pin_key "session_pin"
+  @session_expiry_days_key "session_expiry_days"
+  @default_session_expiry_days 30
+
+  @doc """
+  Returns the kiosk session PIN, or `nil` when no session PIN has been
+  configured yet.
+  """
+  def session_pin do
+    case Repo.get_by(Setting, key: @session_pin_key) do
+      nil -> nil
+      %Setting{value: value} -> value
+    end
+  end
+
+  @doc """
+  Returns true when a kiosk session PIN has been configured. Until then the
+  kiosk stays open.
+  """
+  def session_pin_configured?, do: session_pin() != nil
+
+  @doc """
+  Returns true if the given PIN matches the configured session PIN. Always
+  returns false when no session PIN is configured.
+  """
+  def session_pin_valid?(pin) when is_binary(pin) do
+    case session_pin() do
+      nil -> false
+      configured -> Plug.Crypto.secure_compare(pin, configured)
+    end
+  end
+
+  def session_pin_valid?(_pin), do: false
+
+  @doc """
+  Returns a fingerprint of the current session PIN, used to invalidate
+  existing kiosk session cookies when the PIN changes.
+  """
+  def session_pin_fingerprint do
+    case session_pin() do
+      nil -> nil
+      pin -> :crypto.hash(:sha256, pin) |> Base.encode16(case: :lower)
+    end
+  end
+
+  @doc """
+  Returns a changeset for validating a session PIN change
+  (new PIN plus confirmation).
+  """
+  def change_session_pin(params \\ %{}) do
+    types = %{new_pin: :string, new_pin_confirmation: :string}
+
+    {%{}, types}
+    |> Ecto.Changeset.cast(params, [:new_pin, :new_pin_confirmation])
+    |> Ecto.Changeset.validate_required([:new_pin])
+    |> Ecto.Changeset.validate_format(:new_pin, ~r/^\d{4,12}$/, message: "must be 4 to 12 digits")
+    |> Ecto.Changeset.validate_confirmation(:new_pin, message: "does not match")
+  end
+
+  @doc """
+  Persists a new kiosk session PIN.
+  """
+  def update_session_pin(new_pin) when is_binary(new_pin) do
+    setting = Repo.get_by(Setting, key: @session_pin_key) || %Setting{key: @session_pin_key}
+
+    setting
+    |> Setting.changeset(%{value: new_pin})
+    |> Repo.insert_or_update()
+  end
+
+  @doc """
+  Returns how many days a started kiosk session stays valid. Defaults to
+  `#{@default_session_expiry_days}`.
+  """
+  def session_expiry_days do
+    case Repo.get_by(Setting, key: @session_expiry_days_key) do
+      %Setting{value: value} ->
+        case Integer.parse(value) do
+          {days, ""} when days > 0 -> days
+          _ -> @default_session_expiry_days
+        end
+
+      nil ->
+        @default_session_expiry_days
+    end
+  end
+
+  @doc """
+  Returns the kiosk session expiry in seconds.
+  """
+  def session_expiry_seconds, do: session_expiry_days() * 86_400
+
+  @doc """
+  Returns a changeset for validating a session expiry (in days) change.
+  """
+  def change_session_expiry_days(params \\ %{}) do
+    types = %{days: :integer}
+
+    {%{}, types}
+    |> Ecto.Changeset.cast(params, [:days])
+    |> Ecto.Changeset.validate_required([:days])
+    |> Ecto.Changeset.validate_number(:days,
+      greater_than: 0,
+      less_than_or_equal_to: 3650,
+      message: "must be between 1 and 3650 days"
+    )
+  end
+
+  @doc """
+  Persists the kiosk session expiry in days.
+  """
+  def update_session_expiry_days(days) when is_integer(days) and days > 0 do
+    setting =
+      Repo.get_by(Setting, key: @session_expiry_days_key) ||
+        %Setting{key: @session_expiry_days_key}
+
+    setting
+    |> Setting.changeset(%{value: Integer.to_string(days)})
+    |> Repo.insert_or_update()
+  end
+
   ## Kiosk / attendance tracking
 
   alias AttendanceTracker.Tracker.TrainingSession

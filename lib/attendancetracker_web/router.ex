@@ -18,14 +18,25 @@ defmodule AttendanceTrackerWeb.Router do
     plug AttendanceTrackerWeb.Plugs.RequireAdminPin
   end
 
+  pipeline :kiosk do
+    plug AttendanceTrackerWeb.Plugs.RequireKioskSession
+  end
+
   scope "/", AttendanceTrackerWeb do
     pipe_through :browser
 
-    live "/", CheckInLive, :index
+    live "/start", SessionUnlockLive, :new
+    post "/start", SessionController, :start
 
     live "/login", LoginLive, :new
     post "/login", SessionController, :create
     delete "/logout", SessionController, :delete
+  end
+
+  scope "/", AttendanceTrackerWeb do
+    pipe_through [:browser, :kiosk]
+
+    live "/", CheckInLive, :index
   end
 
   scope "/", AttendanceTrackerWeb do
