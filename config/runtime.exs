@@ -43,7 +43,7 @@ if config_env() == :prod do
     System.get_env("DATABASE_PATH") ||
       raise """
       environment variable DATABASE_PATH is missing.
-      For example: /etc/attendancetracker/attendancetracker.db
+      For example: /data/db/attendancetracker.db
       """
 
   config :attendancetracker, AttendanceTracker.Repo,

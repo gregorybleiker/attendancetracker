@@ -98,14 +98,15 @@ ENV MIX_ENV="prod"
 COPY --from=builder --chown=nobody:root /app/_build/${MIX_ENV}/rel/attendancetracker ./
 
 # All persistent state lives on a volume mounted at /data (see compose.yml):
-# the SQLite database (DATABASE_PATH=/data/attendancetracker.db) and the
-# user-uploaded photos, which the app writes to priv/static/uploads inside
-# the release. Point that directory at the volume via a symlink so photos
-# survive container rebuilds. The image runs as `nobody`, and fresh Docker
-# volumes are root-owned, so /data must be made writable here.
+# the SQLite database at /data/db/attendancetracker.db and the user-uploaded
+# photos at /data/uploads, which the app reaches through the symlink below.
+# Keeping the database in its own /data/db directory lets it be bind-mounted
+# to a host path independently of the photos (see compose.yml). The image runs
+# as `nobody`, and fresh Docker volumes are root-owned, so /data (including
+# /data/db and /data/uploads) must be created and made writable here.
 # NOTE: the release path below contains the app version from mix.exs —
 # update it when the version changes.
-RUN mkdir -p /data && chown nobody:root /data \
+RUN mkdir -p /data/db /data/uploads && chown -R nobody:root /data \
   && rm -rf ./lib/attendancetracker-0.1.0/priv/static/uploads \
   && ln -s /data/uploads ./lib/attendancetracker-0.1.0/priv/static/uploads
 

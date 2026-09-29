@@ -5,6 +5,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
 
   alias AttendanceTracker.Tracker
   alias AttendanceTracker.Tracker.TrainingDay
+  alias AttendanceTracker.Uploads
 
   @impl true
   def mount(_params, lv_session, socket) do
@@ -381,15 +382,9 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   end
 
   defp store_captured_photo("data:image/jpeg;base64," <> base64) do
-    with {:ok, binary} <- Base.decode64(base64) do
-      filename = Ecto.UUID.generate() <> ".jpg"
-      dest = Path.join([:code.priv_dir(:attendancetracker), "static", "uploads", filename])
-      File.mkdir_p!(Path.dirname(dest))
-
-      case File.write(dest, binary) do
-        :ok -> {:ok, "/uploads/" <> filename}
-        {:error, reason} -> {:error, reason}
-      end
+    case Base.decode64(base64) do
+      {:ok, binary} -> Uploads.write_binary(binary, ".jpg")
+      :error -> {:error, :invalid_data}
     end
   end
 

@@ -2,8 +2,9 @@
 
 Production setup: the app runs as an OTP release in Docker, behind Caddy
 (which terminates TLS and fetches a Let's Encrypt certificate automatically).
-State (SQLite database + uploaded participant photos) lives in a Docker
-volume, so container rebuilds are lossless.
+State (SQLite database + uploaded participant photos) lives in Docker
+volumes, so container rebuilds are lossless. The database sits in its own
+`/data/db` mount and can optionally be kept on a host directory instead.
 
 Relevant files:
 
@@ -56,6 +57,13 @@ Public repos need no login to pull.
    Fill in:
    - `SECRET_KEY_BASE` — generate locally with `mix phx.gen.secret`
    - `PHX_HOST` — your domain from step 1
+   - `DATABASE_DIR` — *optional*. By default the SQLite database lives in the
+     Docker-managed `db-data` volume (`/data/db/attendancetracker.db` inside
+     the container). Set this to a host directory (e.g.
+     `/srv/attendancetracker/db`) to bind-mount the database to the host
+     instead, so you can inspect/back it up directly. The directory must exist
+     and be writable by UID 65534 (the container's `nobody` user), e.g.
+     `sudo mkdir -p /srv/attendancetracker/db && sudo chown 65534:65534 /srv/attendancetracker/db`.
 
 3. **Get the code + `.env` onto the VPS**, e.g.:
 
@@ -97,34 +105,56 @@ docker compose pull
 docker compose up -d
 ```
 
-The `app-data` volume holds the database and photos, so updates don't touch
-your data. Migrations run automatically on container start.
+The `app-data` volume holds the photos and `db-data` (or your `DATABASE_DIR`
+host directory) holds the database, so updates don't touch your data.
+Migrations run automatically on container start.
+
+> **Upgrading from an older version (database moved to its own mount).** The
+> SQLite database used to live at `/data/attendancetracker.db` inside the
+> `app-data` volume; it now lives at `/data/db/attendancetracker.db` on a
+> separate `db-data` volume. Before starting the new version, copy it over so
+> the app doesn't come up with an empty database:
+>
+> ```bash
+> docker run --rm \
+>   -v attendancetracker_app-data:/old \
+>   -v attendancetracker_db-data:/new \
+>   alpine sh -c 'cp -a /old/attendancetracker.db* /new/'
+> ```
+>
+> (Adjust the volume names with `docker volume ls` — compose prefixes them
+> with the project directory name. Skip this if you use `DATABASE_DIR`, and
+> just move the file into that host directory instead.)
 
 ## Backups
 
-All state is in the `app-data` volume (`/data` in the container:
-`attendancetracker.db` plus `uploads/`). Back it up regularly, e.g. a cron
-job on the VPS:
+State is split across the `app-data` volume (photos, at `/data/uploads` in the
+container) and the database at `/data/db/attendancetracker.db` (in the
+`db-data` volume, or your `DATABASE_DIR` host directory). Back it up
+regularly, e.g. a cron job on the VPS:
 
 ```bash
 # SQLite-safe snapshot (works while the app is running)
 docker run --rm \
-  -v attendancetracker_app-data:/data \
+  -v attendancetracker_db-data:/data/db \
   -v /root/backups:/backup \
-  alpine sh -c 'apk add -q sqlite && sqlite3 /data/attendancetracker.db ".backup /backup/att-$(date +%F).db"'
+  alpine sh -c 'apk add -q sqlite && sqlite3 /data/db/attendancetracker.db ".backup /backup/att-$(date +%F).db"'
 ```
 
 (Adjust the volume name with `docker volume ls` — compose prefixes it with
-the project directory name.)
+the project directory name. If you set `DATABASE_DIR`, snapshot that host
+directory with `sqlite3` directly instead.)
 
 ## Troubleshooting
 
 - `docker compose logs app` is the first stop for everything.
 - **Crash-loop on first boot:** usually a missing env var — `runtime.exs`
   raises a clear error naming it (`SECRET_KEY_BASE`, `DATABASE_PATH`).
-- **No upload / DB write permission errors:** `/data` is created and
-  `chown`ed to the `nobody` user at image build time (see `Dockerfile`).
-  If you changed that, make sure the directory is writable by UID 65534.
+- **No upload / DB write permission errors:** `/data` (including `/data/db`)
+  is created and `chown`ed to the `nobody` user at image build time (see
+  `Dockerfile`). If you changed that, make sure the directory is writable by
+  UID 65534. A host directory used via `DATABASE_DIR` must be writable by the
+  same UID.
 - **No photos after redeploy:** they persist via the symlink
   `priv/static/uploads -> /data/uploads` inside the image (see
   `Dockerfile`). If you bump `version` in `mix.exs`, update the versioned

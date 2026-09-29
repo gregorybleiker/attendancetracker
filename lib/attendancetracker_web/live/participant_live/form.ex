@@ -1,8 +1,11 @@
 defmodule AttendanceTrackerWeb.ParticipantLive.Form do
   use AttendanceTrackerWeb, :live_view
 
+  require Logger
+
   alias AttendanceTracker.Tracker
   alias AttendanceTracker.Tracker.Participant
+  alias AttendanceTracker.Uploads
 
   @impl true
   def render(assigns) do
@@ -148,16 +151,20 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Form do
 
   defp put_photo_path(socket, params) do
     case consume_uploaded_entries(socket, :photo, &store_upload/2) do
-      [path | _] -> Map.put(params, "photo", path)
-      [] -> params
+      [path | _] when is_binary(path) -> Map.put(params, "photo", path)
+      _ -> params
     end
   end
 
   defp store_upload(%{path: path}, entry) do
-    filename = entry.uuid <> Path.extname(entry.client_name)
-    dest = Path.join([:code.priv_dir(:attendancetracker), "static", "uploads", filename])
-    File.cp!(path, dest)
-    {:ok, "/uploads/" <> filename}
+    case Uploads.copy_uploaded(path, entry.client_name) do
+      {:ok, url} ->
+        {:ok, url}
+
+      {:error, reason} ->
+        Logger.warning("Could not store uploaded photo: #{inspect(reason)}")
+        {:postpone, :error}
+    end
   end
 
   defp upload_error_to_string(:too_large), do: "Photo is too large (max 5 MB)"

@@ -14,10 +14,15 @@ services:
     environment:
       PHX_SERVER: "true"
       PORT: "4000"
-      DATABASE_PATH: /data/attendancetracker.db
+      DATABASE_PATH: /data/db/attendancetracker.db
     volumes:
-      # SQLite database + uploaded photos (see the /data setup in Dockerfile).
+      # Uploaded photos (see the /data setup in Dockerfile).
       - app-data:/data
+      # SQLite database, on its own mount so it can be kept on the host:
+      # set DATABASE_DIR in .env to a host directory (e.g.
+      # DATABASE_DIR=/srv/attendancetracker/db) to bind-mount it, or leave it
+      # unset to use the Docker-managed `db-data` volume.
+      - ${DATABASE_DIR:-db-data}:/data/db
     restart: unless-stopped
 
   caddy:
@@ -34,5 +39,6 @@ services:
 
 volumes:
   app-data:
+  db-data:
   caddy-data:
   caddy-config:
