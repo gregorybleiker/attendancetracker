@@ -2,7 +2,7 @@ defmodule AttendanceTrackerWeb.ReportController do
   use AttendanceTrackerWeb, :controller
 
   alias AttendanceTracker.Tracker
-  alias AttendanceTracker.Tracker.TrainingDay
+  alias AttendanceTracker.Tracker.Training
   alias AttendanceTracker.Tracker.TrainingSession
 
   # UTF-8 BOM, so spreadsheet tools pick the right encoding
@@ -57,8 +57,8 @@ defmodule AttendanceTrackerWeb.ReportController do
     @bom <> lines <> "\r\n"
   end
 
-  defp training_name(%TrainingSession{training_day: %TrainingDay{} = training_day}) do
-    TrainingDay.label(training_day)
+  defp training_name(%TrainingSession{training: %Training{} = training}) do
+    Training.label(training)
   end
 
   defp training_name(%TrainingSession{}), do: "Ad-hoc training"

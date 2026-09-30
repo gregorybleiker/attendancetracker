@@ -17,7 +17,7 @@ end
 
 # Weekly training schedule: 1 = Monday, 7 = Sunday
 {:ok, _} =
-  Tracker.create_training_day(%{
+  Tracker.create_training(%{
     name: "Kids Judo Monday",
     weekday: 1,
     starts_at: ~T[19:00:00],

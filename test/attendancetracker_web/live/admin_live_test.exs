@@ -128,4 +128,81 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
     assert html =~ "must be between 1 and 3650 days"
     assert Tracker.session_expiry_days() == 30
   end
+
+  describe "user management import" do
+    import AttendanceTracker.TrackerFixtures
+
+    alias AttendanceTracker.Directory
+    alias AttendanceTracker.Directory.FakeSource
+
+    setup do
+      Application.put_env(:attendancetracker, :directory_sources, %{"fake" => FakeSource})
+
+      on_exit(fn ->
+        Application.delete_env(:attendancetracker, :directory_sources)
+      end)
+
+      :ok
+    end
+
+    defp unlock(view) do
+      view |> form("#admin-unlock-form", %{pin: "1234"}) |> render_submit()
+    end
+
+    test "saves the connector settings", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin")
+      unlock(view)
+
+      assert has_element?(view, "#directory-settings-form")
+
+      view
+      |> form("#directory-settings-form", %{directory: %{source: "fake"}})
+      |> render_change()
+
+      view
+      |> form("#directory-settings-form", %{directory: %{source: "fake", token: "s3cret"}})
+      |> render_submit()
+
+      assert Directory.source() == "fake"
+      assert Directory.config("fake") == %{"token" => "s3cret"}
+    end
+
+    test "previews members and imports the new ones", %{conn: conn} do
+      training_fixture(%{name: "Kids Judo"})
+      participant_fixture(%{name: "Ada Lovelace"})
+
+      {:ok, view, _html} = live(conn, ~p"/admin")
+      unlock(view)
+
+      view
+      |> form("#directory-settings-form", %{directory: %{source: "fake"}})
+      |> render_change()
+
+      view
+      |> form("#directory-settings-form", %{directory: %{source: "fake", token: "x"}})
+      |> render_submit()
+
+      view |> element("#directory-preview-btn") |> render_click()
+
+      assert has_element?(view, "#directory-preview")
+      assert has_element?(view, "#directory-preview", "Grace Hopper")
+      refute has_element?(view, "#directory-preview", "Ada Lovelace")
+
+      view |> element("#directory-import-btn") |> render_click()
+
+      assert render(view) =~ "Imported 1 participants"
+      refute has_element?(view, "#directory-preview")
+      assert Enum.any?(Tracker.list_participants(), &(&1.name == "Grace Hopper"))
+    end
+
+    test "explains when no training has an alias", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/admin")
+      unlock(view)
+
+      view |> element("#directory-preview-btn") |> render_click()
+
+      assert render(view) =~ "No training has an alias"
+      refute has_element?(view, "#directory-preview")
+    end
+  end
 end

@@ -58,6 +58,11 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# User-management connectors available to the admin import, as a map of
+# id => module implementing AttendanceTracker.Directory.Source. Webling is
+# built in; additional (non-)REST connectors can be registered here.
+config :attendancetracker, :directory_sources, %{}
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

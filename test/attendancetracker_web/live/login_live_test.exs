@@ -12,7 +12,7 @@ defmodule AttendanceTrackerWeb.LoginLiveTest do
   test "all pages except the check-in are guarded when not logged in", %{conn: _conn} do
     for path <- [
           ~p"/participants",
-          ~p"/training_days",
+          ~p"/training",
           ~p"/reporting",
           ~p"/reporting/download?year=2026",
           ~p"/admin"

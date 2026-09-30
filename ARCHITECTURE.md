@@ -36,10 +36,14 @@ lib/
     tracker/
       participant.ex              # Ecto schemas + changesets + pure domain logic
       participant_photo.ex        # Photo bytes + content type (BLOB)
-      training_day.ex
+      training.ex
       training_session.ex
       check_in.ex
       setting.ex
+    directory.ex                  # Context: connector registry + import pipeline
+    directory/
+      source.ex                   # Behaviour for user-management connectors
+      webling.ex                  # Webling connector (Req)
   attendancetracker_web/
     router.ex                     # Routes (all LiveView)
     components/
@@ -50,7 +54,7 @@ lib/
       check_in_live.ex            # The kiosk: photo grid, check-in, PIN, camera
       login_live.ex               # Login page: PIN form POSTed to the session controller
       participant_live/           # Generated-style CRUD: index/form/show
-      training_day_live/          # Weekly schedule config: index/form
+      training_live/               # Weekly schedule config: index/form
       report_live.ex              # Year picker for the CSV attendance report
       admin_live.ex               # PIN-gated admin area
     controllers/
@@ -81,7 +85,7 @@ and persistence layers decoupled.
 ### 2.1 Schemas and changesets (`tracker/*.ex`)
 
 ```elixir
-schema "training_days" do
+schema "trainings" do
   field :name, :string
   field :weekday, :integer
   field :starts_at, :time
@@ -98,8 +102,8 @@ end
 database until a `Repo` call:
 
 ```elixir
-def changeset(training_day, attrs) do
-  training_day
+def changeset(training, attrs) do
+  training
   |> cast(attrs, [:name, :weekday, :starts_at, :ends_at])  # whitelist + type-cast external input
   |> validate_required([:weekday, :starts_at, :ends_at])
   |> validate_inclusion(:weekday, 1..7)
@@ -110,7 +114,7 @@ end
 Key points:
 
 - **`cast/3` is the security boundary**: only listed fields are accepted from
-  user input. `training_day_id` on `TrainingSession` is set programmatically,
+  user input. `training_id` on `TrainingSession` is set programmatically,
   but still cast because sessions are only created server-side.
 - **Custom validation** reads other fields with `get_field/2` (you must not
   pattern-match the changeset for values — changes wrap the data):
@@ -133,10 +137,10 @@ Key points:
 
   ```elixir
   |> unique_constraint(:date)                        # ad-hoc sessions (partial index)
-  |> unique_constraint([:training_day_id, :date])    # one session per training per date
+  |> unique_constraint([:training_id, :date])    # one session per training per date
   ```
 
-### 2.2 Pure domain logic lives in the schema module (`training_day.ex`)
+### 2.2 Pure domain logic lives in the schema module (`training.ex`)
 
 The recurring-schedule math is side-effect free and trivially testable:
 
@@ -156,23 +160,23 @@ end
   `NaiveDateTime` arithmetic. No date library dependency.
 - **Guard-free arithmetic with `rem/2`** — the `+ 7` keeps the modulo positive.
 
-### 2.3 Pattern matching as control flow (`Tracker.current_training_day/3`)
+### 2.3 Pattern matching as control flow (`Tracker.current_training/3`)
 
 "Which training is current?" is expressed as **multiple function clauses** and
 a clear priority chain:
 
 ```elixir
-def current_training_day(training_days, date, time)
+def current_training(trainings, date, time)
 
-def current_training_day([], _date, _time), do: nil          # empty list clause
+def current_training([], _date, _time), do: nil          # empty list clause
 
-def current_training_day(training_days, %Date{} = date, %Time{} = time) do
+def current_training(trainings, %Date{} = date, %Time{} = time) do
   in_progress = ...   # Enum.max_by(& &1.starts_at, Time, fn -> nil end)
   upcoming_today = ... # Enum.min_by(& &1.starts_at, Time, fn -> nil end)
 
   in_progress ||
     upcoming_today ||
-    Enum.max_by(training_days, &TrainingDay.most_recent_start(&1, date, time), NaiveDateTime)
+    Enum.max_by(trainings, &Training.most_recent_start(&1, date, time), NaiveDateTime)
 end
 ```
 
@@ -198,17 +202,17 @@ def todays_session do
   |> Repo.insert(on_conflict: :nothing)      # insert, ignore if it already exists
 
   Repo.one!(from s in TrainingSession,
-    where: s.date == ^today and is_nil(s.training_day_id))
+    where: s.date == ^today and is_nil(s.training_id))
 end
 ```
 
 **Idiom: "upsert then read".** Two kiosks opening the app at the same time can
 race to create today's session. The **unique index makes the race safe**:
 the loser inserts nothing and both read the same row. The migration even keeps
-ad-hoc sessions unique with a **partial index** (`where: "training_day_id IS
+ad-hoc sessions unique with a **partial index** (`where: "training_id IS
 NULL"`), because SQLite treats `NULL`s as distinct in unique indexes.
 
-**Idiom: `is_nil/1` in queries** — `Repo.get_by(training_day_id: nil)` is a
+**Idiom: `is_nil/1` in queries** — `Repo.get_by(training_id: nil)` is a
 compile error; Ecto forces you to write the NULL-safe `is_nil/1` explicitly.
 
 ### 2.5 Shaped preloads (`Tracker.list_participants_with_check_ins/1`)
@@ -301,10 +305,10 @@ def check_in(%Participant{} = participant, %TrainingSession{} = session) do
 
 ```elixir
 live "/", CheckInLive, :index
-live "/training_days/:id/edit", TrainingDayLive.Form, :edit
+live "/training/:id/edit", TrainingLive.Form, :edit
 ```
 
-In templates, paths are written as `~p"/training_days"` — **verified routes**:
+In templates, paths are written as `~p"/training"` — **verified routes**:
 the compiler checks them against the router, so a typo is a compile error, not
 a 404 at runtime.
 
@@ -325,7 +329,7 @@ mount/3        ── runs TWICE: once for the initial HTTP render, once when th
                   WebSocket connects → side effects are guarded:
                   `if connected?(socket), do: Tracker.subscribe(session)`
 
-handle_event/3 ── user interactions ("check_in", "select_training_day", ...)
+handle_event/3 ── user interactions ("check_in", "select_training", ...)
 
 handle_info/3  ── PubSub messages from other clients
 ```
@@ -367,28 +371,28 @@ collections, and updates are surgical DOM patches.
   (`@checked_in_count`), incremented/decremented in `handle_info`.
 - *No empty state* → pure-CSS trick: a `.hidden only:block` div that only
   displays when it's the sole child of the grid.
-- *Changing collections* (switching training day) → refetch + `reset: true`.
+- *Changing collections* (switching training) → refetch + `reset: true`.
 
 ### 4.4 Forms: `to_form/2` everywhere
 
 Two flavors are used:
 
-**Changeset-backed** (training day form):
+**Changeset-backed** (training form):
 
 ```elixir
-assign(:form, to_form(Tracker.change_training_day(training_day)))
+assign(:form, to_form(Tracker.change_training(training)))
 ```
 
 ```heex
-<.form for={@form} id="training-day-form" phx-change="validate" phx-submit="save">
-  <.input field={@form[:weekday]} type="select" options={TrainingDay.weekday_options()} />
+<.form for={@form} id="training-form" phx-change="validate" phx-submit="save">
+  <.input field={@form[:weekday]} type="select" options={Training.weekday_options()} />
 ```
 
 Validation on every change (`phx-change`) re-assigns
 `to_form(changeset, action: :validate)` — errors only render once the changeset
 has an **action**, which is how a fresh form shows no errors.
 
-**Param-map-backed** (PIN prompts, training day selector):
+**Param-map-backed** (PIN prompts, training selector):
 
 ```elixir
 to_form(%{"pin" => ""}, errors: [pin: {"Wrong PIN", []}])
@@ -416,9 +420,9 @@ Compile-time-checked, self-documenting, and reusable across LiveViews
 
 ```heex
 <.header>
-  Training days
+  Training
   <:subtitle>Configure the weekly training schedule…</:subtitle>
-  <:actions><.button variant="primary" …>New training day</.button></:actions>
+  <:actions><.button variant="primary" …>New training</.button></:actions>
 </.header>
 ```
 
@@ -565,6 +569,33 @@ event, because only a controller can write the session. On success,
 flash error. The flag lives in the session cookie, so the login survives page
 reloads and navigation between LiveViews.
 
+### 4.11 Importing from user management (`directory.ex` + connectors)
+
+The admin area can pull members from an external user-management system and
+create participants for everyone enrolled in a training matching a training's
+alias. The design deliberately separates the *connector* from the
+*pipeline* so non-REST sources are possible:
+
+- `AttendanceTracker.Directory.Source` is a **behaviour** (`@callback
+  fetch_members/2`, `config_fields/0`, `label/0`). A connector only has to
+  return normalised `%{first_name, last_name, phone}` maps.
+- `AttendanceTracker.Directory.Webling` implements it with `Req`, filtering via
+  the Webling query language: `GET /api/1/member?format=full&filter=$parents.title
+  = "…"`. Property names (`Vorname`, `Name`, `Telefon`) are configurable.
+- `AttendanceTracker.Directory` is the context. It stores the selected connector
+  and its (JSON) configuration in the settings table (`directory_source`,
+  `directory_config`), builds a schemaless changeset for the admin form, and
+  runs the source-agnostic `preview/0` → `import_members/1` flow: members are
+  normalised, de-duplicated by name, and compared against existing participants
+  (case/whitespace-insensitive) so only missing ones are created. The phone
+  becomes the participant's `emergency_number`.
+
+`AdminLive` renders the connectors' `config_fields/0` dynamically: switching the
+connector re-renders its fields, so adding a connector is "register the module
+in `config :attendancetracker, :directory_sources`" with no template change.
+The import is previewed first and confirmed in a second click, so the admin
+sees exactly who would be created.
+
 ---
 
 ## 5. End-to-end flows
@@ -584,14 +615,14 @@ re-preloads that one participant and `stream_insert`s it → emerald card, count
 +1.
 
 **Auto-selecting the training:**
-mount → `list_training_days/0` → `current_training_day/3` (in progress →
+mount → `list_trainings/0` → `current_training/3` (in progress →
 upcoming today → most recent) → `occurrence_on_or_before/2` gives the concrete
-date → `session_for_training_day/2` get-or-creates the session. No training
-days configured → fall back to one ad-hoc session per day (`[]` clause).
+date → `session_for_training/2` get-or-creates the session. No trainings
+configured → fall back to one ad-hoc session per day (`[]` clause).
 
-**Switching training day:**
+**Switching training:**
 `phx-change` → unsubscribe old PubSub topic, subscribe new → refetch →
-`stream(..., reset: true)`. Check-ins stay separated per (training day, date).
+`stream(..., reset: true)`. Check-ins stay separated per (training, date).
 
 **Undo a check-in:**
 tap checked-in card → PIN modal → `admin_pin_valid?/1` (fresh DB read, so PIN
@@ -611,7 +642,7 @@ modal + hook starts webcam → capture → data URL →
 - **`DataCase` / `ConnCase`** wrap every test in a SQL sandbox transaction —
   tests run concurrently (`max_cases`) and never see each other's data.
 - **Fixtures** (`TrackerFixtures`) create valid entities with overridable
-  defaults: `training_day_fixture(%{weekday: 3})`.
+  defaults: `training_fixture(%{weekday: 3})`.
 - **LiveView tests** drive the real process:
 
   ```elixir
@@ -626,7 +657,7 @@ modal + hook starts webcam → capture → data URL →
 - **PubSub is tested through the real thing**: `Tracker.subscribe(session)` in
   the test process, then `assert_received {:checked_in, ^check_in}` — the `^`
   pin operator asserts on the *value*, not rebinding.
-- Time-dependent logic is pure (`current_training_day(days, date, time)`), so
+- Time-dependent logic is pure (`current_training(days, date, time)`), so
   tests pass explicit dates (`~D[2026-09-14]` is a Monday) instead of sleeping
   or mocking clocks.
 
@@ -637,7 +668,7 @@ modal + hook starts webcam → capture → data URL →
 | Elixir / Phoenix feature | Where it shows up |
 |---|---|
 | Pipe operator `\|>` | changeset pipelines, socket threading, query building |
-| Pattern matching & function clauses | `current_training_day/3`, `store_captured_photo/1` (`"data:image/jpeg;base64," <> base64` matches the string prefix!) |
+| Pattern matching & function clauses | `current_training/3`, `store_captured_photo/1` (`"data:image/jpeg;base64," <> base64` matches the string prefix!) |
 | `with` (happy-path chaining) | `store_captured_photo/1` |
 | Immutability / rebinding | `socket = socket \|> assign(...) \|> stream(...)` |
 | Module attributes as constants | `@pubsub`, `@default_admin_pin`, `@weekday_names` |
@@ -650,6 +681,8 @@ modal + hook starts webcam → capture → data URL →
 | Plug + session guard | `Plugs.RequireAdminPin` + `SessionController` (login) |
 | Binary download | `send_resp/3` + `content-disposition` (CSV report) |
 | Binary image response | `PhotoController` (`send_resp/3` + cache headers) |
+| Behaviour + registry plugin point | `Directory.Source` connectors |
+| HTTP client (`Req`) | Webling member import |
 | LiveView streams | participant grid (`reset: true` on training switch) |
 | `connected?/1` mount guard | PubSub subscribe only on the live socket |
 | Verified routes `~p` | every link/navigate |

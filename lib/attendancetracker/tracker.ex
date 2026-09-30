@@ -142,100 +142,100 @@ defmodule AttendanceTracker.Tracker do
       }
   end
 
-  alias AttendanceTracker.Tracker.TrainingDay
+  alias AttendanceTracker.Tracker.Training
 
   @doc """
-  Returns the list of training days, ordered by weekday and start time.
+  Returns the list of trainings, ordered by weekday and start time.
 
   ## Examples
 
-      iex> list_training_days()
-      [%TrainingDay{}, ...]
+      iex> list_trainings()
+      [%Training{}, ...]
 
   """
-  def list_training_days do
-    Repo.all(from t in TrainingDay, order_by: [asc: t.weekday, asc: t.starts_at])
+  def list_trainings do
+    Repo.all(from t in Training, order_by: [asc: t.weekday, asc: t.starts_at])
   end
 
   @doc """
-  Gets a single training day.
+  Gets a single training.
 
-  Raises `Ecto.NoResultsError` if the Training day does not exist.
+  Raises `Ecto.NoResultsError` if the Training does not exist.
 
   ## Examples
 
-      iex> get_training_day!(123)
-      %TrainingDay{}
+      iex> get_training!(123)
+      %Training{}
 
-      iex> get_training_day!(456)
+      iex> get_training!(456)
       ** (Ecto.NoResultsError)
 
   """
-  def get_training_day!(id), do: Repo.get!(TrainingDay, id)
+  def get_training!(id), do: Repo.get!(Training, id)
 
   @doc """
-  Creates a training day.
+  Creates a training.
 
   ## Examples
 
-      iex> create_training_day(%{field: value})
-      {:ok, %TrainingDay{}}
+      iex> create_training(%{field: value})
+      {:ok, %Training{}}
 
-      iex> create_training_day(%{field: bad_value})
+      iex> create_training(%{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_training_day(attrs) do
-    %TrainingDay{}
-    |> TrainingDay.changeset(attrs)
+  def create_training(attrs) do
+    %Training{}
+    |> Training.changeset(attrs)
     |> Repo.insert()
   end
 
   @doc """
-  Updates a training day.
+  Updates a training.
 
   ## Examples
 
-      iex> update_training_day(training_day, %{field: new_value})
-      {:ok, %TrainingDay{}}
+      iex> update_training(training, %{field: new_value})
+      {:ok, %Training{}}
 
-      iex> update_training_day(training_day, %{field: bad_value})
+      iex> update_training(training, %{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
-  def update_training_day(%TrainingDay{} = training_day, attrs) do
-    training_day
-    |> TrainingDay.changeset(attrs)
+  def update_training(%Training{} = training, attrs) do
+    training
+    |> Training.changeset(attrs)
     |> Repo.update()
   end
 
   @doc """
-  Deletes a training day.
+  Deletes a training.
 
   ## Examples
 
-      iex> delete_training_day(training_day)
-      {:ok, %TrainingDay{}}
+      iex> delete_training(training)
+      {:ok, %Training{}}
 
-      iex> delete_training_day(training_day)
+      iex> delete_training(training)
       {:error, %Ecto.Changeset{}}
 
   """
-  def delete_training_day(%TrainingDay{} = training_day) do
-    Repo.delete(training_day)
+  def delete_training(%Training{} = training) do
+    Repo.delete(training)
   end
 
   @doc """
-  Returns an `%Ecto.Changeset{}` for tracking training day changes.
+  Returns an `%Ecto.Changeset{}` for tracking training changes.
 
   ## Examples
 
-      iex> change_training_day(training_day)
-      %Ecto.Changeset{data: %TrainingDay{}}
+      iex> change_training(training)
+      %Ecto.Changeset{data: %Training{}}
 
   """
-  def change_training_day(%TrainingDay{} = training_day, attrs \\ %{}) do
-    TrainingDay.changeset(training_day, attrs)
+  def change_training(%Training{} = training, attrs \\ %{}) do
+    Training.changeset(training, attrs)
   end
 
   alias AttendanceTracker.Tracker.TrainingSession
@@ -638,8 +638,8 @@ defmodule AttendanceTracker.Tracker do
   end
 
   @doc """
-  Returns the ad-hoc training session for today (not tied to a training
-  day), creating it if needed.
+  Returns the ad-hoc training session for today (not tied to a training),
+  creating it if needed.
   """
   def todays_session do
     today = local_today()
@@ -650,43 +650,43 @@ defmodule AttendanceTracker.Tracker do
 
     Repo.one!(
       from s in TrainingSession,
-        where: s.date == ^today and is_nil(s.training_day_id)
+        where: s.date == ^today and is_nil(s.training_id)
     )
   end
 
   @doc """
-  Returns the training session for the given training day on the given
+  Returns the training session for the given training on the given
   date, creating it if needed.
   """
-  def session_for_training_day(%TrainingDay{} = training_day, %Date{} = date) do
+  def session_for_training(%Training{} = training, %Date{} = date) do
     %TrainingSession{}
-    |> TrainingSession.changeset(%{date: date, training_day_id: training_day.id})
+    |> TrainingSession.changeset(%{date: date, training_id: training.id})
     |> Repo.insert(on_conflict: :nothing)
 
-    Repo.get_by!(TrainingSession, date: date, training_day_id: training_day.id)
+    Repo.get_by!(TrainingSession, date: date, training_id: training.id)
   end
 
   @doc """
-  Returns the "current" training day for the given local date and time:
+  Returns the "current" training for the given local date and time:
 
-    * the training day in progress right now, if any
-    * otherwise the next training day starting later today, if any
-    * otherwise the most recently started training day
+    * the training in progress right now, if any
+    * otherwise the next training starting later today, if any
+    * otherwise the most recently started training
 
   Returns `nil` when the list is empty.
   """
-  def current_training_day(training_days, date, time)
+  def current_training(trainings, date, time)
 
-  def current_training_day([], _date, _time), do: nil
+  def current_training([], _date, _time), do: nil
 
-  def current_training_day(training_days, %Date{} = date, %Time{} = time) do
+  def current_training(trainings, %Date{} = date, %Time{} = time) do
     in_progress =
-      training_days
-      |> Enum.filter(&TrainingDay.in_progress?(&1, date, time))
+      trainings
+      |> Enum.filter(&Training.in_progress?(&1, date, time))
       |> Enum.max_by(& &1.starts_at, Time, fn -> nil end)
 
     upcoming_today =
-      training_days
+      trainings
       |> Enum.filter(
         &(&1.weekday == Date.day_of_week(date) and Time.compare(&1.starts_at, time) == :gt)
       )
@@ -694,7 +694,7 @@ defmodule AttendanceTracker.Tracker do
 
     in_progress ||
       upcoming_today ||
-      Enum.max_by(training_days, &TrainingDay.most_recent_start(&1, date, time), NaiveDateTime)
+      Enum.max_by(trainings, &Training.most_recent_start(&1, date, time), NaiveDateTime)
   end
 
   @doc """
@@ -787,7 +787,7 @@ defmodule AttendanceTracker.Tracker do
 
   @doc """
   Returns all training sessions in the given calendar year (chronological),
-  with their training day and check-ins (participants, in check-in order)
+  with their training and check-ins (participants, in check-in order)
   preloaded. Used for the CSV report.
   """
   def list_sessions_for_report(year) when is_integer(year) do
@@ -798,10 +798,10 @@ defmodule AttendanceTracker.Tracker do
 
     Repo.all(
       from s in TrainingSession,
-        left_join: td in assoc(s, :training_day),
+        left_join: t in assoc(s, :training),
         where: s.date >= ^first and s.date < ^last,
-        order_by: [asc: s.date, asc: td.starts_at],
-        preload: [:training_day, check_ins: ^check_in_query]
+        order_by: [asc: s.date, asc: t.starts_at],
+        preload: [:training, check_ins: ^check_in_query]
     )
   end
 

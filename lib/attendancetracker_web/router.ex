@@ -49,9 +49,9 @@ defmodule AttendanceTrackerWeb.Router do
     live "/participants/:id", ParticipantLive.Show, :show
     live "/participants/:id/edit", ParticipantLive.Form, :edit
 
-    live "/training_days", TrainingDayLive.Index, :index
-    live "/training_days/new", TrainingDayLive.Form, :new
-    live "/training_days/:id/edit", TrainingDayLive.Form, :edit
+    live "/training", TrainingLive.Index, :index
+    live "/training/new", TrainingLive.Form, :new
+    live "/training/:id/edit", TrainingLive.Form, :edit
 
     live "/reporting", ReportLive, :index
     get "/reporting/download", ReportController, :download

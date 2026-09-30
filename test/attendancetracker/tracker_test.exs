@@ -89,36 +89,36 @@ defmodule AttendanceTracker.TrackerTest do
     end
   end
 
-  describe "training_days" do
-    alias AttendanceTracker.Tracker.TrainingDay
+  describe "trainings" do
+    alias AttendanceTracker.Tracker.Training
 
     import AttendanceTracker.TrackerFixtures
 
     @invalid_attrs %{weekday: nil, starts_at: nil, ends_at: nil}
 
-    test "list_training_days/0 returns all training days ordered by weekday and start time" do
-      wednesday = training_day_fixture(%{weekday: 3})
-      monday_evening = training_day_fixture(%{weekday: 1, starts_at: ~T[19:00:00]})
-      monday_morning = training_day_fixture(%{weekday: 1, starts_at: ~T[08:00:00]})
+    test "list_trainings/0 returns all trainings ordered by weekday and start time" do
+      wednesday = training_fixture(%{weekday: 3})
+      monday_evening = training_fixture(%{weekday: 1, starts_at: ~T[19:00:00]})
+      monday_morning = training_fixture(%{weekday: 1, starts_at: ~T[08:00:00]})
 
-      assert Tracker.list_training_days() == [monday_morning, monday_evening, wednesday]
+      assert Tracker.list_trainings() == [monday_morning, monday_evening, wednesday]
     end
 
-    test "get_training_day!/1 returns the training day with given id" do
-      training_day = training_day_fixture()
-      assert Tracker.get_training_day!(training_day.id) == training_day
+    test "get_training!/1 returns the training with given id" do
+      training = training_fixture()
+      assert Tracker.get_training!(training.id) == training
     end
 
-    test "create_training_day/1 with valid data creates a training day" do
+    test "create_training/1 with valid data creates a training" do
       valid_attrs = %{weekday: 1, starts_at: ~T[19:00:00], ends_at: ~T[21:30:00]}
 
-      assert {:ok, %TrainingDay{} = training_day} = Tracker.create_training_day(valid_attrs)
-      assert training_day.weekday == 1
-      assert training_day.starts_at == ~T[19:00:00]
-      assert training_day.ends_at == ~T[21:30:00]
+      assert {:ok, %Training{} = training} = Tracker.create_training(valid_attrs)
+      assert training.weekday == 1
+      assert training.starts_at == ~T[19:00:00]
+      assert training.ends_at == ~T[21:30:00]
     end
 
-    test "create_training_day/1 with an alias creates a training day" do
+    test "create_training/1 with an alias creates a training" do
       valid_attrs = %{
         name: "Kids Judo Monday",
         weekday: 1,
@@ -126,169 +126,169 @@ defmodule AttendanceTracker.TrackerTest do
         ends_at: ~T[21:30:00]
       }
 
-      assert {:ok, %TrainingDay{} = training_day} = Tracker.create_training_day(valid_attrs)
-      assert training_day.name == "Kids Judo Monday"
+      assert {:ok, %Training{} = training} = Tracker.create_training(valid_attrs)
+      assert training.name == "Kids Judo Monday"
     end
 
-    test "create_training_day/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Tracker.create_training_day(@invalid_attrs)
+    test "create_training/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Tracker.create_training(@invalid_attrs)
     end
 
-    test "create_training_day/1 requires the end to be after the start" do
+    test "create_training/1 requires the end to be after the start" do
       attrs = %{weekday: 1, starts_at: ~T[19:00:00], ends_at: ~T[18:00:00]}
 
-      assert {:error, %Ecto.Changeset{} = changeset} = Tracker.create_training_day(attrs)
+      assert {:error, %Ecto.Changeset{} = changeset} = Tracker.create_training(attrs)
       assert "must be after the start time" in errors_on(changeset).ends_at
     end
 
-    test "create_training_day/1 validates the weekday range" do
+    test "create_training/1 validates the weekday range" do
       attrs = %{weekday: 8, starts_at: ~T[19:00:00], ends_at: ~T[21:30:00]}
 
-      assert {:error, %Ecto.Changeset{} = changeset} = Tracker.create_training_day(attrs)
+      assert {:error, %Ecto.Changeset{} = changeset} = Tracker.create_training(attrs)
       assert errors_on(changeset).weekday != []
     end
 
-    test "update_training_day/2 with valid data updates the training day" do
-      training_day = training_day_fixture()
+    test "update_training/2 with valid data updates the training" do
+      training = training_fixture()
       update_attrs = %{weekday: 4, starts_at: ~T[18:00:00], ends_at: ~T[20:00:00]}
 
-      assert {:ok, %TrainingDay{} = training_day} =
-               Tracker.update_training_day(training_day, update_attrs)
+      assert {:ok, %Training{} = training} =
+               Tracker.update_training(training, update_attrs)
 
-      assert training_day.weekday == 4
-      assert training_day.starts_at == ~T[18:00:00]
-      assert training_day.ends_at == ~T[20:00:00]
+      assert training.weekday == 4
+      assert training.starts_at == ~T[18:00:00]
+      assert training.ends_at == ~T[20:00:00]
     end
 
-    test "update_training_day/2 with invalid data returns error changeset" do
-      training_day = training_day_fixture()
+    test "update_training/2 with invalid data returns error changeset" do
+      training = training_fixture()
 
       assert {:error, %Ecto.Changeset{}} =
-               Tracker.update_training_day(training_day, @invalid_attrs)
+               Tracker.update_training(training, @invalid_attrs)
 
-      assert training_day == Tracker.get_training_day!(training_day.id)
+      assert training == Tracker.get_training!(training.id)
     end
 
-    test "delete_training_day/1 deletes the training day" do
-      training_day = training_day_fixture()
-      assert {:ok, %TrainingDay{}} = Tracker.delete_training_day(training_day)
-      assert_raise Ecto.NoResultsError, fn -> Tracker.get_training_day!(training_day.id) end
+    test "delete_training/1 deletes the training" do
+      training = training_fixture()
+      assert {:ok, %Training{}} = Tracker.delete_training(training)
+      assert_raise Ecto.NoResultsError, fn -> Tracker.get_training!(training.id) end
     end
 
-    test "change_training_day/1 returns a training day changeset" do
-      training_day = training_day_fixture()
-      assert %Ecto.Changeset{} = Tracker.change_training_day(training_day)
+    test "change_training/1 returns a training changeset" do
+      training = training_fixture()
+      assert %Ecto.Changeset{} = Tracker.change_training(training)
     end
   end
 
-  describe "training day schedule" do
-    alias AttendanceTracker.Tracker.TrainingDay
+  describe "training schedule" do
+    alias AttendanceTracker.Tracker.Training
 
     import AttendanceTracker.TrackerFixtures
 
     # 2026-09-14 is a Monday, 2026-09-16 a Wednesday, 2026-09-20 a Sunday.
 
     test "label/1 falls back to the weekday and time range" do
-      training_day = %TrainingDay{weekday: 1, starts_at: ~T[19:00:00], ends_at: ~T[21:30:00]}
-      assert TrainingDay.label(training_day) == "Monday · 19:00–21:30"
+      training = %Training{weekday: 1, starts_at: ~T[19:00:00], ends_at: ~T[21:30:00]}
+      assert Training.label(training) == "Monday · 19:00–21:30"
     end
 
     test "label/1 prefers the alias when set" do
-      training_day = %TrainingDay{
+      training = %Training{
         name: "Kids Judo Monday",
         weekday: 1,
         starts_at: ~T[19:00:00],
         ends_at: ~T[21:30:00]
       }
 
-      assert TrainingDay.label(training_day) == "Kids Judo Monday · 19:00–21:30"
+      assert Training.label(training) == "Kids Judo Monday · 19:00–21:30"
 
-      assert TrainingDay.label(%{training_day | name: ""}) == "Monday · 19:00–21:30"
+      assert Training.label(%{training | name: ""}) == "Monday · 19:00–21:30"
     end
 
     test "occurrence_on_or_before/2 returns the same date on the training weekday" do
-      training_day = %TrainingDay{weekday: 1}
-      assert TrainingDay.occurrence_on_or_before(training_day, ~D[2026-09-14]) == ~D[2026-09-14]
+      training = %Training{weekday: 1}
+      assert Training.occurrence_on_or_before(training, ~D[2026-09-14]) == ~D[2026-09-14]
     end
 
     test "occurrence_on_or_before/2 returns the most recent past occurrence" do
-      training_day = %TrainingDay{weekday: 1}
-      assert TrainingDay.occurrence_on_or_before(training_day, ~D[2026-09-16]) == ~D[2026-09-14]
-      assert TrainingDay.occurrence_on_or_before(training_day, ~D[2026-09-20]) == ~D[2026-09-14]
+      training = %Training{weekday: 1}
+      assert Training.occurrence_on_or_before(training, ~D[2026-09-16]) == ~D[2026-09-14]
+      assert Training.occurrence_on_or_before(training, ~D[2026-09-20]) == ~D[2026-09-14]
     end
 
     test "in_progress?/3 checks weekday and time window" do
-      training_day = %TrainingDay{weekday: 1, starts_at: ~T[19:00:00], ends_at: ~T[21:30:00]}
+      training = %Training{weekday: 1, starts_at: ~T[19:00:00], ends_at: ~T[21:30:00]}
 
-      assert TrainingDay.in_progress?(training_day, ~D[2026-09-14], ~T[19:00:00])
-      assert TrainingDay.in_progress?(training_day, ~D[2026-09-14], ~T[21:30:00])
-      refute TrainingDay.in_progress?(training_day, ~D[2026-09-14], ~T[18:59:00])
-      refute TrainingDay.in_progress?(training_day, ~D[2026-09-14], ~T[21:31:00])
-      refute TrainingDay.in_progress?(training_day, ~D[2026-09-16], ~T[20:00:00])
+      assert Training.in_progress?(training, ~D[2026-09-14], ~T[19:00:00])
+      assert Training.in_progress?(training, ~D[2026-09-14], ~T[21:30:00])
+      refute Training.in_progress?(training, ~D[2026-09-14], ~T[18:59:00])
+      refute Training.in_progress?(training, ~D[2026-09-14], ~T[21:31:00])
+      refute Training.in_progress?(training, ~D[2026-09-16], ~T[20:00:00])
     end
 
-    test "current_training_day/3 returns nil for an empty list" do
-      assert Tracker.current_training_day([], ~D[2026-09-14], ~T[20:00:00]) == nil
+    test "current_training/3 returns nil for an empty list" do
+      assert Tracker.current_training([], ~D[2026-09-14], ~T[20:00:00]) == nil
     end
 
-    test "current_training_day/3 picks the training in progress" do
-      monday = training_day_fixture(%{weekday: 1, starts_at: ~T[19:00:00], ends_at: ~T[21:30:00]})
-      _wednesday = training_day_fixture(%{weekday: 3})
+    test "current_training/3 picks the training in progress" do
+      monday = training_fixture(%{weekday: 1, starts_at: ~T[19:00:00], ends_at: ~T[21:30:00]})
+      _wednesday = training_fixture(%{weekday: 3})
 
-      assert Tracker.current_training_day([monday], ~D[2026-09-14], ~T[20:00:00]) == monday
+      assert Tracker.current_training([monday], ~D[2026-09-14], ~T[20:00:00]) == monday
     end
 
-    test "current_training_day/3 picks the soonest upcoming training of the day" do
+    test "current_training/3 picks the soonest upcoming training of the day" do
       morning =
-        training_day_fixture(%{weekday: 1, starts_at: ~T[08:00:00], ends_at: ~T[09:00:00]})
+        training_fixture(%{weekday: 1, starts_at: ~T[08:00:00], ends_at: ~T[09:00:00]})
 
       evening =
-        training_day_fixture(%{weekday: 1, starts_at: ~T[19:00:00], ends_at: ~T[21:30:00]})
+        training_fixture(%{weekday: 1, starts_at: ~T[19:00:00], ends_at: ~T[21:30:00]})
 
-      past = training_day_fixture(%{weekday: 6, starts_at: ~T[10:00:00], ends_at: ~T[12:00:00]})
+      past = training_fixture(%{weekday: 6, starts_at: ~T[10:00:00], ends_at: ~T[12:00:00]})
 
       # Sunday 07:00: both Monday trainings are upcoming tomorrow... none today,
       # so the most recently started one (Saturday) wins.
-      assert Tracker.current_training_day([morning, evening, past], ~D[2026-09-20], ~T[07:00:00]) ==
+      assert Tracker.current_training([morning, evening, past], ~D[2026-09-20], ~T[07:00:00]) ==
                past
 
       # Monday 07:00: the morning training starts later today.
-      assert Tracker.current_training_day([morning, evening, past], ~D[2026-09-14], ~T[07:00:00]) ==
+      assert Tracker.current_training([morning, evening, past], ~D[2026-09-14], ~T[07:00:00]) ==
                morning
 
       # Monday 10:00: only the evening training is still upcoming today.
-      assert Tracker.current_training_day([morning, evening, past], ~D[2026-09-14], ~T[10:00:00]) ==
+      assert Tracker.current_training([morning, evening, past], ~D[2026-09-14], ~T[10:00:00]) ==
                evening
     end
 
-    test "current_training_day/3 falls back to the most recently started training" do
-      monday = training_day_fixture(%{weekday: 1, starts_at: ~T[19:00:00], ends_at: ~T[21:30:00]})
+    test "current_training/3 falls back to the most recently started training" do
+      monday = training_fixture(%{weekday: 1, starts_at: ~T[19:00:00], ends_at: ~T[21:30:00]})
 
       wednesday =
-        training_day_fixture(%{weekday: 3, starts_at: ~T[18:00:00], ends_at: ~T[20:00:00]})
+        training_fixture(%{weekday: 3, starts_at: ~T[18:00:00], ends_at: ~T[20:00:00]})
 
       # Sunday: Wednesday's occurrence is more recent than Monday's.
-      assert Tracker.current_training_day([monday, wednesday], ~D[2026-09-20], ~T[12:00:00]) ==
+      assert Tracker.current_training([monday, wednesday], ~D[2026-09-20], ~T[12:00:00]) ==
                wednesday
 
       # Wednesday 21:00, after the training ended: Wednesday wins over Monday.
-      assert Tracker.current_training_day([monday, wednesday], ~D[2026-09-16], ~T[21:00:00]) ==
+      assert Tracker.current_training([monday, wednesday], ~D[2026-09-16], ~T[21:00:00]) ==
                wednesday
     end
 
-    test "session_for_training_day/2 gets or creates a session per training day and date" do
-      monday = training_day_fixture(%{weekday: 1})
-      other_monday = training_day_fixture(%{weekday: 1, starts_at: ~T[08:00:00]})
+    test "session_for_training/2 gets or creates a session per training and date" do
+      monday = training_fixture(%{weekday: 1})
+      other_monday = training_fixture(%{weekday: 1, starts_at: ~T[08:00:00]})
 
-      session = Tracker.session_for_training_day(monday, ~D[2026-09-14])
+      session = Tracker.session_for_training(monday, ~D[2026-09-14])
       assert session.date == ~D[2026-09-14]
-      assert session.training_day_id == monday.id
+      assert session.training_id == monday.id
 
       # Idempotent
-      assert Tracker.session_for_training_day(monday, ~D[2026-09-14]).id == session.id
+      assert Tracker.session_for_training(monday, ~D[2026-09-14]).id == session.id
 
-      # Same date, different training day: separate sessions
-      other_session = Tracker.session_for_training_day(other_monday, ~D[2026-09-14])
+      # Same date, different training: separate sessions
+      other_session = Tracker.session_for_training(other_monday, ~D[2026-09-14])
       assert other_session.id != session.id
     end
   end
@@ -425,7 +425,7 @@ defmodule AttendanceTracker.TrackerTest do
     test "todays_session/0 returns today's session, creating it once" do
       session = Tracker.todays_session()
       assert session.date == Tracker.local_today()
-      assert session.training_day_id == nil
+      assert session.training_id == nil
       assert Tracker.todays_session().id == session.id
     end
 

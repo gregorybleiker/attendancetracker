@@ -33,19 +33,19 @@ defmodule AttendanceTracker.TrackerFixtures do
   end
 
   @doc """
-  Generate a training_day.
+  Generate a training.
   """
-  def training_day_fixture(attrs \\ %{}) do
-    {:ok, training_day} =
+  def training_fixture(attrs \\ %{}) do
+    {:ok, training} =
       attrs
       |> Enum.into(%{
         weekday: 1,
         starts_at: ~T[19:00:00],
         ends_at: ~T[21:30:00]
       })
-      |> AttendanceTracker.Tracker.create_training_day()
+      |> AttendanceTracker.Tracker.create_training()
 
-    training_day
+    training
   end
 
   @doc """

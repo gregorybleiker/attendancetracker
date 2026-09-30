@@ -136,71 +136,71 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
     end
   end
 
-  describe "training day selection" do
+  describe "training selection" do
     alias AttendanceTracker.Tracker
 
-    test "hides the dropdown when no training days are configured", %{conn: conn} do
+    test "hides the dropdown when no trainings are configured", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/")
 
-      refute has_element?(view, "#training-day-select")
+      refute has_element?(view, "#training-select")
     end
 
-    test "pre-selects the training day in progress", %{conn: conn} do
+    test "pre-selects the training in progress", %{conn: conn} do
       today_weekday = Date.day_of_week(Tracker.local_today())
 
       current =
-        training_day_fixture(%{
+        training_fixture(%{
           name: "Kids Judo Today",
           weekday: today_weekday,
           starts_at: ~T[00:00:00],
           ends_at: ~T[23:59:59]
         })
 
-      _other = training_day_fixture(%{weekday: other_weekday(today_weekday)})
+      _other = training_fixture(%{weekday: other_weekday(today_weekday)})
 
       {:ok, view, _html} = live(conn, ~p"/")
 
       assert has_element?(
                view,
-               "#training-day-select option[value='#{current.id}'][selected]"
+               "#training-select option[value='#{current.id}'][selected]"
              )
 
       # the dropdown shows the alias
       assert render(view) =~ "Kids Judo Today"
     end
 
-    test "switching the training day switches the session", %{conn: conn} do
+    test "switching the training switches the session", %{conn: conn} do
       today_weekday = Date.day_of_week(Tracker.local_today())
 
       current =
-        training_day_fixture(%{
+        training_fixture(%{
           weekday: today_weekday,
           starts_at: ~T[00:00:00],
           ends_at: ~T[23:59:59]
         })
 
-      other = training_day_fixture(%{weekday: other_weekday(today_weekday)})
+      other = training_fixture(%{weekday: other_weekday(today_weekday)})
       participant = participant_fixture(%{name: "Switcher", active: true})
 
       {:ok, view, _html} = live(conn, ~p"/")
 
-      # Check in on the current training day
+      # Check in on the current training
       view |> element("#check-in-btn-#{participant.id}") |> render_click()
       assert render(view) =~ "1 / 1 present"
 
-      # Switch to the other training day: separate session, nobody checked in
+      # Switch to the other training: separate session, nobody checked in
       view
-      |> element("#training-day-select")
-      |> render_change(%{"training_day_id" => to_string(other.id)})
+      |> element("#training-select")
+      |> render_change(%{"training_id" => to_string(other.id)})
 
       assert render(view) =~ "0 / 1 present"
       refute has_element?(view, "#checked-in-badge-#{participant.id}")
-      assert has_element?(view, "#training-day-select option[value='#{other.id}'][selected]")
+      assert has_element?(view, "#training-select option[value='#{other.id}'][selected]")
 
       # Switching back restores the check-in
       view
-      |> element("#training-day-select")
-      |> render_change(%{"training_day_id" => to_string(current.id)})
+      |> element("#training-select")
+      |> render_change(%{"training_id" => to_string(current.id)})
 
       assert render(view) =~ "1 / 1 present"
       assert has_element?(view, "#checked-in-badge-#{participant.id}")

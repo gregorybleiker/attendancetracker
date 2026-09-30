@@ -1,4 +1,4 @@
-defmodule AttendanceTracker.Tracker.TrainingDay do
+defmodule AttendanceTracker.Tracker.Training do
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -10,7 +10,7 @@ defmodule AttendanceTracker.Tracker.TrainingDay do
   such as "Kids Judo Monday".
   """
 
-  schema "training_days" do
+  schema "trainings" do
     field :name, :string
     field :weekday, :integer
     field :starts_at, :time
@@ -24,8 +24,8 @@ defmodule AttendanceTracker.Tracker.TrainingDay do
   @weekday_names ~w(Monday Tuesday Wednesday Thursday Friday Saturday Sunday)
 
   @doc false
-  def changeset(training_day, attrs) do
-    training_day
+  def changeset(training, attrs) do
+    training
     |> cast(attrs, [:name, :weekday, :starts_at, :ends_at])
     |> validate_required([:weekday, :starts_at, :ends_at])
     |> validate_inclusion(:weekday, 1..7)
@@ -52,7 +52,7 @@ defmodule AttendanceTracker.Tracker.TrainingDay do
   end
 
   @doc """
-  The weekday name of a training day, e.g. `"Monday"`.
+  The weekday name of a training, e.g. `"Monday"`.
   """
   def weekday_name(%__MODULE__{weekday: weekday}) do
     Enum.at(@weekday_names, weekday - 1)
@@ -62,21 +62,21 @@ defmodule AttendanceTracker.Tracker.TrainingDay do
   A human readable label, e.g. `"Kids Judo Monday · 19:00–21:30"` or, without
   an alias, `"Monday · 19:00–21:30"`.
   """
-  def label(%__MODULE__{} = training_day) do
+  def label(%__MODULE__{} = training) do
     name =
-      case training_day.name do
-        nil -> weekday_name(training_day)
-        "" -> weekday_name(training_day)
+      case training.name do
+        nil -> weekday_name(training)
+        "" -> weekday_name(training)
         training_alias -> training_alias
       end
 
-    start_time = Calendar.strftime(training_day.starts_at, "%H:%M")
-    end_time = Calendar.strftime(training_day.ends_at, "%H:%M")
+    start_time = Calendar.strftime(training.starts_at, "%H:%M")
+    end_time = Calendar.strftime(training.ends_at, "%H:%M")
     "#{name} · #{start_time}–#{end_time}"
   end
 
   @doc """
-  Returns the date of the most recent occurrence of this training day
+  Returns the date of the most recent occurrence of this training
   on or before `date`.
   """
   def occurrence_on_or_before(%__MODULE__{weekday: weekday}, %Date{} = date) do
@@ -88,20 +88,20 @@ defmodule AttendanceTracker.Tracker.TrainingDay do
   Returns true if the training is in progress at `time` on `date`
   (same weekday and `starts_at <= time <= ends_at`).
   """
-  def in_progress?(%__MODULE__{} = training_day, %Date{} = date, %Time{} = time) do
-    Date.day_of_week(date) == training_day.weekday &&
-      Time.compare(time, training_day.starts_at) != :lt &&
-      Time.compare(time, training_day.ends_at) != :gt
+  def in_progress?(%__MODULE__{} = training, %Date{} = date, %Time{} = time) do
+    Date.day_of_week(date) == training.weekday &&
+      Time.compare(time, training.starts_at) != :lt &&
+      Time.compare(time, training.ends_at) != :gt
   end
 
   @doc """
-  Returns the most recent start of this training day at or before
-  `date`/`time`, as a naive datetime. Useful for ordering training days
+  Returns the most recent start of this training at or before
+  `date`/`time`, as a naive datetime. Useful for ordering trainings
   by recency.
   """
-  def most_recent_start(%__MODULE__{} = training_day, %Date{} = date, %Time{} = time) do
-    occurrence = occurrence_on_or_before(training_day, date)
-    start = NaiveDateTime.new!(occurrence, training_day.starts_at)
+  def most_recent_start(%__MODULE__{} = training, %Date{} = date, %Time{} = time) do
+    occurrence = occurrence_on_or_before(training, date)
+    start = NaiveDateTime.new!(occurrence, training.starts_at)
     now = NaiveDateTime.new!(date, Time.truncate(time, :second))
 
     if NaiveDateTime.compare(start, now) == :gt do

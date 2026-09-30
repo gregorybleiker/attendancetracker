@@ -8,15 +8,15 @@ defmodule AttendanceTrackerWeb.ReportControllerTest do
   end
 
   test "downloads the year's trainings, dates and participants as one CSV", %{conn: conn} do
-    training_day =
-      training_day_fixture(%{
+    training =
+      training_fixture(%{
         name: "Kids Judo Monday",
         weekday: 1,
         starts_at: ~T[19:00:00],
         ends_at: ~T[21:30:00]
       })
 
-    session = training_session_fixture(%{date: ~D[2026-01-05], training_day_id: training_day.id})
+    session = training_session_fixture(%{date: ~D[2026-01-05], training_id: training.id})
 
     check_in_fixture(%{
       participant: participant_fixture(%{name: "Alex Rivera"}),

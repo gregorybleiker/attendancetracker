@@ -52,8 +52,8 @@ defmodule AttendanceTrackerWeb.Layouts do
           <.link :if={@admin_mode} navigate={~p"/participants"} class="btn btn-ghost">
             Participants
           </.link>
-          <.link :if={@admin_mode} navigate={~p"/training_days"} class="btn btn-ghost">
-            Training days
+          <.link :if={@admin_mode} navigate={~p"/training"} class="btn btn-ghost">
+            Training
           </.link>
           <.link :if={@admin_mode} navigate={~p"/reporting"} class="btn btn-ghost">
             Reporting
@@ -88,8 +88,8 @@ defmodule AttendanceTrackerWeb.Layouts do
               </.link>
             </li>
             <li :if={@admin_mode}>
-              <.link navigate={~p"/training_days"}>
-                <.icon name="hero-calendar-days" class="size-5" /> Training days
+              <.link navigate={~p"/training"}>
+                <.icon name="hero-calendar-days" class="size-5" /> Training
               </.link>
             </li>
             <li :if={@admin_mode}>
