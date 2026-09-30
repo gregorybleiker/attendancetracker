@@ -29,8 +29,8 @@ if config_env() == :dev do
     live_reload: [
       web_console_logger: true,
       patterns: [
-        # Static assets, except user uploads
-        ~r"priv/static/(?!uploads/).*\.(js|css|png|jpeg|jpg|gif|svg)$",
+        # Static assets
+        ~r"priv/static/.*\.(js|css|png|jpeg|jpg|gif|svg)$",
         # Router, Controllers, LiveViews and LiveComponents
         ~r"lib/attendancetracker_web/router\.ex$",
         ~r"lib/attendancetracker_web/(controllers|live|components)/.*\.(ex|heex)$"

@@ -2,8 +2,8 @@
 
 Production setup: the app runs as an OTP release in Docker, behind Caddy
 (which terminates TLS and fetches a Let's Encrypt certificate automatically).
-State (SQLite database + uploaded participant photos) lives in Docker
-volumes, so container rebuilds are lossless. The database sits in its own
+State (the SQLite database, including participant photos) lives in a Docker
+volume, so container rebuilds are lossless. The database sits in its own
 `/data/db` mount and can optionally be kept on a host directory instead.
 
 Relevant files:
@@ -105,8 +105,8 @@ docker compose pull
 docker compose up -d
 ```
 
-The `app-data` volume holds the photos and `db-data` (or your `DATABASE_DIR`
-host directory) holds the database, so updates don't touch your data.
+The `db-data` volume (or your `DATABASE_DIR` host directory) holds the
+database — including participant photos — so updates don't touch your data.
 Migrations run automatically on container start.
 
 > **Upgrading from an older version (database moved to its own mount).** The
@@ -128,10 +128,10 @@ Migrations run automatically on container start.
 
 ## Backups
 
-State is split across the `app-data` volume (photos, at `/data/uploads` in the
-container) and the database at `/data/db/attendancetracker.db` (in the
-`db-data` volume, or your `DATABASE_DIR` host directory). Back it up
-regularly, e.g. a cron job on the VPS:
+State is a single SQLite database at `/data/db/attendancetracker.db` (in the
+`db-data` volume, or your `DATABASE_DIR` host directory), containing both the
+participants and their photos. Back it up regularly, e.g. a cron job on the
+VPS:
 
 ```bash
 # SQLite-safe snapshot (works while the app is running)
@@ -155,10 +155,6 @@ directory with `sqlite3` directly instead.)
   `Dockerfile`). If you changed that, make sure the directory is writable by
   UID 65534. A host directory used via `DATABASE_DIR` must be writable by the
   same UID.
-- **No photos after redeploy:** they persist via the symlink
-  `priv/static/uploads -> /data/uploads` inside the image (see
-  `Dockerfile`). If you bump `version` in `mix.exs`, update the versioned
-  release path in that `RUN` step.
 - **HTTPS not working:** DNS must resolve to the VPS *and* ports 80/443
   must be reachable for the ACME challenge — check `docker compose logs
   caddy`.

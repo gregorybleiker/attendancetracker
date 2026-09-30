@@ -7,6 +7,7 @@ defmodule AttendanceTracker.Tracker do
   alias AttendanceTracker.Repo
 
   alias AttendanceTracker.Tracker.Participant
+  alias AttendanceTracker.Tracker.ParticipantPhoto
 
   @doc """
   Returns the list of participants.
@@ -18,7 +19,9 @@ defmodule AttendanceTracker.Tracker do
 
   """
   def list_participants do
-    Repo.all(Participant)
+    Participant
+    |> with_photo()
+    |> Repo.all()
   end
 
   @doc """
@@ -35,7 +38,7 @@ defmodule AttendanceTracker.Tracker do
       ** (Ecto.NoResultsError)
 
   """
-  def get_participant!(id), do: Repo.get!(Participant, id)
+  def get_participant!(id), do: Repo.get!(with_photo(Participant), id)
 
   @doc """
   Creates a participant.
@@ -100,6 +103,43 @@ defmodule AttendanceTracker.Tracker do
   """
   def change_participant(%Participant{} = participant, attrs \\ %{}) do
     Participant.changeset(participant, attrs)
+  end
+
+  @doc """
+  Stores (or replaces) a participant's photo from raw bytes.
+
+  ## Examples
+
+      iex> put_participant_photo(participant, <<255, 216, ...>>, "image/jpeg")
+      {:ok, %ParticipantPhoto{}}
+
+  """
+  def put_participant_photo(%Participant{} = participant, data, content_type)
+      when is_binary(data) and is_binary(content_type) do
+    %ParticipantPhoto{participant_id: participant.id}
+    |> ParticipantPhoto.changeset(%{data: data, content_type: content_type})
+    |> Repo.insert(
+      on_conflict: {:replace, [:data, :content_type, :updated_at]},
+      conflict_target: :participant_id
+    )
+  end
+
+  @doc """
+  Fetches a participant's photo, or `nil` when they have none.
+  """
+  def get_participant_photo(participant_id) do
+    Repo.get_by(ParticipantPhoto, participant_id: participant_id)
+  end
+
+  # Adds the lightweight `has_photo`/`photo_updated_at` fields to a
+  # participant query without ever loading the photo bytes.
+  defp with_photo(query) do
+    from p in query,
+      left_join: photo in assoc(p, :photo),
+      select_merge: %{
+        has_photo: not is_nil(photo.id),
+        photo_updated_at: photo.updated_at
+      }
   end
 
   alias AttendanceTracker.Tracker.TrainingDay
@@ -664,12 +704,13 @@ defmodule AttendanceTracker.Tracker do
   def list_participants_with_check_ins(%TrainingSession{} = session) do
     check_in_query = from c in CheckIn, where: c.training_session_id == ^session.id
 
-    Repo.all(
-      from p in Participant,
-        where: p.active,
-        order_by: p.name,
-        preload: [check_ins: ^check_in_query]
+    from(p in Participant,
+      where: p.active,
+      order_by: p.name,
+      preload: [check_ins: ^check_in_query]
     )
+    |> with_photo()
+    |> Repo.all()
   end
 
   @doc """
@@ -678,11 +719,12 @@ defmodule AttendanceTracker.Tracker do
   def get_participant_with_check_ins(%TrainingSession{} = session, participant_id) do
     check_in_query = from c in CheckIn, where: c.training_session_id == ^session.id
 
-    Repo.one!(
-      from p in Participant,
-        where: p.id == ^participant_id,
-        preload: [check_ins: ^check_in_query]
+    from(p in Participant,
+      where: p.id == ^participant_id,
+      preload: [check_ins: ^check_in_query]
     )
+    |> with_photo()
+    |> Repo.one!()
   end
 
   @doc """

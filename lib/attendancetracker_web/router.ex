@@ -31,6 +31,8 @@ defmodule AttendanceTrackerWeb.Router do
     live "/login", LoginLive, :new
     post "/login", SessionController, :create
     delete "/logout", SessionController, :delete
+
+    get "/photos/:id/:version", PhotoController, :show
   end
 
   scope "/", AttendanceTrackerWeb do

@@ -1,11 +1,12 @@
 defmodule AttendanceTrackerWeb.ParticipantLive.Form do
   use AttendanceTrackerWeb, :live_view
 
+  import AttendanceTrackerWeb.ParticipantComponents
+
   require Logger
 
   alias AttendanceTracker.Tracker
   alias AttendanceTracker.Tracker.Participant
-  alias AttendanceTracker.Uploads
 
   @impl true
   def render(assigns) do
@@ -49,8 +50,8 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Form do
               </p>
             </div>
             <img
-              :if={@uploads.photo.entries == [] && @participant.photo}
-              src={@participant.photo}
+              :if={@uploads.photo.entries == [] && photo_url(@participant)}
+              src={photo_url(@participant)}
               class="size-24 rounded-full object-cover"
             />
             <.live_file_input
@@ -121,11 +122,10 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Form do
   end
 
   defp save_participant(socket, :edit, participant_params) do
-    case Tracker.update_participant(
-           socket.assigns.participant,
-           put_photo_path(socket, participant_params)
-         ) do
+    case Tracker.update_participant(socket.assigns.participant, participant_params) do
       {:ok, participant} ->
+        store_photo(participant, consume_photo(socket))
+
         {:noreply,
          socket
          |> put_flash(:info, "Participant updated successfully")
@@ -137,8 +137,10 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Form do
   end
 
   defp save_participant(socket, :new, participant_params) do
-    case Tracker.create_participant(put_photo_path(socket, participant_params)) do
+    case Tracker.create_participant(participant_params) do
       {:ok, participant} ->
+        store_photo(participant, consume_photo(socket))
+
         {:noreply,
          socket
          |> put_flash(:info, "Participant created successfully")
@@ -149,21 +151,45 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Form do
     end
   end
 
-  defp put_photo_path(socket, params) do
-    case consume_uploaded_entries(socket, :photo, &store_upload/2) do
-      [path | _] when is_binary(path) -> Map.put(params, "photo", path)
-      _ -> params
+  # Reads the pending upload (if any) into memory. Returns `nil` when no new
+  # photo was picked.
+  defp consume_photo(socket) do
+    case consume_uploaded_entries(socket, :photo, &read_upload/2) do
+      [{data, content_type} | _] -> {data, content_type}
+      _ -> nil
     end
   end
 
-  defp store_upload(%{path: path}, entry) do
-    case Uploads.copy_uploaded(path, entry.client_name) do
-      {:ok, url} ->
-        {:ok, url}
+  defp read_upload(%{path: path}, entry) do
+    case File.read(path) do
+      {:ok, data} ->
+        {:ok, {data, content_type(entry.client_name)}}
 
       {:error, reason} ->
-        Logger.warning("Could not store uploaded photo: #{inspect(reason)}")
+        Logger.warning("Could not read uploaded photo: #{inspect(reason)}")
         {:postpone, :error}
+    end
+  end
+
+  defp content_type(client_name) do
+    case client_name |> Path.extname() |> String.downcase() do
+      ".png" -> "image/png"
+      ".webp" -> "image/webp"
+      _ -> "image/jpeg"
+    end
+  end
+
+  defp store_photo(_participant, nil), do: :ok
+
+  defp store_photo(participant, {data, content_type}) do
+    case Tracker.put_participant_photo(participant, data, content_type) do
+      {:ok, _photo} ->
+        :ok
+
+      {:error, reason} ->
+        Logger.warning(
+          "Could not store photo for participant #{participant.id}: #{inspect(reason)}"
+        )
     end
   end
 

@@ -14,9 +14,9 @@ defmodule AttendanceTrackerWeb.ParticipantComponents do
   """
   def avatar(assigns) do
     ~H"""
-    <%= if @participant.photo do %>
+    <%= if photo_url(@participant) do %>
       <img
-        src={@participant.photo}
+        src={photo_url(@participant)}
         alt={@participant.name}
         class={[@class, "rounded-full object-cover", @dim && "opacity-60 grayscale"]}
       />
@@ -32,6 +32,17 @@ defmodule AttendanceTrackerWeb.ParticipantComponents do
     <% end %>
     """
   end
+
+  @doc """
+  Returns the public URL for a participant's photo, or `nil` when they have
+  none. The `updated_at` timestamp is part of the URL so the browser cache is
+  busted whenever the photo is replaced.
+  """
+  def photo_url(%{has_photo: true, photo_updated_at: %DateTime{} = updated_at} = participant) do
+    ~p"/photos/#{participant.id}/#{DateTime.to_unix(updated_at)}"
+  end
+
+  def photo_url(_participant), do: nil
 
   defp initials(name) do
     name

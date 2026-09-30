@@ -8,7 +8,7 @@ defmodule AttendanceTracker.TrackerTest do
 
     import AttendanceTracker.TrackerFixtures
 
-    @invalid_attrs %{active: nil, name: nil, photo: nil}
+    @invalid_attrs %{active: nil, name: nil}
 
     test "list_participants/0 returns all participants" do
       participant = participant_fixture()
@@ -21,12 +21,11 @@ defmodule AttendanceTracker.TrackerTest do
     end
 
     test "create_participant/1 with valid data creates a participant" do
-      valid_attrs = %{active: true, name: "some name", photo: "some photo"}
+      valid_attrs = %{active: true, name: "some name"}
 
       assert {:ok, %Participant{} = participant} = Tracker.create_participant(valid_attrs)
       assert participant.active == true
       assert participant.name == "some name"
-      assert participant.photo == "some photo"
     end
 
     test "create_participant/1 with invalid data returns error changeset" do
@@ -35,14 +34,13 @@ defmodule AttendanceTracker.TrackerTest do
 
     test "update_participant/2 with valid data updates the participant" do
       participant = participant_fixture()
-      update_attrs = %{active: false, name: "some updated name", photo: "some updated photo"}
+      update_attrs = %{active: false, name: "some updated name"}
 
       assert {:ok, %Participant{} = participant} =
                Tracker.update_participant(participant, update_attrs)
 
       assert participant.active == false
       assert participant.name == "some updated name"
-      assert participant.photo == "some updated photo"
     end
 
     test "update_participant/2 with invalid data returns error changeset" do
@@ -60,6 +58,34 @@ defmodule AttendanceTracker.TrackerTest do
     test "change_participant/1 returns a participant changeset" do
       participant = participant_fixture()
       assert %Ecto.Changeset{} = Tracker.change_participant(participant)
+    end
+
+    test "put_participant_photo/3 stores the bytes and flags the participant" do
+      participant = participant_fixture()
+
+      assert {:ok, photo} = Tracker.put_participant_photo(participant, "bytes", "image/png")
+      assert photo.data == "bytes"
+      assert photo.content_type == "image/png"
+
+      reloaded = Tracker.get_participant!(participant.id)
+      assert reloaded.has_photo
+      assert %DateTime{} = reloaded.photo_updated_at
+      assert Tracker.get_participant_photo(participant.id).data == "bytes"
+    end
+
+    test "put_participant_photo/3 replaces an existing photo" do
+      participant = participant_fixture()
+      {:ok, _} = Tracker.put_participant_photo(participant, "old", "image/jpeg")
+
+      assert {:ok, photo} = Tracker.put_participant_photo(participant, "new", "image/webp")
+      assert photo.data == "new"
+      assert Tracker.get_participant_photo(participant.id).content_type == "image/webp"
+    end
+
+    test "get_participant_photo/1 returns nil and has_photo is false without a photo" do
+      participant = participant_fixture()
+      assert Tracker.get_participant_photo(participant.id) == nil
+      refute Tracker.get_participant!(participant.id).has_photo
     end
   end
 

@@ -17,8 +17,9 @@ Browser(s)  ◄── WebSocket ──►  LiveViews (one process per connected 
                                     │
                     ┌───────────────┼────────────────┐
                     ▼               ▼                ▼
-                 Ecto Repo      Phoenix.PubSub    File system
-                  (SQLite)     (real-time sync)   (uploaded photos)
+                 Ecto Repo      Phoenix.PubSub    Photo controller
+                  (SQLite,      (real-time sync)  (serves photos
+                 incl. photos)                      from the DB)
 ```
 
 ---
@@ -28,12 +29,13 @@ Browser(s)  ◄── WebSocket ──►  LiveViews (one process per connected 
 ```
 Dockerfile / compose.yml / Caddyfile / DEPLOY.md / .env.example
                               # Production deployment: OTP release in Docker
-                              # behind Caddy (TLS), SQLite + uploads on a volume
+                              # behind Caddy (TLS), SQLite (incl. photos) on a volume
 lib/
   attendancetracker/
     tracker.ex                    # The Tracker context — all business logic entry points
     tracker/
       participant.ex              # Ecto schemas + changesets + pure domain logic
+      participant_photo.ex        # Photo bytes + content type (BLOB)
       training_day.ex
       training_session.ex
       check_in.ex
@@ -54,12 +56,12 @@ lib/
     controllers/
       session_controller.ex       # Login: checks the PIN, marks the session
       report_controller.ex        # CSV download of a full year's attendance
+      photo_controller.ex         # Serves /photos/:id/:version from the DB
     plugs/
       require_admin_pin.ex        # Redirects to /login until the client logs in
 priv/
   repo/migrations/                # Database history
   repo/seeds.exs                  # Demo data
-  static/uploads/                 # Participant photos served at /uploads/...
 test/
   support/fixtures/               # TrackerFixtures — test data helpers
   attendancetracker/              # Context tests
@@ -477,17 +479,29 @@ it next to the markup:
 - **Cleanup in `destroyed()`** — the camera stream stops when the modal
   disappears from the DOM, regardless of how it closed.
 
-### 4.8 Classic file uploads (`participant_live/form.ex`)
+### 4.8 Photo storage (`participant_live/form.ex`, `check_in_live.ex`)
 
-The other photo path uses LiveView's built-in upload machinery:
+Photos are small (max 5 MB via `allow_upload/3`, and webcam snapshots are
+downscaled) and there is one per participant, so they live in the database as
+BLOBs instead of on disk. The other photo path uses LiveView's built-in upload
+machinery:
 
 ```elixir
 |> allow_upload(:photo, accept: ~w(.jpg .jpeg .png .webp), max_entries: 1, max_file_size: 5_000_000)
 ```
 
-`consume_uploaded_entries/3` runs at save time and copies the file into
-`priv/static/uploads/`; only the path (`/uploads/<uuid>.jpg`) is stored in the
-DB. Drag-and-drop, progress, and validation come free.
+`consume_uploaded_entries/3` runs at save time and `File.read/1`s the temp file;
+`Tracker.put_participant_photo/3` upserts a `participant_photos` row (`:binary`
+`data` + `content_type`, unique on `participant_id`, `on_delete: :delete_all`).
+Drag-and-drop, progress, and validation come free.
+
+Participant queries never load the bytes: the context left-joins the photo and
+selects only the lightweight `has_photo` / `photo_updated_at` virtual fields, so
+the kiosk's participant stream stays small. `PhotoController.show/2` serves the
+bytes from `/photos/:id/:version`; the `updated_at` in the URL busts the browser
+cache when a photo is replaced (`cache-control: public, max-age=…, immutable`).
+The webcam path (`check_in_live.ex`) feeds the same context function by decoding
+the base64 JPEG data URL.
 
 ### 4.9 CSV report (`report_live.ex` + `report_controller.ex`)
 
@@ -630,11 +644,12 @@ modal + hook starts webcam → capture → data URL →
 | Erlang interop | `:calendar.local_time()` |
 | Ecto changesets & constraints | all schemas; unique + partial indexes in migrations |
 | Filtered preloads | `list_participants_with_check_ins/1` |
-| Upserts | `on_conflict: :nothing` (sessions), `insert_or_update` (PIN) |
+| Upserts | `on_conflict: :nothing` (sessions), `insert_or_update` (PIN), photo replace |
 | Schemaless changesets | `change_admin_pin/1` |
 | Phoenix.PubSub | check-in/check-out fan-out to all kiosks |
 | Plug + session guard | `Plugs.RequireAdminPin` + `SessionController` (login) |
 | Binary download | `send_resp/3` + `content-disposition` (CSV report) |
+| Binary image response | `PhotoController` (`send_resp/3` + cache headers) |
 | LiveView streams | participant grid (`reset: true` on training switch) |
 | `connected?/1` mount guard | PubSub subscribe only on the live socket |
 | Verified routes `~p` | every link/navigate |

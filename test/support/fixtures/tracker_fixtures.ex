@@ -12,12 +12,24 @@ defmodule AttendanceTracker.TrackerFixtures do
       attrs
       |> Enum.into(%{
         active: true,
-        name: "some name",
-        photo: "some photo"
+        name: "some name"
       })
       |> AttendanceTracker.Tracker.create_participant()
 
     participant
+  end
+
+  @doc """
+  Attach a photo to a participant.
+  """
+  def participant_photo_fixture(participant, attrs \\ %{}) do
+    data = Map.get(attrs, :data, "photo-bytes")
+    content_type = Map.get(attrs, :content_type, "image/jpeg")
+
+    {:ok, photo} =
+      AttendanceTracker.Tracker.put_participant_photo(participant, data, content_type)
+
+    photo
   end
 
   @doc """

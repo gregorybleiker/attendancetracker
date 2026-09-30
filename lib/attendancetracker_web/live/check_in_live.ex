@@ -5,7 +5,6 @@ defmodule AttendanceTrackerWeb.CheckInLive do
 
   alias AttendanceTracker.Tracker
   alias AttendanceTracker.Tracker.TrainingDay
-  alias AttendanceTracker.Uploads
 
   @impl true
   def mount(_params, lv_session, socket) do
@@ -364,9 +363,9 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   def handle_event("captured_photo", %{"data" => data_url}, socket) do
     participant = socket.assigns.camera_participant
 
-    case store_captured_photo(data_url) do
-      {:ok, path} ->
-        {:ok, _} = Tracker.update_participant(participant, %{photo: path})
+    case decode_jpeg(data_url) do
+      {:ok, binary} ->
+        {:ok, _photo} = Tracker.put_participant_photo(participant, binary, "image/jpeg")
 
         participant =
           Tracker.get_participant_with_check_ins(socket.assigns.session, participant.id)
@@ -381,14 +380,14 @@ defmodule AttendanceTrackerWeb.CheckInLive do
     end
   end
 
-  defp store_captured_photo("data:image/jpeg;base64," <> base64) do
+  defp decode_jpeg("data:image/jpeg;base64," <> base64) do
     case Base.decode64(base64) do
-      {:ok, binary} -> Uploads.write_binary(binary, ".jpg")
+      {:ok, binary} -> {:ok, binary}
       :error -> {:error, :invalid_data}
     end
   end
 
-  defp store_captured_photo(_invalid_data), do: {:error, :invalid_data}
+  defp decode_jpeg(_invalid_data), do: {:error, :invalid_data}
 
   defp check_out_participant(socket, id) do
     participant = Tracker.get_participant!(id)

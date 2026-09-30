@@ -256,18 +256,19 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
     end
 
     test "a captured photo becomes the participant's photo", %{conn: conn} do
-      participant = participant_fixture(%{name: "Snapshot", active: true, photo: nil})
+      participant = participant_fixture(%{name: "Snapshot", active: true})
 
       {:ok, view, _html} = live(log_in(conn), ~p"/")
       view |> element("#camera-btn-#{participant.id}") |> render_click()
 
-      jpeg = Base.encode64(<<255, 216, 255, 224, 1, 2, 3, 255, 217>>)
+      bytes = <<255, 216, 255, 224, 1, 2, 3, 255, 217>>
+      jpeg = Base.encode64(bytes)
       render_hook(view, "captured_photo", %{"data" => "data:image/jpeg;base64," <> jpeg})
 
-      photo = AttendanceTracker.Tracker.get_participant!(participant.id).photo
-      assert photo =~ ~r"^/uploads/.+\.jpg$"
-
-      on_exit(fn -> File.rm(Path.join([:code.priv_dir(:attendancetracker), "static", photo])) end)
+      photo = AttendanceTracker.Tracker.get_participant_photo(participant.id)
+      assert photo.data == bytes
+      assert photo.content_type == "image/jpeg"
+      assert AttendanceTracker.Tracker.get_participant!(participant.id).has_photo
 
       refute has_element?(view, "#camera-modal")
     end
