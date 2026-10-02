@@ -14,22 +14,24 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Form do
     <Layouts.app flash={@flash} admin_mode={@admin_mode}>
       <.header>
         {@page_title}
-        <:subtitle>Participants with a photo are easier to spot on the check-in screen.</:subtitle>
+        <:subtitle>
+          {gettext("Participants with a photo are easier to spot on the check-in screen.")}
+        </:subtitle>
       </.header>
 
       <.form for={@form} id="participant-form" phx-change="validate" phx-submit="save">
-        <.input field={@form[:name]} type="text" label="Name" />
+        <.input field={@form[:name]} type="text" label={gettext("Name")} />
         <.input
           field={@form[:emergency_number]}
           type="text"
-          label="Notfallnummer"
+          label={gettext("Notfallnummer")}
           inputmode="tel"
           autocomplete="off"
         />
-        <.input field={@form[:active]} type="checkbox" label="Active" />
+        <.input field={@form[:active]} type="checkbox" label={gettext("Active")} />
 
         <div>
-          <span class="label mb-1 block">Photo</span>
+          <span class="label mb-1 block">{gettext("Photo")}</span>
           <div class="mt-2 flex flex-wrap items-center gap-4">
             <div
               :for={entry <- @uploads.photo.entries}
@@ -41,7 +43,7 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Form do
                 phx-click="cancel-upload"
                 phx-value-ref={entry.ref}
                 class="absolute -top-1 -right-1 rounded-full bg-base-300 p-1"
-                aria-label="Remove photo"
+                aria-label={gettext("Remove photo")}
               >
                 <.icon name="hero-x-mark" class="size-3" />
               </button>
@@ -65,8 +67,10 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Form do
         </div>
 
         <footer>
-          <.button phx-disable-with="Saving..." variant="primary">Save Participant</.button>
-          <.button navigate={return_path(@return_to, @participant)}>Cancel</.button>
+          <.button phx-disable-with={gettext("Saving...")} variant="primary">
+            {gettext("Save Participant")}
+          </.button>
+          <.button navigate={return_path(@return_to, @participant)}>{gettext("Cancel")}</.button>
         </footer>
       </.form>
     </Layouts.app>
@@ -93,7 +97,7 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Form do
     participant = Tracker.get_participant!(id)
 
     socket
-    |> assign(:page_title, "Edit Participant")
+    |> assign(:page_title, gettext("Edit Participant"))
     |> assign(:participant, participant)
     |> assign(:form, to_form(Tracker.change_participant(participant)))
   end
@@ -102,7 +106,7 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Form do
     participant = %Participant{}
 
     socket
-    |> assign(:page_title, "New Participant")
+    |> assign(:page_title, gettext("New Participant"))
     |> assign(:participant, participant)
     |> assign(:form, to_form(Tracker.change_participant(participant)))
   end
@@ -128,7 +132,7 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Form do
 
         {:noreply,
          socket
-         |> put_flash(:info, "Participant updated successfully")
+         |> put_flash(:info, gettext("Participant updated successfully"))
          |> push_navigate(to: return_path(socket.assigns.return_to, participant))}
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -143,7 +147,7 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Form do
 
         {:noreply,
          socket
-         |> put_flash(:info, "Participant created successfully")
+         |> put_flash(:info, gettext("Participant created successfully"))
          |> push_navigate(to: return_path(socket.assigns.return_to, participant))}
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -193,10 +197,15 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Form do
     end
   end
 
-  defp upload_error_to_string(:too_large), do: "Photo is too large (max 5 MB)"
-  defp upload_error_to_string(:not_accepted), do: "Only JPG, PNG or WebP photos are allowed"
-  defp upload_error_to_string(:too_many_files), do: "Only one photo allowed"
-  defp upload_error_to_string(err), do: "Upload error: #{inspect(err)}"
+  defp upload_error_to_string(:too_large), do: gettext("Photo is too large (max 5 MB)")
+
+  defp upload_error_to_string(:not_accepted),
+    do: gettext("Only JPG, PNG or WebP photos are allowed")
+
+  defp upload_error_to_string(:too_many_files), do: gettext("Only one photo allowed")
+
+  defp upload_error_to_string(err),
+    do: gettext("Upload error: %{error}", error: inspect(err))
 
   defp return_path("index", _participant), do: ~p"/participants"
   defp return_path("show", participant), do: ~p"/participants/#{participant}"

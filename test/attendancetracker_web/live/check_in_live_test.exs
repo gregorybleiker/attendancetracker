@@ -285,4 +285,26 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
       assert render(view) =~ "Could not save the photo"
     end
   end
+
+  describe "source badge" do
+    test "is hidden outside admin mode", %{conn: conn} do
+      webling = participant_fixture(%{name: "From Webling", active: true, source: "webling"})
+      local = participant_fixture(%{name: "Local Only", active: true})
+
+      {:ok, view, _html} = live(conn, ~p"/")
+
+      refute has_element?(view, "#source-webling-#{webling.id}")
+      refute has_element?(view, "#source-local-#{local.id}")
+    end
+
+    test "shows whether a participant is in Webling or only local in admin mode", %{conn: conn} do
+      webling = participant_fixture(%{name: "From Webling", active: true, source: "webling"})
+      local = participant_fixture(%{name: "Local Only", active: true})
+
+      {:ok, view, _html} = live(log_in(conn), ~p"/")
+
+      assert has_element?(view, "#source-webling-#{webling.id}")
+      assert has_element?(view, "#source-local-#{local.id}")
+    end
+  end
 end

@@ -44,6 +44,39 @@ defmodule AttendanceTrackerWeb.ParticipantComponents do
 
   def photo_url(_participant), do: nil
 
+  attr :participant, :map, required: true
+  attr :class, :string, default: nil
+
+  @doc """
+  Small badge showing where a participant comes from: a cloud when they also
+  exist in Webling, a user when they only exist in AttendanceTracker.
+  """
+  def source_badge(assigns) do
+    ~H"""
+    <span
+      id={"source-#{@participant.source}-#{@participant.id}"}
+      title={
+        if @participant.source == "webling",
+          do: gettext("Also in Webling"),
+          else: gettext("Only in AttendanceTracker")
+      }
+      class={[
+        "inline-flex items-center justify-center rounded-full p-0.5",
+        if(@participant.source == "webling",
+          do: "bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300",
+          else: "bg-base-200 text-base-content/60"
+        ),
+        @class
+      ]}
+    >
+      <.icon
+        name={if @participant.source == "webling", do: "hero-cloud", else: "hero-user"}
+        class="size-3"
+      />
+    </span>
+    """
+  end
+
   defp initials(name) do
     name
     |> String.split(~r/\s+/, trim: true)

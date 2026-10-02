@@ -8,13 +8,15 @@ defmodule AttendanceTracker.TrackerFixtures do
   Generate a participant.
   """
   def participant_fixture(attrs \\ %{}) do
+    {source, attrs} = Map.pop(attrs, :source, "local")
+
     {:ok, participant} =
       attrs
       |> Enum.into(%{
         active: true,
         name: "some name"
       })
-      |> AttendanceTracker.Tracker.create_participant()
+      |> AttendanceTracker.Tracker.create_participant(source)
 
     participant
   end

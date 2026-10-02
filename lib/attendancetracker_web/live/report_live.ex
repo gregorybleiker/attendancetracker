@@ -8,16 +8,18 @@ defmodule AttendanceTrackerWeb.ReportLive do
     ~H"""
     <Layouts.app flash={@flash} admin_mode={@admin_mode}>
       <.header>
-        Reporting
-        <:subtitle>Download the attendance report for a full year as a CSV file.</:subtitle>
+        {gettext("Reporting")}
+        <:subtitle>
+          {gettext("Download the attendance report for a full year as a CSV file.")}
+        </:subtitle>
       </.header>
 
       <div class="max-w-sm">
         <.form for={@form} id="report-form" action={~p"/reporting/download"} method="get">
-          <.input field={@form[:year]} type="select" label="Year" options={@years} />
+          <.input field={@form[:year]} type="select" label={gettext("Year")} options={@years} />
           <footer>
             <.button variant="primary">
-              <.icon name="hero-arrow-down-tray" class="size-5" /> Download CSV
+              <.icon name="hero-arrow-down-tray" class="size-5" /> {gettext("Download CSV")}
             </.button>
           </footer>
         </.form>
@@ -32,7 +34,7 @@ defmodule AttendanceTrackerWeb.ReportLive do
 
     {:ok,
      socket
-     |> assign(:page_title, "Reporting")
+     |> assign(:page_title, gettext("Reporting"))
      |> assign(:years, years)
      |> assign(:form, to_form(%{"year" => hd(years)}))}
   end

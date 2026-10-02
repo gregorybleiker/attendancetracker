@@ -5,6 +5,8 @@ defmodule AttendanceTrackerWeb.Layouts do
   """
   use AttendanceTrackerWeb, :html
 
+  alias AttendanceTrackerWeb.Locales
+
   # Embed all files in layouts/* within this module.
   # The default root.html.heex file contains the HTML
   # skeleton of your application, namely HTML headers
@@ -38,29 +40,33 @@ defmodule AttendanceTrackerWeb.Layouts do
   slot :inner_block, required: true
 
   def app(assigns) do
+    assigns = assign(assigns, :locale, Gettext.get_locale(AttendanceTrackerWeb.Gettext))
+
     ~H"""
     <header class="sticky top-0 z-40 border-b border-base-300 bg-base-100/90 backdrop-blur">
       <div class="navbar mx-auto max-w-7xl gap-2 px-4 sm:px-6 lg:px-8">
         <div class="flex-1">
           <a href="/" class="flex w-fit items-center gap-2 text-lg font-bold tracking-tight">
-            <.icon name="hero-clipboard-document-check" class="size-6" /> AttendanceTracker
+            <.logo class="size-6" /> AttendanceTracker
           </a>
         </div>
 
         <nav class="hidden items-center gap-1 lg:flex">
-          <.link navigate={~p"/"} class="btn btn-ghost">Check-in</.link>
+          <.link navigate={~p"/"} class="btn btn-ghost">{gettext("Check-in")}</.link>
           <.link :if={@admin_mode} navigate={~p"/participants"} class="btn btn-ghost">
-            Participants
+            {gettext("Participants")}
           </.link>
           <.link :if={@admin_mode} navigate={~p"/training"} class="btn btn-ghost">
-            Training
+            {gettext("Training")}
           </.link>
           <.link :if={@admin_mode} navigate={~p"/reporting"} class="btn btn-ghost">
-            Reporting
+            {gettext("Reporting")}
           </.link>
-          <.link :if={@admin_mode} navigate={~p"/admin"} class="btn btn-ghost">Admin</.link>
+          <.link :if={@admin_mode} navigate={~p"/admin"} class="btn btn-ghost">
+            {gettext("Admin")}
+          </.link>
           <.link :if={!@admin_mode} navigate={~p"/login"} id="admin-mode-menu" class="btn btn-ghost">
-            <.icon name="hero-lock-closed" class="size-4" /> Admin mode
+            <.icon name="hero-lock-closed" class="size-4" /> {gettext("Admin mode")}
           </.link>
           <.link
             :if={@admin_mode}
@@ -69,52 +75,59 @@ defmodule AttendanceTrackerWeb.Layouts do
             id="exit-admin-mode-menu"
             class="btn btn-ghost"
           >
-            <.icon name="hero-lock-open" class="size-4" /> Exit admin mode
+            <.icon name="hero-lock-open" class="size-4" /> {gettext("Exit admin mode")}
           </.link>
+          <.language_toggle locale={@locale} id="language-toggle-desktop" />
           <.theme_toggle />
         </nav>
 
         <details class="dropdown dropdown-end lg:hidden">
-          <summary class="btn btn-ghost btn-square" aria-label="Open menu">
+          <summary class="btn btn-ghost btn-square" aria-label={gettext("Open menu")}>
             <.icon name="hero-bars-3" class="size-6" />
           </summary>
           <ul class="menu dropdown-content z-50 mt-2 w-60 rounded-box border border-base-300 bg-base-100 p-2 shadow-xl">
             <li>
-              <.link navigate={~p"/"}><.icon name="hero-home" class="size-5" /> Check-in</.link>
+              <.link navigate={~p"/"}><.icon name="hero-home" class="size-5" /> {gettext("Check-in")}</.link>
             </li>
             <li :if={@admin_mode}>
               <.link navigate={~p"/participants"}>
-                <.icon name="hero-user-group" class="size-5" /> Participants
+                <.icon name="hero-user-group" class="size-5" /> {gettext("Participants")}
               </.link>
             </li>
             <li :if={@admin_mode}>
               <.link navigate={~p"/training"}>
-                <.icon name="hero-calendar-days" class="size-5" /> Training
+                <.icon name="hero-calendar-days" class="size-5" /> {gettext("Training")}
               </.link>
             </li>
             <li :if={@admin_mode}>
               <.link navigate={~p"/reporting"}>
-                <.icon name="hero-chart-bar" class="size-5" /> Reporting
+                <.icon name="hero-chart-bar" class="size-5" /> {gettext("Reporting")}
               </.link>
             </li>
             <li :if={@admin_mode}>
               <.link navigate={~p"/admin"}>
-                <.icon name="hero-cog-6-tooth" class="size-5" /> Admin
+                <.icon name="hero-cog-6-tooth" class="size-5" /> {gettext("Admin")}
               </.link>
             </li>
             <li :if={!@admin_mode}>
               <.link navigate={~p"/login"}>
-                <.icon name="hero-lock-closed" class="size-5" /> Admin mode
+                <.icon name="hero-lock-closed" class="size-5" /> {gettext("Admin mode")}
               </.link>
             </li>
             <li :if={@admin_mode}>
               <.link href={~p"/logout"} method="delete">
-                <.icon name="hero-lock-open" class="size-5" /> Exit admin mode
+                <.icon name="hero-lock-open" class="size-5" /> {gettext("Exit admin mode")}
               </.link>
             </li>
             <li class="mt-1 border-t border-base-300 pt-1">
               <div class="flex items-center justify-between gap-2 px-2 py-1">
-                <span class="text-sm opacity-70">Theme</span>
+                <span class="text-sm opacity-70">{gettext("Language")}</span>
+                <.language_toggle locale={@locale} id="language-toggle-mobile" />
+              </div>
+            </li>
+            <li>
+              <div class="flex items-center justify-between gap-2 px-2 py-1">
+                <span class="text-sm opacity-70">{gettext("Theme")}</span>
                 <.theme_toggle />
               </div>
             </li>
@@ -130,6 +143,50 @@ defmodule AttendanceTrackerWeb.Layouts do
     </main>
 
     <.flash_group flash={@flash} />
+    """
+  end
+
+  attr :class, :string, default: "size-6"
+
+  @doc """
+  The app logo: two people, the back one faded and the front one solid.
+
+  Uses `currentColor`, so it follows the surrounding text colour (and thus the
+  light/dark theme).
+  """
+  def logo(assigns) do
+    ~H"""
+    <svg viewBox="6 15 53 42" fill="currentColor" aria-hidden="true" class={@class}>
+      <g opacity="0.45">
+        <circle cx="21" cy="25" r="7" />
+        <path d="M 9 48 A 12 14 0 0 1 33 48 Z" />
+      </g>
+      <g>
+        <circle cx="42" cy="29" r="8.5" />
+        <path d="M 28 54 A 14 15 0 0 1 56 54 Z" />
+      </g>
+    </svg>
+    """
+  end
+
+  attr :locale, :string, required: true
+  attr :id, :string, default: "language-toggle"
+
+  @doc """
+  Language switcher: a link per available locale that stores the choice in the
+  session and reloads the page.
+  """
+  def language_toggle(assigns) do
+    ~H"""
+    <div class="join" id={@id}>
+      <.link
+        :for={locale <- Locales.all()}
+        href={~p"/locale/#{locale}"}
+        class={["btn btn-ghost btn-sm join-item", @locale == locale && "btn-active"]}
+      >
+        {String.upcase(locale)}
+      </.link>
+    </div>
     """
   end
 
@@ -152,7 +209,7 @@ defmodule AttendanceTrackerWeb.Layouts do
       <.flash
         id="client-error"
         kind={:error}
-        title="We can't find the internet"
+        title={gettext("We can't find the internet")}
         phx-disconnected={
           show(".phx-client-error #client-error")
           |> JS.remove_attribute("hidden", to: ".phx-client-error #client-error")
@@ -160,14 +217,14 @@ defmodule AttendanceTrackerWeb.Layouts do
         phx-connected={hide("#client-error") |> JS.set_attribute({"hidden", ""})}
         hidden
       >
-        Attempting to reconnect
+        {gettext("Attempting to reconnect")}
         <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
       </.flash>
 
       <.flash
         id="server-error"
         kind={:error}
-        title="Something went wrong!"
+        title={gettext("Something went wrong!")}
         phx-disconnected={
           show(".phx-server-error #server-error")
           |> JS.remove_attribute("hidden", to: ".phx-server-error #server-error")
@@ -175,7 +232,7 @@ defmodule AttendanceTrackerWeb.Layouts do
         phx-connected={hide("#server-error") |> JS.set_attribute({"hidden", ""})}
         hidden
       >
-        Attempting to reconnect
+        {gettext("Attempting to reconnect")}
         <.icon name="hero-arrow-path" class="ml-1 size-3 motion-safe:animate-spin" />
       </.flash>
     </div>

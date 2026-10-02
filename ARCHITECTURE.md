@@ -49,23 +49,33 @@ lib/
     components/
       layouts.ex                  # App shell: navbar, theme toggle, flash group
       core_components.ex          # <.button>, <.input>, <.table>, <.icon>, …
-      participant_components.ex   # Domain components: <.avatar>
+      participant_components.ex   # Domain components: <.avatar>, <.source_badge>
     live/
       check_in_live.ex            # The kiosk: photo grid, check-in, PIN, camera
       login_live.ex               # Login page: PIN form POSTed to the session controller
       participant_live/           # Generated-style CRUD: index/form/show
-      training_live/               # Weekly schedule config: index/form
+      training_live/              # Weekly schedule config: index/form
       report_live.ex              # Year picker for the CSV attendance report
       admin_live.ex               # PIN-gated admin area
     controllers/
       session_controller.ex       # Login: checks the PIN, marks the session
       report_controller.ex        # CSV download of a full year's attendance
       photo_controller.ex         # Serves /photos/:id/:version from the DB
+      pwa_controller.ex           # Serves the web app manifest
+      locale_controller.ex        # Stores the chosen language in the session
     plugs/
       require_admin_pin.ex        # Redirects to /login until the client logs in
+      set_locale.ex               # Detects/remembers the locale
+    gettext.ex                    # Gettext backend (en + de)
+    locales.ex                    # The supported locales
 priv/
   repo/migrations/                # Database history
   repo/seeds.exs                  # Demo data
+  gettext/                        # en/de PO files (default + errors domains)
+  static/
+    manifest.webmanifest          # PWA manifest (served via PwaController)
+    service-worker.js             # PWA service worker (static-asset cache)
+    images/icon-*.png             # Install icons (192/512 + maskable + apple)
 test/
   support/fixtures/               # TrackerFixtures — test data helpers
   attendancetracker/              # Context tests
@@ -587,14 +597,48 @@ alias. The design deliberately separates the *connector* from the
   `directory_config`), builds a schemaless changeset for the admin form, and
   runs the source-agnostic `preview/0` → `import_members/1` flow: members are
   normalised, de-duplicated by name, and compared against existing participants
-  (case/whitespace-insensitive) so only missing ones are created. The phone
-  becomes the participant's `emergency_number`.
+  (case/whitespace-insensitive). Missing ones are created and matched ones are
+  updated, both flagged `source: "webling"`; the phone becomes the participant's
+  `emergency_number`. The `source` field (`"local"` or `"webling"`, never cast
+  from user input) drives the `<.source_badge>` shown in admin mode on the
+  check-in grid and in the participant list.
 
 `AdminLive` renders the connectors' `config_fields/0` dynamically: switching the
 connector re-renders its fields, so adding a connector is "register the module
 in `config :attendancetracker, :directory_sources`" with no template change.
 The import is previewed first and confirmed in a second click, so the admin
 sees exactly who would be created.
+
+### 4.12 Installable PWA (`manifest.webmanifest`, `service-worker.js`)
+
+The app ships a web app manifest (`priv/static/manifest.webmanifest`) with
+192/512 PNG icons plus a maskable variant and `display: standalone`, so it can
+be installed to a phone's home screen. The manifest is served by
+`PwaController` rather than `Plug.Static` because production static paths are
+digested and the manifest must keep its `application/manifest+json` content
+type. The root layout links the manifest, `theme-color` and an Apple touch
+icon.
+
+A small service worker (`priv/static/service-worker.js`) is registered from
+`app.js` in production builds only (esbuild's `NODE_ENV` gate). It
+stale-while-revalidates the bundled CSS/JS, images and fonts, and deliberately
+does **not** intercept LiveView websockets or check-in traffic — the kiosk
+stays online-first, never serving stale data.
+
+### 4.13 Localisation (Gettext, English + German)
+
+Every user-facing string goes through Gettext (`AttendanceTrackerWeb.Gettext`,
+messages in `priv/gettext/{en,de}/LC_MESSAGES`). The locale is per-process, so
+it is set twice: by `Plugs.SetLocale` for the HTTP request (which also detects
+`Accept-Language` on the first visit and remembers the choice in the session),
+and by the `AssignAdminMode` `on_mount` hook for each LiveView process. The
+navbar switcher links to `/locale/:locale`, which stores the choice and does a
+full reload so every LiveView re-mounts in the new language.
+
+`translate_error/1` looks up Ecto changeset messages in the `errors` domain, so
+validation errors are translated too. Weekday and connector-field labels are
+runtime strings, translated with `Gettext.dgettext/3`. Date formatting
+(`Calendar.strftime`) is still English.
 
 ---
 
@@ -683,6 +727,7 @@ modal + hook starts webcam → capture → data URL →
 | Binary image response | `PhotoController` (`send_resp/3` + cache headers) |
 | Behaviour + registry plugin point | `Directory.Source` connectors |
 | HTTP client (`Req`) | Webling member import |
+| Gettext i18n + locale plug/hook | whole UI (en/de) |
 | LiveView streams | participant grid (`reset: true` on training switch) |
 | `connected?/1` mount guard | PubSub subscribe only on the live socket |
 | Verified routes `~p` | every link/navigate |

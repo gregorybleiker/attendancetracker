@@ -3,6 +3,7 @@ defmodule AttendanceTrackerWeb.TrainingLive.Form do
 
   alias AttendanceTracker.Tracker
   alias AttendanceTracker.Tracker.Training
+  alias AttendanceTrackerWeb.TrainingLabels
 
   @impl true
   def render(assigns) do
@@ -10,29 +11,31 @@ defmodule AttendanceTrackerWeb.TrainingLive.Form do
     <Layouts.app flash={@flash} admin_mode={@admin_mode}>
       <.header>
         {@page_title}
-        <:subtitle>For example: every Monday from 19:00 to 21:30.</:subtitle>
+        <:subtitle>{gettext("For example: every Monday from 19:00 to 21:30.")}</:subtitle>
       </.header>
 
       <.form for={@form} id="training-form" phx-change="validate" phx-submit="save">
         <.input
           field={@form[:name]}
           type="text"
-          label="Alias"
-          placeholder="Kids Judo Monday"
+          label={gettext("Alias")}
+          placeholder={gettext("Kids Judo Monday")}
         />
         <.input
           field={@form[:weekday]}
           type="select"
-          label="Weekday"
-          prompt="Choose a weekday"
-          options={Training.weekday_options()}
+          label={gettext("Weekday")}
+          prompt={gettext("Choose a weekday")}
+          options={weekday_options()}
         />
-        <.input field={@form[:starts_at]} type="time" label="Start" />
-        <.input field={@form[:ends_at]} type="time" label="End" />
+        <.input field={@form[:starts_at]} type="time" label={gettext("Start")} />
+        <.input field={@form[:ends_at]} type="time" label={gettext("End")} />
 
         <footer>
-          <.button phx-disable-with="Saving..." variant="primary">Save training</.button>
-          <.button navigate={~p"/training"}>Cancel</.button>
+          <.button phx-disable-with={gettext("Saving...")} variant="primary">
+            {gettext("Save training")}
+          </.button>
+          <.button navigate={~p"/training"}>{gettext("Cancel")}</.button>
         </footer>
       </.form>
     </Layouts.app>
@@ -48,7 +51,7 @@ defmodule AttendanceTrackerWeb.TrainingLive.Form do
     training = Tracker.get_training!(id)
 
     socket
-    |> assign(:page_title, "Edit training")
+    |> assign(:page_title, gettext("Edit training"))
     |> assign(:training, training)
     |> assign(:form, to_form(Tracker.change_training(training)))
   end
@@ -57,7 +60,7 @@ defmodule AttendanceTrackerWeb.TrainingLive.Form do
     training = %Training{}
 
     socket
-    |> assign(:page_title, "New training")
+    |> assign(:page_title, gettext("New training"))
     |> assign(:training, training)
     |> assign(:form, to_form(Tracker.change_training(training)))
   end
@@ -77,7 +80,7 @@ defmodule AttendanceTrackerWeb.TrainingLive.Form do
       {:ok, _training} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Training updated successfully")
+         |> put_flash(:info, gettext("Training updated successfully"))
          |> push_navigate(to: ~p"/training")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -90,11 +93,17 @@ defmodule AttendanceTrackerWeb.TrainingLive.Form do
       {:ok, _training} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Training created successfully")
+         |> put_flash(:info, gettext("Training created successfully"))
          |> push_navigate(to: ~p"/training")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
     end
+  end
+
+  defp weekday_options do
+    Enum.map(Training.weekday_options(), fn {_label, weekday} ->
+      {TrainingLabels.weekday_label(weekday), weekday}
+    end)
   end
 end

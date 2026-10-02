@@ -16,6 +16,7 @@ defmodule AttendanceTracker.Directory do
   alias AttendanceTracker.Directory.Webling
   alias AttendanceTracker.Repo
   alias AttendanceTracker.Tracker
+  alias AttendanceTracker.Tracker.Participant
   alias AttendanceTracker.Tracker.Setting
 
   @default_sources %{"webling" => Webling}
@@ -100,10 +101,10 @@ defmodule AttendanceTracker.Directory do
 
   @doc """
   Fetches members for the trainings that have an alias and splits them into
-  those that would be created and those skipped because a participant with the
-  same name already exists.
+  those that would be created (`new`) and those matching an existing
+  participant (`existing`, which the import flags as Webling members).
 
-  Returns `{:ok, %{new: [candidate], skipped: integer, total: integer}}`, or
+  Returns `{:ok, %{new: [candidate], existing: [candidate], total: integer}}`,
   `{:error, :no_named_trainings}` when no training has an alias, or
   `{:error, reason}` when the connector fails.
   """
@@ -123,41 +124,62 @@ defmodule AttendanceTracker.Directory do
             |> Enum.reject(&is_nil/1)
             |> Enum.uniq_by(&normalise_name(&1.name))
 
-          existing = existing_names()
-          new = Enum.reject(candidates, &MapSet.member?(existing, normalise_name(&1.name)))
+          by_name = participants_by_name()
 
-          {:ok, %{new: new, skipped: length(candidates) - length(new), total: length(candidates)}}
+          {existing, new} =
+            Enum.split_with(candidates, &Map.has_key?(by_name, normalise_name(&1.name)))
+
+          {:ok, %{new: new, existing: existing, total: length(candidates)}}
         end
     end
   end
 
   @doc """
-  Creates a participant for every candidate whose name is not already taken.
+  Creates a participant (source `"webling"`) for every new candidate and flags
+  the name-matched existing participants as Webling members.
 
-  Returns `{:ok, %{created: integer, skipped: integer}}`.
+  Takes the result of `preview/0` and returns
+  `{:ok, %{created: integer, linked: integer}}`.
   """
-  def import_members(candidates) when is_list(candidates) do
-    {created, skipped, _seen} =
-      Enum.reduce(candidates, {0, 0, existing_names()}, fn candidate, {created, skipped, seen} ->
+  def import_members(%{new: new, existing: existing}) do
+    {created, _seen} =
+      Enum.reduce(new, {0, participants_by_name() |> Map.keys() |> MapSet.new()}, fn candidate,
+                                                                                     {created,
+                                                                                      seen} ->
         key = normalise_name(candidate.name)
 
-        cond do
-          MapSet.member?(seen, key) ->
-            {created, skipped + 1, seen}
-
-          true ->
-            case Tracker.create_participant(%{
-                   name: candidate.name,
-                   emergency_number: candidate.phone,
-                   active: true
-                 }) do
-              {:ok, _participant} -> {created + 1, skipped, MapSet.put(seen, key)}
-              {:error, _changeset} -> {created, skipped + 1, seen}
-            end
+        if MapSet.member?(seen, key) do
+          {created, seen}
+        else
+          case Tracker.create_participant(
+                 %{name: candidate.name, emergency_number: candidate.phone, active: true},
+                 "webling"
+               ) do
+            {:ok, _participant} -> {created + 1, MapSet.put(seen, key)}
+            {:error, _changeset} -> {created, seen}
+          end
         end
       end)
 
-    {:ok, %{created: created, skipped: skipped}}
+    linked =
+      Enum.reduce(existing, 0, fn candidate, linked ->
+        case Map.get(participants_by_name(), normalise_name(candidate.name)) do
+          %Participant{} = participant ->
+            if Participant.webling?(participant) do
+              linked
+            else
+              case Tracker.set_participant_source(participant, "webling") do
+                {:ok, _} -> linked + 1
+                {:error, _} -> linked
+              end
+            end
+
+          nil ->
+            linked
+        end
+      end)
+
+    {:ok, %{created: created, linked: linked}}
   end
 
   defp named_trainings do
@@ -191,10 +213,11 @@ defmodule AttendanceTracker.Directory do
 
   defp clean(_value), do: nil
 
-  defp existing_names do
+  defp participants_by_name do
     Tracker.list_participants()
-    |> Enum.map(&normalise_name(&1.name))
-    |> MapSet.new()
+    |> Enum.reduce(%{}, fn participant, acc ->
+      Map.put_new(acc, normalise_name(participant.name), participant)
+    end)
   end
 
   defp normalise_name(name) when is_binary(name) do

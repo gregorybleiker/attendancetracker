@@ -61,7 +61,7 @@ defmodule AttendanceTrackerWeb.ReportController do
     Training.label(training)
   end
 
-  defp training_name(%TrainingSession{}), do: "Ad-hoc training"
+  defp training_name(%TrainingSession{}), do: gettext("Ad-hoc training")
 
   defp csv_escape(value) do
     value = to_string(value)

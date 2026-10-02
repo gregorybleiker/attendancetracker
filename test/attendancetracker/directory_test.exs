@@ -40,27 +40,28 @@ defmodule AttendanceTracker.DirectoryTest do
     assert {:error, :no_named_trainings} = Directory.preview()
   end
 
-  test "preview reports new members and skips existing ones" do
+  test "preview reports new members and matches existing ones" do
     training_fixture(%{name: "Kids Judo"})
     _ada = participant_fixture(%{name: "Ada Lovelace"})
     {:ok, _} = Directory.save_settings("fake", %{"token" => "x"})
 
     assert {:ok, preview} = Directory.preview()
     assert preview.total == 2
-    assert preview.skipped == 1
+    assert [%{name: "Ada Lovelace"}] = preview.existing
     assert [%{name: "Grace Hopper", phone: "079 222"}] = preview.new
 
     assert_received {:fake_fetch, ["Kids Judo"], %{"token" => "x"}}
   end
 
-  test "import_members creates participants for new members and skips existing ones" do
-    _ada = participant_fixture(%{name: "Ada Lovelace"})
+  test "import_members creates new members and flags matched ones as Webling" do
+    ada = participant_fixture(%{name: "Ada Lovelace"})
+    refute AttendanceTracker.Tracker.Participant.webling?(ada)
 
-    assert {:ok, %{created: 1, skipped: 1}} =
-             Directory.import_members([
-               %{name: "Ada Lovelace", phone: "079 111"},
-               %{name: "Grace Hopper", phone: "079 222"}
-             ])
+    assert {:ok, %{created: 1, linked: 1}} =
+             Directory.import_members(%{
+               new: [%{name: "Grace Hopper", phone: "079 222"}],
+               existing: [%{name: "Ada Lovelace"}]
+             })
 
     participants = Tracker.list_participants()
     names = Enum.map(participants, & &1.name)
@@ -71,5 +72,9 @@ defmodule AttendanceTracker.DirectoryTest do
     grace = Enum.find(participants, &(&1.name == "Grace Hopper"))
     assert grace.emergency_number == "079 222"
     assert grace.active
+    assert grace.source == "webling"
+
+    ada = Tracker.get_participant!(ada.id)
+    assert ada.source == "webling"
   end
 end

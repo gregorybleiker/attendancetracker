@@ -58,6 +58,11 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Localisation
+config :attendancetracker, AttendanceTrackerWeb.Gettext,
+  default_locale: "en",
+  locales: ~w(en de)
+
 # User-management connectors available to the admin import, as a map of
 # id => module implementing AttendanceTracker.Directory.Source. Webling is
 # built in; additional (non-)REST connectors can be registered here.

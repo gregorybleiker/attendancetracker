@@ -7,7 +7,7 @@ defmodule AttendanceTrackerWeb.LoginLive do
     <Layouts.app flash={@flash} admin_mode={@admin_mode}>
       <.header>
         AttendanceTracker
-        <:subtitle>Enter the admin PIN to continue.</:subtitle>
+        <:subtitle>{gettext("Enter the admin PIN to continue.")}</:subtitle>
       </.header>
 
       <div class="max-w-sm">
@@ -15,12 +15,12 @@ defmodule AttendanceTrackerWeb.LoginLive do
           <.input
             field={@form[:pin]}
             type="password"
-            label="Admin PIN"
+            label={gettext("Admin PIN")}
             inputmode="numeric"
             autocomplete="off"
           />
           <footer>
-            <.button variant="primary">Log in</.button>
+            <.button variant="primary">{gettext("Log in")}</.button>
           </footer>
         </.form>
       </div>
@@ -35,7 +35,7 @@ defmodule AttendanceTrackerWeb.LoginLive do
     else
       {:ok,
        socket
-       |> assign(:page_title, "Log in")
+       |> assign(:page_title, gettext("Log in"))
        |> assign(:form, to_form(%{"pin" => ""}))}
     end
   end

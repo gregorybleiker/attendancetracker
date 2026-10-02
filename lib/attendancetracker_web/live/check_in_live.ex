@@ -17,7 +17,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
 
     {:ok,
      socket
-     |> assign(:page_title, "Check in")
+     |> assign(:page_title, gettext("Check in"))
      |> assign(:session, session)
      |> assign(:trainings, trainings)
      |> assign(:training_options, training_options(trainings))
@@ -69,18 +69,21 @@ defmodule AttendanceTrackerWeb.CheckInLive do
         <.input
           field={@training_form[:training_id]}
           type="select"
-          label="Training"
+          label={gettext("Training")}
           options={@training_options}
         />
       </.form>
 
       <div class="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 class="text-2xl font-bold">Tap your photo to check in</h1>
+          <h1 class="text-2xl font-bold">{gettext("Tap your photo to check in")}</h1>
           <p class="text-sm opacity-70">{Calendar.strftime(@session.date, "%A, %B %-d")}</p>
         </div>
         <div id="attendance-count" class="rounded-full bg-base-200 px-4 py-1 text-sm font-semibold">
-          {@checked_in_count} / {@participant_count} present
+          {gettext("%{checked} / %{total} present",
+            checked: @checked_in_count,
+            total: @participant_count
+          )}
         </div>
       </div>
 
@@ -93,8 +96,8 @@ defmodule AttendanceTrackerWeb.CheckInLive do
           id="participants-empty"
           class="hidden only:block rounded-xl border border-dashed border-base-300 p-8 text-center"
         >
-          No active participants yet.
-          <.link navigate={~p"/participants/new"} class="link link-primary">Add one</.link>
+          {gettext("No active participants yet.")}
+          <.link navigate={~p"/participants/new"} class="link link-primary">{gettext("Add one")}</.link>
         </div>
 
         <div :for={{id, participant} <- @streams.participants} id={id}>
@@ -108,20 +111,26 @@ defmodule AttendanceTrackerWeb.CheckInLive do
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       >
         <div class="w-full max-w-sm rounded-2xl bg-base-100 p-6 shadow-xl">
-          <h2 class="text-lg font-bold">Undo check-in for {@toggle_participant.name}?</h2>
-          <p class="mt-1 text-sm opacity-70">Enter the admin PIN to remove this check-in.</p>
+          <h2 class="text-lg font-bold">
+            {gettext("Undo check-in for %{name}?", name: @toggle_participant.name)}
+          </h2>
+          <p class="mt-1 text-sm opacity-70">
+            {gettext("Enter the admin PIN to remove this check-in.")}
+          </p>
 
           <.form for={@pin_form} id="pin-form" phx-submit="submit_pin" class="mt-4">
             <.input
               field={@pin_form[:pin]}
               type="password"
-              label="Admin PIN"
+              label={gettext("Admin PIN")}
               inputmode="numeric"
               autocomplete="off"
             />
             <div class="mt-4 flex justify-end gap-2">
-              <.button type="button" phx-click="cancel_check_out">Cancel</.button>
-              <.button variant="primary" phx-disable-with="Checking...">Undo check-in</.button>
+              <.button type="button" phx-click="cancel_check_out">{gettext("Cancel")}</.button>
+              <.button variant="primary" phx-disable-with={gettext("Checking...")}>
+                {gettext("Undo check-in")}
+              </.button>
             </div>
           </.form>
         </div>
@@ -133,9 +142,13 @@ defmodule AttendanceTrackerWeb.CheckInLive do
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       >
         <div class="w-full max-w-md rounded-2xl bg-base-100 p-6 shadow-xl">
-          <h2 class="text-lg font-bold">Take a photo of {@camera_participant.name}</h2>
+          <h2 class="text-lg font-bold">
+            {gettext("Take a photo of %{name}", name: @camera_participant.name)}
+          </h2>
           <p class="mt-1 text-sm opacity-70">
-            Center the face in the preview, then capture. The photo is used on the check-in tile.
+            {gettext(
+              "Center the face in the preview, then capture. The photo is used on the check-in tile."
+            )}
           </p>
 
           <div
@@ -155,7 +168,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
               data-capture
               class="btn btn-primary mt-4 w-full cursor-pointer rounded-lg px-4 py-2"
             >
-              <.icon name="hero-camera" class="size-5" /> Capture photo
+              <.icon name="hero-camera" class="size-5" /> {gettext("Capture photo")}
             </button>
           </div>
 
@@ -164,7 +177,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
           </p>
 
           <div class="mt-2 flex justify-end">
-            <.button type="button" phx-click="close_camera">Cancel</.button>
+            <.button type="button" phx-click="close_camera">{gettext("Cancel")}</.button>
           </div>
         </div>
       </div>
@@ -222,7 +235,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
         id={"check-in-btn-#{@participant.id}"}
         phx-click={if(checked_in, do: "prompt_check_out", else: "check_in")}
         phx-value-id={@participant.id}
-        title={if(checked_in, do: "Tap to undo the check-in")}
+        title={if(checked_in, do: gettext("Tap to undo the check-in"))}
         class={[
           "group relative flex w-full cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all duration-200",
           if(checked_in,
@@ -235,6 +248,10 @@ defmodule AttendanceTrackerWeb.CheckInLive do
       >
         <div class="relative">
           <.avatar participant={@participant} dim={is_nil(checked_in)} />
+
+          <div :if={@admin_mode} class="absolute -top-1 -left-1">
+            <.source_badge participant={@participant} />
+          </div>
 
           <div
             :if={checked_in}
@@ -270,7 +287,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
         id={"camera-btn-#{@participant.id}"}
         phx-click="open_camera"
         phx-value-id={@participant.id}
-        title="Take a photo"
+        title={gettext("Take a photo")}
         class="absolute top-2 right-2 cursor-pointer rounded-full bg-base-100/80 p-1.5 opacity-40 shadow-sm transition-opacity hover:opacity-100"
       >
         <.icon name="hero-camera" class="size-4" />
@@ -357,7 +374,12 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   end
 
   def handle_event("camera_error", %{"message" => message}, socket) do
-    {:noreply, assign(socket, :camera_error, "Could not access the camera: #{message}")}
+    {:noreply,
+     assign(
+       socket,
+       :camera_error,
+       gettext("Could not access the camera: %{message}", message: message)
+     )}
   end
 
   def handle_event("captured_photo", %{"data" => data_url}, socket) do
@@ -376,7 +398,8 @@ defmodule AttendanceTrackerWeb.CheckInLive do
          |> stream_insert(:participants, participant)}
 
       {:error, _reason} ->
-        {:noreply, assign(socket, :camera_error, "Could not save the photo, please try again.")}
+        {:noreply,
+         assign(socket, :camera_error, gettext("Could not save the photo, please try again."))}
     end
   end
 
@@ -396,7 +419,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   end
 
   defp pin_form_with_error do
-    to_form(%{"pin" => ""}, errors: [pin: {"Wrong PIN", []}])
+    to_form(%{"pin" => ""}, errors: [pin: {gettext("Wrong PIN"), []}])
   end
 
   @impl true

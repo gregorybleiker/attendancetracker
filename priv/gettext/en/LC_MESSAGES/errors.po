@@ -1,0 +1,28 @@
+msgid ""
+msgstr ""
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "can't be blank"
+msgstr "can't be blank"
+
+msgid "has already been taken"
+msgstr "has already been taken"
+
+msgid "is invalid"
+msgstr "is invalid"
+
+msgid "must be after the start time"
+msgstr "must be after the start time"
+
+msgid "must be between 1 and 3650 days"
+msgstr "must be between 1 and 3650 days"
+
+msgid "must be 4 to 12 digits"
+msgstr "must be 4 to 12 digits"
+
+msgid "does not match"
+msgstr "does not match"
+
+msgid "Wrong PIN"
+msgstr "Wrong PIN"

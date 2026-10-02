@@ -17,7 +17,8 @@ defmodule AttendanceTrackerWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
+  def static_paths,
+    do: ~w(assets fonts images service-worker.js favicon.ico robots.txt)
 
   def router do
     quote do
@@ -41,6 +42,8 @@ defmodule AttendanceTrackerWeb do
       use Phoenix.Controller, formats: [:html, :json]
 
       import Plug.Conn
+
+      use Gettext, backend: AttendanceTrackerWeb.Gettext
 
       unquote(verified_routes())
     end
@@ -83,6 +86,9 @@ defmodule AttendanceTrackerWeb do
       import Phoenix.HTML
       # Core UI components
       import AttendanceTrackerWeb.CoreComponents
+
+      # Translations
+      use Gettext, backend: AttendanceTrackerWeb.Gettext
 
       # Common modules used in templates
       alias Phoenix.LiveView.JS

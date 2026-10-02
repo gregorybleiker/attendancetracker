@@ -2,47 +2,48 @@ defmodule AttendanceTrackerWeb.TrainingLive.Index do
   use AttendanceTrackerWeb, :live_view
 
   alias AttendanceTracker.Tracker
-  alias AttendanceTracker.Tracker.Training
+  alias AttendanceTrackerWeb.TrainingLabels
 
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} admin_mode={@admin_mode}>
       <.header>
-        Training
+        {gettext("Training")}
         <:subtitle>
-          Configure the weekly training schedule, e.g. every Monday from 19:00 to 21:30.
-          The check-in screen pre-selects the current training based on date and time.
+          {gettext(
+            "Configure the weekly training schedule, e.g. every Monday from 19:00 to 21:30. The check-in screen pre-selects the current training based on date and time."
+          )}
         </:subtitle>
         <:actions>
           <.button variant="primary" navigate={~p"/training/new"}>
-            <.icon name="hero-plus" /> New training
+            <.icon name="hero-plus" /> {gettext("New training")}
           </.button>
         </:actions>
       </.header>
 
       <.table id="trainings" rows={@streams.trainings}>
-        <:col :let={{_id, training}} label="Alias">
+        <:col :let={{_id, training}} label={gettext("Alias")}>
           {training.name || "–"}
         </:col>
-        <:col :let={{_id, training}} label="Weekday">
-          {Training.weekday_name(training)}
+        <:col :let={{_id, training}} label={gettext("Weekday")}>
+          {TrainingLabels.weekday_label(training.weekday)}
         </:col>
-        <:col :let={{_id, training}} label="Time">
+        <:col :let={{_id, training}} label={gettext("Time")}>
           {Calendar.strftime(training.starts_at, "%H:%M")}–{Calendar.strftime(
             training.ends_at,
             "%H:%M"
           )}
         </:col>
         <:action :let={{_id, training}}>
-          <.link navigate={~p"/training/#{training}/edit"}>Edit</.link>
+          <.link navigate={~p"/training/#{training}/edit"}>{gettext("Edit")}</.link>
         </:action>
         <:action :let={{id, training}}>
           <.link
             phx-click={JS.push("delete", value: %{id: training.id}) |> hide("##{id}")}
-            data-confirm="Are you sure?"
+            data-confirm={gettext("Are you sure?")}
           >
-            Delete
+            {gettext("Delete")}
           </.link>
         </:action>
       </.table>
@@ -54,7 +55,7 @@ defmodule AttendanceTrackerWeb.TrainingLive.Index do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:page_title, "Training")
+     |> assign(:page_title, gettext("Training"))
      |> stream(:trainings, Tracker.list_trainings())}
   end
 

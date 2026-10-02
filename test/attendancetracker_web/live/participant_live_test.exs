@@ -28,6 +28,16 @@ defmodule AttendanceTrackerWeb.ParticipantLiveTest do
       assert html =~ participant.name
     end
 
+    test "shows the Webling/local source badge", %{conn: conn} do
+      webling = participant_fixture(%{name: "From Webling", source: "webling"})
+      local = participant_fixture(%{name: "Local Only"})
+
+      {:ok, view, _html} = live(conn, ~p"/participants")
+
+      assert has_element?(view, "#source-webling-#{webling.id}")
+      assert has_element?(view, "#source-local-#{local.id}")
+    end
+
     test "saves new participant", %{conn: conn} do
       {:ok, index_live, _html} = live(conn, ~p"/participants")
 

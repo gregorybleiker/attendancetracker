@@ -8,8 +8,8 @@ defmodule AttendanceTrackerWeb.SessionUnlockLive do
     ~H"""
     <Layouts.app flash={@flash} admin_mode={@admin_mode}>
       <.header>
-        Start session
-        <:subtitle>Enter the session PIN to unlock the check-in screen.</:subtitle>
+        {gettext("Start session")}
+        <:subtitle>{gettext("Enter the session PIN to unlock the check-in screen.")}</:subtitle>
       </.header>
 
       <div class="max-w-sm">
@@ -17,12 +17,12 @@ defmodule AttendanceTrackerWeb.SessionUnlockLive do
           <.input
             field={@form[:pin]}
             type="password"
-            label="Session PIN"
+            label={gettext("Session PIN")}
             inputmode="numeric"
             autocomplete="off"
           />
           <footer>
-            <.button variant="primary">Start session</.button>
+            <.button variant="primary">{gettext("Start session")}</.button>
           </footer>
         </.form>
       </div>
@@ -35,7 +35,7 @@ defmodule AttendanceTrackerWeb.SessionUnlockLive do
     if Tracker.session_pin_configured?() do
       {:ok,
        socket
-       |> assign(:page_title, "Start session")
+       |> assign(:page_title, gettext("Start session"))
        |> assign(:form, to_form(%{"pin" => ""}))}
     else
       {:ok, redirect(socket, to: ~p"/")}

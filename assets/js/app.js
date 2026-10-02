@@ -46,6 +46,16 @@ liveSocket.connect()
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
 
+// Register the service worker so the app can be installed as a PWA.
+// Skipped in development to avoid caching stale assets while iterating.
+if (process.env.NODE_ENV !== "development" && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/service-worker.js").catch(error => {
+      console.error("Service worker registration failed:", error)
+    })
+  })
+}
+
 // The lines below enable quality of life phoenix_live_reload
 // development features:
 //

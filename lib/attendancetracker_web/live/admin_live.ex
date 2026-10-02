@@ -4,15 +4,13 @@ defmodule AttendanceTrackerWeb.AdminLive do
   alias AttendanceTracker.Directory
   alias AttendanceTracker.Tracker
 
-  @wrong_pin_error [pin: {"Wrong PIN", []}]
-
   @impl true
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} admin_mode={@admin_mode}>
       <.header>
-        Admin
-        <:subtitle>Restricted area — enter the admin PIN to continue.</:subtitle>
+        {gettext("Admin")}
+        <:subtitle>{gettext("Restricted area — enter the admin PIN to continue.")}</:subtitle>
       </.header>
 
       <div :if={not @unlocked} class="max-w-sm">
@@ -20,12 +18,14 @@ defmodule AttendanceTrackerWeb.AdminLive do
           <.input
             field={@pin_form[:pin]}
             type="password"
-            label="Admin PIN"
+            label={gettext("Admin PIN")}
             inputmode="numeric"
             autocomplete="off"
           />
           <footer>
-            <.button variant="primary" phx-disable-with="Unlocking...">Unlock</.button>
+            <.button variant="primary" phx-disable-with={gettext("Unlocking...")}>
+              {gettext("Unlock")}
+            </.button>
           </footer>
         </.form>
       </div>
@@ -33,9 +33,9 @@ defmodule AttendanceTrackerWeb.AdminLive do
       <div :if={@unlocked} id="admin-panel" class="max-w-sm space-y-8">
         <div class="space-y-6">
           <div>
-            <h2 class="text-lg font-semibold">Change admin PIN</h2>
+            <h2 class="text-lg font-semibold">{gettext("Change admin PIN")}</h2>
             <p class="mt-1 text-sm opacity-70">
-              The PIN is required to undo check-ins and to enter this area.
+              {gettext("The PIN is required to undo check-ins and to enter this area.")}
             </p>
           </div>
 
@@ -43,33 +43,36 @@ defmodule AttendanceTrackerWeb.AdminLive do
             <.input
               field={@form[:new_pin]}
               type="password"
-              label="New PIN"
+              label={gettext("New PIN")}
               inputmode="numeric"
               autocomplete="off"
             />
             <.input
               field={@form[:new_pin_confirmation]}
               type="password"
-              label="Confirm new PIN"
+              label={gettext("Confirm new PIN")}
               inputmode="numeric"
               autocomplete="off"
             />
             <footer>
-              <.button variant="primary" phx-disable-with="Saving...">Save PIN</.button>
+              <.button variant="primary" phx-disable-with={gettext("Saving...")}>
+                {gettext("Save PIN")}
+              </.button>
             </footer>
           </.form>
         </div>
 
         <div class="space-y-6 border-t border-base-300 pt-8">
           <div>
-            <h2 class="text-lg font-semibold">Session PIN</h2>
+            <h2 class="text-lg font-semibold">{gettext("Session PIN")}</h2>
             <p class="mt-1 text-sm opacity-70">
-              Required to start a kiosk session on the check-in screen. It is
-              separate from the admin PIN.
+              {gettext(
+                "Required to start a kiosk session on the check-in screen. It is separate from the admin PIN."
+              )}
               <%= if @session_pin_configured do %>
-                A session PIN is configured.
+                {gettext("A session PIN is configured.")}
               <% else %>
-                No session PIN configured yet — the kiosk is currently open to everyone.
+                {gettext("No session PIN configured yet — the kiosk is currently open to everyone.")}
               <% end %>
             </p>
           </div>
@@ -78,29 +81,32 @@ defmodule AttendanceTrackerWeb.AdminLive do
             <.input
               field={@session_pin_form[:new_pin]}
               type="password"
-              label="New session PIN"
+              label={gettext("New session PIN")}
               inputmode="numeric"
               autocomplete="off"
             />
             <.input
               field={@session_pin_form[:new_pin_confirmation]}
               type="password"
-              label="Confirm new session PIN"
+              label={gettext("Confirm new session PIN")}
               inputmode="numeric"
               autocomplete="off"
             />
             <footer>
-              <.button variant="primary" phx-disable-with="Saving...">Save session PIN</.button>
+              <.button variant="primary" phx-disable-with={gettext("Saving...")}>
+                {gettext("Save session PIN")}
+              </.button>
             </footer>
           </.form>
         </div>
 
         <div class="space-y-6 border-t border-base-300 pt-8">
           <div>
-            <h2 class="text-lg font-semibold">Session expiry</h2>
+            <h2 class="text-lg font-semibold">{gettext("Session expiry")}</h2>
             <p class="mt-1 text-sm opacity-70">
-              How long a started kiosk session stays unlocked before the session
-              PIN is required again. Defaults to 30 days.
+              {gettext(
+                "How long a started kiosk session stays unlocked before the session PIN is required again. Defaults to 30 days."
+              )}
             </p>
           </div>
 
@@ -108,24 +114,26 @@ defmodule AttendanceTrackerWeb.AdminLive do
             <.input
               field={@expiry_form[:days]}
               type="number"
-              label="Session duration (days)"
+              label={gettext("Session duration (days)")}
               min="1"
               max="3650"
               inputmode="numeric"
             />
             <footer>
-              <.button variant="primary" phx-disable-with="Saving...">Save expiry</.button>
+              <.button variant="primary" phx-disable-with={gettext("Saving...")}>
+                {gettext("Save expiry")}
+              </.button>
             </footer>
           </.form>
         </div>
 
         <div class="space-y-6 border-t border-base-300 pt-8">
           <div>
-            <h2 class="text-lg font-semibold">User management import</h2>
+            <h2 class="text-lg font-semibold">{gettext("User management import")}</h2>
             <p class="mt-1 text-sm opacity-70">
-              Fetch members from an external user management system and create
-              participants for members enrolled in a training whose name equals a
-              training's alias.
+              {gettext(
+                "Fetch members from an external user management system and create participants for members enrolled in a training whose name equals a training's alias."
+              )}
             </p>
           </div>
 
@@ -138,18 +146,20 @@ defmodule AttendanceTrackerWeb.AdminLive do
             <.input
               field={@directory_form[:source]}
               type="select"
-              label="Connector"
+              label={gettext("Connector")}
               options={@directory_source_options}
             />
             <.input
               :for={field <- @directory_fields}
               field={@directory_form[field.key]}
               type={if(field.secret, do: "password", else: "text")}
-              label={field.label}
+              label={directory_field_label(field)}
               autocomplete="off"
             />
             <footer>
-              <.button variant="primary" phx-disable-with="Saving...">Save connection</.button>
+              <.button variant="primary" phx-disable-with={gettext("Saving...")}>
+                {gettext("Save connection")}
+              </.button>
             </footer>
           </.form>
 
@@ -158,9 +168,9 @@ defmodule AttendanceTrackerWeb.AdminLive do
               id="directory-preview-btn"
               type="button"
               phx-click="preview_directory"
-              phx-disable-with="Fetching..."
+              phx-disable-with={gettext("Fetching...")}
             >
-              Fetch members
+              {gettext("Fetch members")}
             </.button>
             <.button
               :if={@import_preview && @import_preview.new != []}
@@ -168,9 +178,9 @@ defmodule AttendanceTrackerWeb.AdminLive do
               type="button"
               variant="primary"
               phx-click="import_directory"
-              phx-disable-with="Importing..."
+              phx-disable-with={gettext("Importing...")}
             >
-              Import {length(@import_preview.new)} participants
+              {gettext("Import %{count} participants", count: length(@import_preview.new))}
             </.button>
           </div>
 
@@ -180,8 +190,12 @@ defmodule AttendanceTrackerWeb.AdminLive do
             class="space-y-3 rounded-xl border border-base-300 p-4 text-sm"
           >
             <p>
-              {length(@import_preview.new)} new, {@import_preview.skipped} already present
-              ({@import_preview.total} in matching trainings).
+              {gettext(
+                "%{new} new, %{existing} matched to existing participants (%{total} in matching trainings).",
+                new: length(@import_preview.new),
+                existing: length(@import_preview.existing),
+                total: @import_preview.total
+              )}
             </p>
             <ul :if={@import_preview.new != []} class="divide-y divide-base-200">
               <li
@@ -189,11 +203,11 @@ defmodule AttendanceTrackerWeb.AdminLive do
                 class="flex items-center justify-between gap-4 py-1"
               >
                 <span class="font-medium">{candidate.name}</span>
-                <span class="opacity-70">{candidate.phone || "no number"}</span>
+                <span class="opacity-70">{candidate.phone || gettext("no number")}</span>
               </li>
             </ul>
             <p :if={@import_preview.new == []} class="opacity-70">
-              Everyone is already a participant.
+              {gettext("Everyone is already a participant.")}
             </p>
           </div>
         </div>
@@ -206,7 +220,7 @@ defmodule AttendanceTrackerWeb.AdminLive do
   def mount(_params, _session, socket) do
     {:ok,
      socket
-     |> assign(:page_title, "Admin")
+     |> assign(:page_title, gettext("Admin"))
      |> assign(:unlocked, false)
      |> assign(:pin_form, to_form(%{"pin" => ""}))
      |> assign(:form, pin_changeset_form())
@@ -221,7 +235,7 @@ defmodule AttendanceTrackerWeb.AdminLive do
     if Tracker.admin_pin_valid?(pin) do
       {:noreply, assign(socket, :unlocked, true)}
     else
-      {:noreply, assign(socket, :pin_form, to_form(%{"pin" => ""}, errors: @wrong_pin_error))}
+      {:noreply, assign(socket, :pin_form, to_form(%{"pin" => ""}, errors: wrong_pin_error()))}
     end
   end
 
@@ -233,7 +247,7 @@ defmodule AttendanceTrackerWeb.AdminLive do
 
       {:noreply,
        socket
-       |> put_flash(:info, "Admin PIN updated")
+       |> put_flash(:info, gettext("Admin PIN updated"))
        |> assign(:form, pin_changeset_form())}
     else
       {:noreply, assign(socket, :form, to_form(changeset, as: :pin, action: :validate))}
@@ -248,7 +262,7 @@ defmodule AttendanceTrackerWeb.AdminLive do
 
       {:noreply,
        socket
-       |> put_flash(:info, "Session PIN updated")
+       |> put_flash(:info, gettext("Session PIN updated"))
        |> assign(:session_pin_configured, true)
        |> assign(:session_pin_form, session_pin_changeset_form())}
     else
@@ -266,7 +280,7 @@ defmodule AttendanceTrackerWeb.AdminLive do
 
       {:noreply,
        socket
-       |> put_flash(:info, "Session expiry updated")
+       |> put_flash(:info, gettext("Session expiry updated"))
        |> assign(:expiry_form, expiry_changeset_form())}
     else
       {:noreply,
@@ -295,7 +309,7 @@ defmodule AttendanceTrackerWeb.AdminLive do
 
       {:noreply,
        socket
-       |> put_flash(:info, "User management connection saved")
+       |> put_flash(:info, gettext("User management connection saved"))
        |> assign(:directory_source, saved)
        |> assign(:directory_fields, Directory.config_fields(saved))
        |> assign(:directory_form, to_form(Directory.change_settings(saved), as: :directory))
@@ -318,12 +332,18 @@ defmodule AttendanceTrackerWeb.AdminLive do
 
   def handle_event("import_directory", _params, socket) do
     case socket.assigns.import_preview do
-      %{new: candidates} ->
-        {:ok, %{created: created, skipped: skipped}} = Directory.import_members(candidates)
+      %{new: _} = preview ->
+        {:ok, %{created: created, linked: linked}} = Directory.import_members(preview)
 
         {:noreply,
          socket
-         |> put_flash(:info, "Imported #{created} participants (#{skipped} skipped)")
+         |> put_flash(
+           :info,
+           gettext("Imported %{created} participants (%{linked} linked to Webling)",
+             created: created,
+             linked: linked
+           )
+         )
          |> assign(:import_preview, nil)}
 
       _ ->
@@ -369,23 +389,35 @@ defmodule AttendanceTrackerWeb.AdminLive do
     end
   end
 
+  defp directory_field_label(%{key: :base_url}), do: gettext("Base URL")
+  defp directory_field_label(%{key: :apikey}), do: gettext("API key")
+  defp directory_field_label(%{key: :first_name_property}), do: gettext("First-name field")
+  defp directory_field_label(%{key: :last_name_property}), do: gettext("Last-name field")
+  defp directory_field_label(%{key: :phone_property}), do: gettext("Phone field")
+  defp directory_field_label(%{label: label}), do: label
+
+  defp wrong_pin_error, do: [pin: {gettext("Wrong PIN"), []}]
+
   defp directory_error(:no_named_trainings) do
-    "No training has an alias yet. Set an alias on a training first."
+    gettext("No training has an alias yet. Set an alias on a training first.")
   end
 
-  defp directory_error(:missing_apikey), do: "Add the user management API key first."
+  defp directory_error(:missing_apikey), do: gettext("Add the user management API key first.")
 
   defp directory_error({:webling_http_error, 401, _message}) do
-    "The user management rejected the API key (401)."
+    gettext("The user management rejected the API key (401).")
   end
 
   defp directory_error({:webling_http_error, status, message}) do
-    "The user management returned an error (#{status}): #{message}"
+    gettext("The user management returned an error (%{status}): %{message}",
+      status: status,
+      message: message
+    )
   end
 
   defp directory_error({:webling_request_failed, reason}) do
-    "Could not reach the user management: #{inspect(reason)}"
+    gettext("Could not reach the user management: %{reason}", reason: inspect(reason))
   end
 
-  defp directory_error(reason), do: "Fetch failed: #{inspect(reason)}"
+  defp directory_error(reason), do: gettext("Fetch failed: %{reason}", reason: inspect(reason))
 end

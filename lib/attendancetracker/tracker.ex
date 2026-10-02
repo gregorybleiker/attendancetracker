@@ -53,9 +53,32 @@ defmodule AttendanceTracker.Tracker do
 
   """
   def create_participant(attrs) do
+    create_participant(attrs, "local")
+  end
+
+  @participant_sources ~w(local webling)
+
+  @doc """
+  Creates a participant with an explicit source (`"local"` or `"webling"`).
+
+  The source is set programmatically (it is not castable from user input).
+  """
+  def create_participant(attrs, source) when source in @participant_sources do
     %Participant{}
     |> Participant.changeset(attrs)
+    |> Ecto.Changeset.put_change(:source, source)
     |> Repo.insert()
+  end
+
+  @doc """
+  Sets a participant's source, e.g. flagging a manually created participant as
+  also existing in Webling.
+  """
+  def set_participant_source(%Participant{} = participant, source)
+      when source in @participant_sources do
+    participant
+    |> Ecto.Changeset.change(source: source)
+    |> Repo.update()
   end
 
   @doc """

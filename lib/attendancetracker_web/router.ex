@@ -8,6 +8,7 @@ defmodule AttendanceTrackerWeb.Router do
     plug :put_root_layout, html: {AttendanceTrackerWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug AttendanceTrackerWeb.Plugs.SetLocale
   end
 
   pipeline :api do
@@ -33,6 +34,8 @@ defmodule AttendanceTrackerWeb.Router do
     delete "/logout", SessionController, :delete
 
     get "/photos/:id/:version", PhotoController, :show
+    get "/manifest.webmanifest", PwaController, :manifest
+    get "/locale/:locale", LocaleController, :update
   end
 
   scope "/", AttendanceTrackerWeb do
