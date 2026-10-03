@@ -1,5 +1,7 @@
 This is a web application written using the Phoenix web framework.
 
+Project knowledge lives in the `docs/` Open Knowledge Format (OKF) bundle. Start at `docs/index.md` and read only the concepts you need (architecture, imports, logs, deployment, etc.). When a change affects a documented area, update the matching concept and add an entry to `docs/log.md`.
+
 ## Project guidelines
 
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues

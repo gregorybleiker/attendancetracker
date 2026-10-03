@@ -1,4 +1,4 @@
-# Production deployment: app + Caddy (automatic HTTPS). See DEPLOY.md.
+# Production deployment: app + Caddy (automatic HTTPS). See docs/deployment.md.
 services:
   app:
     # Published by the "Publish Docker image" workflow — `docker compose

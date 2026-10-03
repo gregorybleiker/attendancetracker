@@ -1,4 +1,39 @@
-# Deploying AttendanceTracker to a VPS
+---
+type: Runbook
+title: Deploying to a VPS
+description: Production deployment as an OTP release in Docker behind Caddy, image publishing, first deploy, and updates.
+tags: [deployment, docker, caddy, otp, vps]
+status: stable
+generated: { by: human:gregorybleiker, at: 2026-10-03T00:00:00Z }
+verified: { by: human:gregorybleiker, at: 2026-10-03T00:00:00Z }
+sources:
+  - id: repo
+    resource: https://github.com/gregorybleiker/attendancetracker
+    title: AttendanceTracker source repository
+    author: human:gregorybleiker
+  - id: dockerfile
+    resource: ../Dockerfile
+    title: Dockerfile
+    author: human:gregorybleiker
+  - id: compose
+    resource: ../compose.yml
+    title: compose.yml
+    author: human:gregorybleiker
+  - id: caddyfile
+    resource: ../caddy/Caddyfile
+    title: Caddyfile
+    author: human:gregorybleiker
+  - id: docker-publish
+    resource: ../.github/workflows/docker-publish.yml
+    title: Publish Docker image workflow
+    author: human:gregorybleiker
+  - id: env-example
+    resource: ../.env.example
+    title: .env.example
+    author: human:gregorybleiker
+---
+
+# Overview
 
 Production setup: the app runs as an OTP release in Docker, behind Caddy
 (which terminates TLS and fetches a Let's Encrypt certificate automatically).
@@ -16,7 +51,7 @@ Relevant files:
 | `caddy/Caddyfile` | Reverse proxy + automatic HTTPS for your domain |
 | `.env` (gitignored, create from `.env.example`) | `SECRET_KEY_BASE`, `PHX_HOST` |
 
-## Publishing
+# Publishing
 
 Pushing to `main` triggers the **Publish Docker image** workflow, which
 builds the production image and pushes it to GitHub Container Registry as
@@ -36,13 +71,13 @@ echo <token> | docker login ghcr.io -u <github-username> --password-stdin
 
 Public repos need no login to pull.
 
-## Prerequisites
+# Prerequisites
 
 - VPS with Ubuntu 24.04 (1 GB RAM is plenty), SSH access
 - A domain with an `A` record pointing at the VPS, e.g. `attendance.example.com`
 - Docker on the VPS: `curl -fsSL https://get.docker.com | sh`
 
-## First deploy
+# First deploy
 
 1. **Point the proxy at your domain.** Edit `caddy/Caddyfile`, replacing
    `attendance.example.com` with your domain. Use the same value for
@@ -97,7 +132,7 @@ Public repos need no login to pull.
    `1234`, and **change the PIN under Admin immediately** (seeds don't run
    in production, so the default is active until you change it).
 
-## Updating
+# Updating
 
 ```bash
 git pull
@@ -126,44 +161,4 @@ Migrations run automatically on container start.
 > with the project directory name. Skip this if you use `DATABASE_DIR`, and
 > just move the file into that host directory instead.)
 
-## Backups
-
-State is a single SQLite database at `/data/db/attendancetracker.db` (in the
-`db-data` volume, or your `DATABASE_DIR` host directory), containing both the
-participants and their photos. Back it up regularly, e.g. a cron job on the
-VPS:
-
-```bash
-# SQLite-safe snapshot (works while the app is running)
-docker run --rm \
-  -v attendancetracker_db-data:/data/db \
-  -v /root/backups:/backup \
-  alpine sh -c 'apk add -q sqlite && sqlite3 /data/db/attendancetracker.db ".backup /backup/att-$(date +%F).db"'
-```
-
-(Adjust the volume name with `docker volume ls` — compose prefixes it with
-the project directory name. If you set `DATABASE_DIR`, snapshot that host
-directory with `sqlite3` directly instead.)
-
-## Troubleshooting
-
-- `docker compose logs app` is the first stop for everything.
-- **Crash-loop on first boot:** usually a missing env var — `runtime.exs`
-  raises a clear error naming it (`SECRET_KEY_BASE`, `DATABASE_PATH`).
-- **No upload / DB write permission errors:** `/data` (including `/data/db`)
-  is created and `chown`ed to the `nobody` user at image build time (see
-  `Dockerfile`). If you changed that, make sure the directory is writable by
-  UID 65534. A host directory used via `DATABASE_DIR` must be writable by the
-  same UID.
-- **HTTPS not working:** DNS must resolve to the VPS *and* ports 80/443
-  must be reachable for the ACME challenge — check `docker compose logs
-  caddy`.
-- **LiveView disconnects:** Caddy proxies websockets by default, no extra
-  config needed. If you swap in nginx, remember the `Upgrade`/`Connection`
-  headers. Locally, also make sure `PHX_HOST` is in the endpoint's allowed
-  origins (`config/runtime.exs` allows the configured host plus `localhost`).
-- **`crun: mount ... Not a directory` (Podman on WSL):** a known bug with
-  *single-file* bind mounts and relative paths in `podman compose`. Mount a
-  directory instead (the Caddyfile lives in `caddy/`, mounted at
-  `/etc/caddy`), or make the compose provider WSL-native — the Windows
-  `docker-compose.exe` in `/mnt/c/...` mis-resolves relative paths.
+See also [Backups](/backups.md) and [Troubleshooting](/troubleshooting.md).
