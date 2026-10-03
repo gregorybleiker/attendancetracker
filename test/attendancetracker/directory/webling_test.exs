@@ -65,7 +65,7 @@ defmodule AttendanceTracker.Directory.WeblingTest do
     assert {:ok, [_]} = Webling.fetch_members(["Kids Judo"], %{"apikey" => "key"})
   end
 
-  test "splits a separated training list on ; , and |" do
+  test "matches when the alias is contained in the field text" do
     Req.Test.stub(__MODULE__, fn conn ->
       Req.Test.json(conn, %{
         "objects" => [
@@ -76,13 +76,21 @@ defmodule AttendanceTracker.Directory.WeblingTest do
               "Training" => "Kids Judo; Erwachsene"
             }
           },
-          %{"properties" => %{"Vorname" => "Bob", "Name" => "M", "Training" => "A, B"}},
-          %{"properties" => %{"Vorname" => "Cid", "Name" => "N", "Training" => "X | Y"}}
+          %{
+            "properties" => %{
+              "Vorname" => "Bob",
+              "Name" => "M",
+              "Training" => "Erwachsene Anfänger"
+            }
+          },
+          %{"properties" => %{"Vorname" => "Cid", "Name" => "N", "Training" => "Wettkampf"}}
         ]
       })
     end)
 
-    assert {:ok, members} = Webling.fetch_members(["B", "Kids Judo"], %{"apikey" => "key"})
+    assert {:ok, members} =
+             Webling.fetch_members(["Kids Judo", "Erwachsene"], %{"apikey" => "key"})
+
     first_names = Enum.map(members, & &1.first_name)
 
     assert "Ada" in first_names

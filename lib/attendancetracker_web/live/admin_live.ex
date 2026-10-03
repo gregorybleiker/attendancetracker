@@ -12,6 +12,11 @@ defmodule AttendanceTrackerWeb.AdminLive do
       <.header>
         {gettext("Admin")}
         <:subtitle>{gettext("Restricted area — enter the admin PIN to continue.")}</:subtitle>
+        <:actions>
+          <.button navigate={~p"/admin/logs"}>
+            <.icon name="hero-document-text" /> {gettext("View logs")}
+          </.button>
+        </:actions>
       </.header>
 
       <div :if={not @unlocked} class="max-w-sm">

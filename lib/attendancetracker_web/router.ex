@@ -60,6 +60,7 @@ defmodule AttendanceTrackerWeb.Router do
     get "/reporting/download", ReportController, :download
 
     live "/admin", AdminLive, :index
+    live "/admin/logs", AdminLogsLive, :index
   end
 
   # Other scopes may use custom stacks.

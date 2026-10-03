@@ -62,6 +62,7 @@ lib/
       training_live/              # Weekly schedule config: index/form
       report_live.ex              # Year picker for the CSV attendance report
       admin_live.ex               # PIN-gated admin area
+      admin_logs_live.ex          # Scrollable audit/program log viewer
     controllers/
       session_controller.ex       # Login: checks the PIN, marks the session
       report_controller.ex        # CSV download of a full year's attendance
@@ -596,10 +597,9 @@ alias. The design deliberately separates the *connector* from the
   return normalised `%{first_name, last_name, phone}` maps.
 - `AttendanceTracker.Directory.Webling` implements it with `Req`: it fetches all
   members (`GET /api/1/member?format=full`) and keeps those whose configurable
-  `training_field` property matches a training alias. The field may be a
-  multi-value (list) property or a single string with several trainings
-  separated by `;`, `,` or `|`. Property names (`Vorname`, `Name`, `Telefon`)
-  are configurable.
+  `training_field` property contains the whole text of a training alias
+  (case-insensitive substring match; the field may also be a multi-value list).
+  Property names (`Vorname`, `Name`, `Telefon`) are configurable.
 - `AttendanceTracker.Directory` is the context. It stores the selected connector
   and its (JSON) configuration in the settings table (`directory_source`,
   `directory_config`), builds a schemaless changeset for the admin form, and
@@ -667,7 +667,9 @@ beyond the cap, and `AttendanceTracker.Logs.Pruner` (a `GenServer` in the app
 supervision tree) additionally prunes on a timer. Both the maximum
 (`log_max_entries`, default 10 000) and the interval
 (`log_prune_interval_minutes`, default 60) are stored in the settings table and
-editable in the admin area.
+editable in the admin area. `AdminLogsLive` (`/admin/logs`, reachable from the
+admin panel) shows both streams in a tabbed, scrollable view (500 newest
+entries each).
 
 ---
 

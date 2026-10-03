@@ -4,9 +4,9 @@ defmodule AttendanceTracker.Directory.Webling do
   [Webling](https://www.webling.ch) member database API.
 
   Members are matched by a configurable member property (`training_field`): a
-  member is returned when that property contains one of the configured training
-  aliases. The property may be a multi-value (list) property or a single string
-  holding several trainings separated by `;`, `,` or `|`.
+  member is returned when that property contains the whole text of one of the
+  configured training aliases (case-insensitive substring match). The property
+  may be a multi-value (list) property or a single string.
 
   Configuration keys (all strings): `base_url`, `apikey`, `training_field`,
   `first_name_property`, `last_name_property`, `phone_property`.
@@ -15,7 +15,6 @@ defmodule AttendanceTracker.Directory.Webling do
   @behaviour AttendanceTracker.Directory.Source
 
   @default_base_url "https://demo.webling.ch"
-  @training_separators [";", ",", "|"]
   @per_page 200
   @max_pages 50
 
@@ -73,24 +72,18 @@ defmodule AttendanceTracker.Directory.Webling do
   defp member_in_trainings?(%{"properties" => properties}, names, config)
        when is_map(properties) do
     field = get_config(config, "training_field", default("training_field"))
-    tokens = properties |> Map.get(field) |> training_tokens()
-    wanted = Enum.map(names, &normalise_token/1)
+    haystacks = properties |> Map.get(field) |> field_values()
+    wanted = names |> Enum.map(&normalise_token/1) |> Enum.reject(&(&1 == ""))
 
-    Enum.any?(wanted, &(&1 != "" and &1 in tokens))
+    Enum.any?(wanted, fn name -> Enum.any?(haystacks, &String.contains?(&1, name)) end)
   end
 
   defp member_in_trainings?(_object, _names, _config), do: false
 
-  defp training_tokens(value) when is_list(value), do: Enum.map(value, &normalise_token/1)
-
-  defp training_tokens(value) when is_binary(value) do
-    value
-    |> String.split(@training_separators)
-    |> Enum.map(&normalise_token/1)
-    |> Enum.reject(&(&1 == ""))
-  end
-
-  defp training_tokens(_value), do: []
+  defp field_values(value) when is_list(value), do: Enum.map(value, &normalise_token/1)
+  defp field_values(value) when is_binary(value), do: [normalise_token(value)]
+  defp field_values(value) when is_integer(value), do: [Integer.to_string(value)]
+  defp field_values(_value), do: []
 
   defp normalise_token(value) when is_binary(value),
     do: value |> String.trim() |> String.downcase()
