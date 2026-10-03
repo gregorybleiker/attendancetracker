@@ -24,12 +24,7 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Index do
         row_click={fn {_id, participant} -> JS.navigate(~p"/participants/#{participant}") end}
       >
         <:col :let={{_id, participant}} label={gettext("Photo")}>
-          <div class="relative w-fit">
-            <.avatar participant={participant} class="size-10" text_class="text-xs" />
-            <div class="absolute -top-1 -left-1">
-              <.source_badge participant={participant} />
-            </div>
-          </div>
+          <.avatar participant={participant} class="size-10" text_class="text-xs" />
         </:col>
         <:col :let={{_id, participant}} label={gettext("Name")}>{participant.name}</:col>
         <:col :let={{_id, participant}} label={gettext("Active")}>{participant.active}</:col>

@@ -44,6 +44,11 @@ lib/
     directory/
       source.ex                   # Behaviour for user-management connectors
       webling.ex                  # Webling connector (Req)
+    logs.ex                       # Context: audit + program logs, retention settings
+    logs/
+      audit_log.ex                # Ecto schema (user interactions)
+      program_log.ex              # Ecto schema (sync calls + results)
+      pruner.ex                   # Periodic retention GenServer
   attendancetracker_web/
     router.ex                     # Routes (all LiveView)
     components/
@@ -589,9 +594,12 @@ alias. The design deliberately separates the *connector* from the
 - `AttendanceTracker.Directory.Source` is a **behaviour** (`@callback
   fetch_members/2`, `config_fields/0`, `label/0`). A connector only has to
   return normalised `%{first_name, last_name, phone}` maps.
-- `AttendanceTracker.Directory.Webling` implements it with `Req`, filtering via
-  the Webling query language: `GET /api/1/member?format=full&filter=$parents.title
-  = "…"`. Property names (`Vorname`, `Name`, `Telefon`) are configurable.
+- `AttendanceTracker.Directory.Webling` implements it with `Req`: it fetches all
+  members (`GET /api/1/member?format=full`) and keeps those whose configurable
+  `training_field` property matches a training alias. The field may be a
+  multi-value (list) property or a single string with several trainings
+  separated by `;`, `,` or `|`. Property names (`Vorname`, `Name`, `Telefon`)
+  are configurable.
 - `AttendanceTracker.Directory` is the context. It stores the selected connector
   and its (JSON) configuration in the settings table (`directory_source`,
   `directory_config`), builds a schemaless changeset for the admin form, and
@@ -601,7 +609,7 @@ alias. The design deliberately separates the *connector* from the
   updated, both flagged `source: "webling"`; the phone becomes the participant's
   `emergency_number`. The `source` field (`"local"` or `"webling"`, never cast
   from user input) drives the `<.source_badge>` shown in admin mode on the
-  check-in grid and in the participant list.
+  check-in grid.
 
 `AdminLive` renders the connectors' `config_fields/0` dynamically: switching the
 connector re-renders its fields, so adding a connector is "register the module
@@ -637,8 +645,29 @@ full reload so every LiveView re-mounts in the new language.
 
 `translate_error/1` looks up Ecto changeset messages in the `errors` domain, so
 validation errors are translated too. Weekday and connector-field labels are
-runtime strings, translated with `Gettext.dgettext/3`. Date formatting
-(`Calendar.strftime`) is still English.
+runtime strings, translated with `Gettext.dgettext/3`. Dates are rendered with
+`AttendanceTrackerWeb.DateFormat` (`long_date/1`, `short_date/1`), which routes
+month/weekday names through Gettext and reorders day/month via a translatable
+format string (`%{month} %{day}` → `%{day}. %{month}`). CSV exports keep ISO
+dates.
+
+### 4.14 Logs (`logs.ex`, `logs/pruner.ex`)
+
+Two database-backed log streams, both kept small by design:
+
+- **Audit log** (`audit_logs`) records user interactions: `Tracker.check_in/2`
+  and `check_out/2` append a row (`action`, participant id/name, session id).
+- **Program log** (`program_logs`) records sync operations. The directory
+  context logs every Webling fetch (the full call description and the number of
+  members matched, or the error) and every import (`created`/`linked` counts).
+
+`AttendanceTracker.Logs` writes entries, reads them newest-first, and trims each
+stream to a maximum. Every insert opportunistically deletes the oldest rows
+beyond the cap, and `AttendanceTracker.Logs.Pruner` (a `GenServer` in the app
+supervision tree) additionally prunes on a timer. Both the maximum
+(`log_max_entries`, default 10 000) and the interval
+(`log_prune_interval_minutes`, default 60) are stored in the settings table and
+editable in the admin area.
 
 ---
 
@@ -728,6 +757,7 @@ modal + hook starts webcam → capture → data URL →
 | Behaviour + registry plugin point | `Directory.Source` connectors |
 | HTTP client (`Req`) | Webling member import |
 | Gettext i18n + locale plug/hook | whole UI (en/de) |
+| Dual logs + periodic retention | `Logs` context + `Logs.Pruner` |
 | LiveView streams | participant grid (`reset: true` on training switch) |
 | `connected?/1` mount guard | PubSub subscribe only on the live socket |
 | Verified routes `~p` | every link/navigate |

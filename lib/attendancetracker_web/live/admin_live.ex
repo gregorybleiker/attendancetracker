@@ -2,6 +2,7 @@ defmodule AttendanceTrackerWeb.AdminLive do
   use AttendanceTrackerWeb, :live_view
 
   alias AttendanceTracker.Directory
+  alias AttendanceTracker.Logs
   alias AttendanceTracker.Tracker
 
   @impl true
@@ -129,6 +130,41 @@ defmodule AttendanceTrackerWeb.AdminLive do
 
         <div class="space-y-6 border-t border-base-300 pt-8">
           <div>
+            <h2 class="text-lg font-semibold">{gettext("Logs")}</h2>
+            <p class="mt-1 text-sm opacity-70">
+              {gettext(
+                "The audit log records check-ins and reverts; the program log records sync calls and their results. Both are capped and the oldest entries are pruned periodically."
+              )}
+            </p>
+          </div>
+
+          <.form for={@log_form} id="logs-settings-form" phx-submit="save_log_settings">
+            <.input
+              field={@log_form[:max_entries]}
+              type="number"
+              label={gettext("Maximum entries per log")}
+              min="1"
+              max="1000000"
+              inputmode="numeric"
+            />
+            <.input
+              field={@log_form[:prune_interval_minutes]}
+              type="number"
+              label={gettext("Prune interval (minutes)")}
+              min="1"
+              max="100800"
+              inputmode="numeric"
+            />
+            <footer>
+              <.button variant="primary" phx-disable-with={gettext("Saving...")}>
+                {gettext("Save log settings")}
+              </.button>
+            </footer>
+          </.form>
+        </div>
+
+        <div class="space-y-6 border-t border-base-300 pt-8">
+          <div>
             <h2 class="text-lg font-semibold">{gettext("User management import")}</h2>
             <p class="mt-1 text-sm opacity-70">
               {gettext(
@@ -227,6 +263,7 @@ defmodule AttendanceTrackerWeb.AdminLive do
      |> assign(:session_pin_configured, Tracker.session_pin_configured?())
      |> assign(:session_pin_form, session_pin_changeset_form())
      |> assign(:expiry_form, expiry_changeset_form())
+     |> assign(:log_form, log_changeset_form())
      |> assign_directory(Directory.source())}
   end
 
@@ -285,6 +322,23 @@ defmodule AttendanceTrackerWeb.AdminLive do
     else
       {:noreply,
        assign(socket, :expiry_form, to_form(changeset, as: :session_expiry, action: :validate))}
+    end
+  end
+
+  def handle_event("save_log_settings", %{"logs" => params}, socket) do
+    changeset = Logs.change_settings(params)
+
+    if changeset.valid? do
+      max_entries = Ecto.Changeset.get_field(changeset, :max_entries)
+      interval = Ecto.Changeset.get_field(changeset, :prune_interval_minutes)
+      :ok = Logs.update_settings(max_entries, interval)
+
+      {:noreply,
+       socket
+       |> put_flash(:info, gettext("Log settings updated"))
+       |> assign(:log_form, log_changeset_form())}
+    else
+      {:noreply, assign(socket, :log_form, to_form(changeset, as: :logs, action: :validate))}
     end
   end
 
@@ -364,6 +418,15 @@ defmodule AttendanceTrackerWeb.AdminLive do
     to_form(Tracker.change_session_expiry_days(params), as: :session_expiry)
   end
 
+  defp log_changeset_form do
+    params = %{
+      max_entries: Logs.max_entries(),
+      prune_interval_minutes: Logs.prune_interval_minutes()
+    }
+
+    to_form(Logs.change_settings(params), as: :logs)
+  end
+
   defp assign_directory(socket, source_id) do
     socket
     |> assign(:directory_source, source_id)
@@ -391,6 +454,7 @@ defmodule AttendanceTrackerWeb.AdminLive do
 
   defp directory_field_label(%{key: :base_url}), do: gettext("Base URL")
   defp directory_field_label(%{key: :apikey}), do: gettext("API key")
+  defp directory_field_label(%{key: :training_field}), do: gettext("Training field")
   defp directory_field_label(%{key: :first_name_property}), do: gettext("First-name field")
   defp directory_field_label(%{key: :last_name_property}), do: gettext("Last-name field")
   defp directory_field_label(%{key: :phone_property}), do: gettext("Phone field")

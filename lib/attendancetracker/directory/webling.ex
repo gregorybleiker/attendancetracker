@@ -3,17 +3,19 @@ defmodule AttendanceTracker.Directory.Webling do
   `AttendanceTracker.Directory.Source` connector for the
   [Webling](https://www.webling.ch) member database API.
 
-  Members are matched by the title of the membergroup ("Training") they belong
-  to: a member is returned when at least one of its parent groups has a title
-  equal to one of the configured training aliases.
+  Members are matched by a configurable member property (`training_field`): a
+  member is returned when that property contains one of the configured training
+  aliases. The property may be a multi-value (list) property or a single string
+  holding several trainings separated by `;`, `,` or `|`.
 
-  Configuration keys (all strings): `base_url`, `apikey`,
+  Configuration keys (all strings): `base_url`, `apikey`, `training_field`,
   `first_name_property`, `last_name_property`, `phone_property`.
   """
 
   @behaviour AttendanceTracker.Directory.Source
 
   @default_base_url "https://demo.webling.ch"
+  @training_separators [";", ",", "|"]
   @per_page 200
   @max_pages 50
 
@@ -30,6 +32,7 @@ defmodule AttendanceTracker.Directory.Webling do
         secret: false
       },
       %{key: :apikey, label: "API key", default: "", secret: true},
+      %{key: :training_field, label: "Training field", default: "Training", secret: false},
       %{key: :first_name_property, label: "First-name field", default: "Vorname", secret: false},
       %{key: :last_name_property, label: "Last-name field", default: "Name", secret: false},
       %{key: :phone_property, label: "Phone field", default: "Telefon", secret: false}
@@ -48,9 +51,10 @@ defmodule AttendanceTracker.Directory.Webling do
         {:error, :missing_apikey}
 
       true ->
-        with {:ok, objects} <- fetch_all(config, "/member", filter: filter(names), format: "full") do
+        with {:ok, objects} <- fetch_all(config, "/member", format: "full") do
           members =
             objects
+            |> Enum.filter(&member_in_trainings?(&1, names, config))
             |> Enum.map(&normalise_member(&1, config))
             |> Enum.reject(&is_nil/1)
 
@@ -66,12 +70,33 @@ defmodule AttendanceTracker.Directory.Webling do
     |> Enum.uniq()
   end
 
-  defp filter(names) do
-    names
-    |> Enum.map_join(" OR ", fn name -> ~s($parents.title = "#{escape(name)}") end)
+  defp member_in_trainings?(%{"properties" => properties}, names, config)
+       when is_map(properties) do
+    field = get_config(config, "training_field", default("training_field"))
+    tokens = properties |> Map.get(field) |> training_tokens()
+    wanted = Enum.map(names, &normalise_token/1)
+
+    Enum.any?(wanted, &(&1 != "" and &1 in tokens))
   end
 
-  defp escape(name), do: String.replace(name, "\"", "\\\"")
+  defp member_in_trainings?(_object, _names, _config), do: false
+
+  defp training_tokens(value) when is_list(value), do: Enum.map(value, &normalise_token/1)
+
+  defp training_tokens(value) when is_binary(value) do
+    value
+    |> String.split(@training_separators)
+    |> Enum.map(&normalise_token/1)
+    |> Enum.reject(&(&1 == ""))
+  end
+
+  defp training_tokens(_value), do: []
+
+  defp normalise_token(value) when is_binary(value),
+    do: value |> String.trim() |> String.downcase()
+
+  defp normalise_token(value) when is_integer(value), do: Integer.to_string(value)
+  defp normalise_token(_value), do: ""
 
   defp fetch_all(config, path, params, page \\ 1, acc \\ []) do
     params = Keyword.merge(params, page: page, per_page: @per_page)

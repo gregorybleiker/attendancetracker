@@ -14,6 +14,7 @@ defmodule AttendanceTracker.Directory do
   import Ecto.Changeset
 
   alias AttendanceTracker.Directory.Webling
+  alias AttendanceTracker.Logs
   alias AttendanceTracker.Repo
   alias AttendanceTracker.Tracker
   alias AttendanceTracker.Tracker.Participant
@@ -116,20 +117,28 @@ defmodule AttendanceTracker.Directory do
       names ->
         source_id = source()
         module = source_module(source_id)
+        config = config(source_id)
 
-        with {:ok, members} <- module.fetch_members(names, config(source_id)) do
-          candidates =
-            members
-            |> Enum.map(&to_candidate/1)
-            |> Enum.reject(&is_nil/1)
-            |> Enum.uniq_by(&normalise_name(&1.name))
+        case module.fetch_members(names, config) do
+          {:ok, members} ->
+            candidates =
+              members
+              |> Enum.map(&to_candidate/1)
+              |> Enum.reject(&is_nil/1)
+              |> Enum.uniq_by(&normalise_name(&1.name))
 
-          by_name = participants_by_name()
+            by_name = participants_by_name()
 
-          {existing, new} =
-            Enum.split_with(candidates, &Map.has_key?(by_name, normalise_name(&1.name)))
+            {existing, new} =
+              Enum.split_with(candidates, &Map.has_key?(by_name, normalise_name(&1.name)))
 
-          {:ok, %{new: new, existing: existing, total: length(candidates)}}
+            log_fetch(source_id, config, names, {:ok, length(members)})
+
+            {:ok, %{new: new, existing: existing, total: length(candidates)}}
+
+          {:error, reason} = error ->
+            log_fetch(source_id, config, names, {:error, reason})
+            error
         end
     end
   end
@@ -179,7 +188,32 @@ defmodule AttendanceTracker.Directory do
         end
       end)
 
+    Logs.program(%{
+      source: source(),
+      command: "import",
+      status: "ok",
+      request: "import #{length(new) + length(existing)} candidate(s)",
+      result: "created #{created}, linked #{linked}"
+    })
+
     {:ok, %{created: created, linked: linked}}
+  end
+
+  defp log_fetch(source_id, config, names, result) do
+    {status, text} =
+      case result do
+        {:ok, count} -> {"ok", "#{count} member(s) matched"}
+        {:error, reason} -> {"error", inspect(reason)}
+      end
+
+    Logs.program(%{
+      source: source_id,
+      command: "fetch_members",
+      status: status,
+      request:
+        "#{source_id} #{Map.get(config, "base_url", "")} · trainings: #{Enum.join(names, ", ")}",
+      result: text
+    })
   end
 
   defp named_trainings do

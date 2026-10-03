@@ -5,6 +5,8 @@ defmodule AttendanceTrackerWeb.CheckInLive do
 
   alias AttendanceTracker.Tracker
   alias AttendanceTracker.Tracker.Training
+  alias AttendanceTrackerWeb.DateFormat
+  alias AttendanceTrackerWeb.TrainingLabels
 
   @impl true
   def mount(_params, lv_session, socket) do
@@ -50,9 +52,23 @@ defmodule AttendanceTrackerWeb.CheckInLive do
 
     for training <- trainings do
       date = Training.occurrence_on_or_before(training, today)
-      label = Training.label(training)
-      {"#{label} · #{Calendar.strftime(date, "%b %-d")}", training.id}
+      label = training_label(training)
+      {"#{label} · #{DateFormat.short_date(date)}", training.id}
     end
+  end
+
+  # Like `Training.label/1`, but with the weekday translated in the web layer.
+  defp training_label(training) do
+    name =
+      case training.name do
+        nil -> TrainingLabels.weekday_label(training.weekday)
+        "" -> TrainingLabels.weekday_label(training.weekday)
+        training_alias -> training_alias
+      end
+
+    start_time = Calendar.strftime(training.starts_at, "%H:%M")
+    end_time = Calendar.strftime(training.ends_at, "%H:%M")
+    "#{name} · #{start_time}–#{end_time}"
   end
 
   @impl true
@@ -77,7 +93,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
       <div class="flex flex-wrap items-end justify-between gap-2">
         <div>
           <h1 class="text-2xl font-bold">{gettext("Tap your photo to check in")}</h1>
-          <p class="text-sm opacity-70">{Calendar.strftime(@session.date, "%A, %B %-d")}</p>
+          <p class="text-sm opacity-70">{DateFormat.long_date(@session.date)}</p>
         </div>
         <div id="attendance-count" class="rounded-full bg-base-200 px-4 py-1 text-sm font-semibold">
           {gettext("%{checked} / %{total} present",

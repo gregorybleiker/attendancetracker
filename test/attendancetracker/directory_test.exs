@@ -77,4 +77,17 @@ defmodule AttendanceTracker.DirectoryTest do
     ada = Tracker.get_participant!(ada.id)
     assert ada.source == "webling"
   end
+
+  test "preview and import write program logs" do
+    training_fixture(%{name: "Kids Judo"})
+    {:ok, _} = Directory.save_settings("fake", %{"token" => "x"})
+
+    {:ok, preview} = Directory.preview()
+    {:ok, _} = Directory.import_members(preview)
+
+    commands = AttendanceTracker.Logs.list_program_logs() |> Enum.map(& &1.command)
+
+    assert "fetch_members" in commands
+    assert "import" in commands
+  end
 end

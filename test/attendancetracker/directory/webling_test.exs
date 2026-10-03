@@ -13,11 +13,10 @@ defmodule AttendanceTracker.Directory.WeblingTest do
     :ok
   end
 
-  test "fetches and normalises members from matching groups" do
+  test "matches members whose training field equals a configured training" do
     Req.Test.stub(__MODULE__, fn conn ->
       params = URI.decode_query(conn.query_string)
       assert params["format"] == "full"
-      assert params["filter"] =~ ~s($parents.title = "Kids Judo")
 
       Req.Test.json(conn, %{
         "objects" => [
@@ -25,7 +24,15 @@ defmodule AttendanceTracker.Directory.WeblingTest do
             "properties" => %{
               "Vorname" => "Ada",
               "Name" => "Lovelace",
-              "Telefon" => "079 123"
+              "Telefon" => "079 123",
+              "Training" => "Kids Judo"
+            }
+          },
+          %{
+            "properties" => %{
+              "Vorname" => "Bob",
+              "Name" => "Other",
+              "Training" => "Erwachsene"
             }
           }
         ]
@@ -40,19 +47,77 @@ defmodule AttendanceTracker.Directory.WeblingTest do
     assert member.phone == "079 123"
   end
 
-  test "supports custom property names and multiple trainings" do
+  test "matches case-insensitively and trims whitespace" do
     Req.Test.stub(__MODULE__, fn conn ->
-      params = URI.decode_query(conn.query_string)
-      assert params["filter"] =~ ~s($parents.title = "A")
-      assert params["filter"] =~ ~s($parents.title = "B")
+      Req.Test.json(conn, %{
+        "objects" => [
+          %{
+            "properties" => %{
+              "Vorname" => "Ada",
+              "Name" => "Lovelace",
+              "Training" => "  kids judo "
+            }
+          }
+        ]
+      })
+    end)
 
+    assert {:ok, [_]} = Webling.fetch_members(["Kids Judo"], %{"apikey" => "key"})
+  end
+
+  test "splits a separated training list on ; , and |" do
+    Req.Test.stub(__MODULE__, fn conn ->
+      Req.Test.json(conn, %{
+        "objects" => [
+          %{
+            "properties" => %{
+              "Vorname" => "Ada",
+              "Name" => "L",
+              "Training" => "Kids Judo; Erwachsene"
+            }
+          },
+          %{"properties" => %{"Vorname" => "Bob", "Name" => "M", "Training" => "A, B"}},
+          %{"properties" => %{"Vorname" => "Cid", "Name" => "N", "Training" => "X | Y"}}
+        ]
+      })
+    end)
+
+    assert {:ok, members} = Webling.fetch_members(["B", "Kids Judo"], %{"apikey" => "key"})
+    first_names = Enum.map(members, & &1.first_name)
+
+    assert "Ada" in first_names
+    assert "Bob" in first_names
+    refute "Cid" in first_names
+  end
+
+  test "supports multi-value (list) training properties" do
+    Req.Test.stub(__MODULE__, fn conn ->
+      Req.Test.json(conn, %{
+        "objects" => [
+          %{
+            "properties" => %{
+              "Vorname" => "Ada",
+              "Name" => "L",
+              "Training" => ["Kids Judo", "Erwachsene"]
+            }
+          }
+        ]
+      })
+    end)
+
+    assert {:ok, [_]} = Webling.fetch_members(["Erwachsene"], %{"apikey" => "key"})
+  end
+
+  test "uses the configured training field and property names" do
+    Req.Test.stub(__MODULE__, fn conn ->
       Req.Test.json(conn, %{
         "objects" => [
           %{
             "properties" => %{
               "firstname" => "Tim",
               "lastname" => "Muster",
-              "mobile" => "076 000"
+              "mobile" => "076 000",
+              "Kurs" => "Kids Judo"
             }
           }
         ]
@@ -61,12 +126,13 @@ defmodule AttendanceTracker.Directory.WeblingTest do
 
     config = %{
       "apikey" => "key",
+      "training_field" => "Kurs",
       "first_name_property" => "firstname",
       "last_name_property" => "lastname",
       "phone_property" => "mobile"
     }
 
-    assert {:ok, [member]} = Webling.fetch_members(["A", "B"], config)
+    assert {:ok, [member]} = Webling.fetch_members(["Kids Judo"], config)
     assert member.first_name == "Tim"
     assert member.last_name == "Muster"
     assert member.phone == "076 000"

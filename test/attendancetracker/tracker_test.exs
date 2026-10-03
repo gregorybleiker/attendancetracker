@@ -422,6 +422,29 @@ defmodule AttendanceTracker.TrackerTest do
       assert {:error, :not_checked_in} = Tracker.check_out(participant, session)
     end
 
+    test "check_in/2 writes an audit log" do
+      participant = participant_fixture(%{name: "Audit Person"})
+      session = training_session_fixture()
+
+      assert {:ok, _} = Tracker.check_in(participant, session)
+
+      assert [%{action: "check_in", participant_name: "Audit Person", training_session_id: id}] =
+               AttendanceTracker.Logs.list_audit_logs()
+
+      assert id == session.id
+    end
+
+    test "check_out/2 writes an audit log" do
+      participant = participant_fixture(%{name: "Audit Person"})
+      session = training_session_fixture()
+
+      assert {:ok, _} = Tracker.check_in(participant, session)
+      assert {:ok, _} = Tracker.check_out(participant, session)
+
+      assert [%{action: "check_out"}, %{action: "check_in"}] =
+               AttendanceTracker.Logs.list_audit_logs()
+    end
+
     test "todays_session/0 returns today's session, creating it once" do
       session = Tracker.todays_session()
       assert session.date == Tracker.local_today()

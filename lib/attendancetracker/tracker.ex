@@ -5,6 +5,7 @@ defmodule AttendanceTracker.Tracker do
 
   import Ecto.Query, warn: false
   alias AttendanceTracker.Repo
+  alias AttendanceTracker.Logs
 
   alias AttendanceTracker.Tracker.Participant
   alias AttendanceTracker.Tracker.ParticipantPhoto
@@ -761,6 +762,14 @@ defmodule AttendanceTracker.Tracker do
     |> Repo.insert()
     |> case do
       {:ok, check_in} ->
+        _ =
+          Logs.audit(%{
+            action: "check_in",
+            participant_id: participant.id,
+            participant_name: participant.name,
+            training_session_id: session.id
+          })
+
         Phoenix.PubSub.broadcast(@pubsub, topic(session.id), {:checked_in, check_in})
         {:ok, check_in}
 
@@ -787,6 +796,15 @@ defmodule AttendanceTracker.Tracker do
 
       check_in ->
         {:ok, check_in} = Repo.delete(check_in)
+
+        _ =
+          Logs.audit(%{
+            action: "check_out",
+            participant_id: participant.id,
+            participant_name: participant.name,
+            training_session_id: session.id
+          })
+
         Phoenix.PubSub.broadcast(@pubsub, topic(session.id), {:checked_out, check_in})
         {:ok, check_in}
     end

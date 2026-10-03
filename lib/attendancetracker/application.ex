@@ -14,6 +14,7 @@ defmodule AttendanceTracker.Application do
        repos: Application.fetch_env!(:attendancetracker, :ecto_repos), skip: skip_migrations?()},
       {DNSCluster, query: Application.get_env(:attendancetracker, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: AttendanceTracker.PubSub},
+      AttendanceTracker.Logs.Pruner,
       # Start a worker by calling: AttendanceTracker.Worker.start_link(arg)
       # {AttendanceTracker.Worker, arg},
       # Start to serve requests, typically the last entry

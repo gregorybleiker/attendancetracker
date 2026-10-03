@@ -1,6 +1,8 @@
 defmodule AttendanceTrackerWeb.LocaleTest do
   use AttendanceTrackerWeb.ConnCase
 
+  import Phoenix.LiveViewTest
+
   test "detects the browser language", %{conn: conn} do
     conn =
       conn
@@ -33,5 +35,17 @@ defmodule AttendanceTrackerWeb.LocaleTest do
 
     assert html_response(conn, 200) =~ "Wochentag"
     assert html_response(conn, 200) =~ "Neues Training"
+  end
+
+  test "renders the kiosk date in German", %{conn: conn} do
+    Gettext.put_locale(AttendanceTrackerWeb.Gettext, "de")
+
+    expected =
+      AttendanceTrackerWeb.DateFormat.long_date(AttendanceTracker.Tracker.local_today())
+
+    conn = get(conn, ~p"/locale/de")
+    {:ok, _view, html} = live(recycle(conn), ~p"/")
+
+    assert html =~ expected
   end
 end

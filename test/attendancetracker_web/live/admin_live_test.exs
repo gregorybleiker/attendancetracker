@@ -129,6 +129,20 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
     assert Tracker.session_expiry_days() == 30
   end
 
+  test "sets the log settings", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin")
+    view |> form("#admin-unlock-form", %{pin: "1234"}) |> render_submit()
+
+    assert has_element?(view, "#logs-settings-form")
+
+    view
+    |> form("#logs-settings-form", %{logs: %{max_entries: 500, prune_interval_minutes: 15}})
+    |> render_submit()
+
+    assert AttendanceTracker.Logs.max_entries() == 500
+    assert AttendanceTracker.Logs.prune_interval_minutes() == 15
+  end
+
   describe "user management import" do
     import AttendanceTracker.TrackerFixtures
 
