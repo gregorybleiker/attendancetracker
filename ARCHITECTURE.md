@@ -49,6 +49,7 @@ lib/
       audit_log.ex                # Ecto schema (user interactions)
       program_log.ex              # Ecto schema (sync calls + results)
       pruner.ex                   # Periodic retention GenServer
+    duplicates.ex                 # Detect + merge likely duplicate participants
   attendancetracker_web/
     router.ex                     # Routes (all LiveView)
     components/
@@ -63,6 +64,7 @@ lib/
       report_live.ex              # Year picker for the CSV attendance report
       admin_live.ex               # PIN-gated admin area
       admin_logs_live.ex          # Scrollable audit/program log viewer
+      admin_duplicates_live.ex    # Detect + merge duplicate participants
     controllers/
       session_controller.ex       # Login: checks the PIN, marks the session
       report_controller.ex        # CSV download of a full year's attendance
@@ -670,6 +672,22 @@ supervision tree) additionally prunes on a timer. Both the maximum
 editable in the admin area. `AdminLogsLive` (`/admin/logs`, reachable from the
 admin panel) shows both streams in a tabbed, scrollable view (500 newest
 entries each).
+
+### 4.15 Merging duplicates (`duplicates.ex`)
+
+Participants that ended up with only a first name or only a last name (e.g.
+from an import) often duplicate a participant that has the full name.
+`AttendanceTracker.Duplicates.list_candidates/0` pairs each such incomplete
+participant with full-name participants whose first/last name matches its
+single name (case-insensitive, exact or substring). `AdminDuplicatesLive`
+(`/admin/duplicates`) lists the pairs; opening one shows a merge mask prefilled
+with the first non-empty value of each field, which the admin can adjust.
+
+`Duplicates.merge/3` runs in a transaction: it applies the mask to the
+survivor, moves the duplicate's check-ins over (on a session both attended the
+survivor's check-in wins and the duplicate's is dropped), moves the duplicate's
+photo when the survivor has none, flags the survivor as a Webling member if
+either record was, deletes the duplicate, and writes an audit-log entry.
 
 ---
 

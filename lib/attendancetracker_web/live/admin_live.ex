@@ -16,6 +16,9 @@ defmodule AttendanceTrackerWeb.AdminLive do
           <.button navigate={~p"/admin/logs"}>
             <.icon name="hero-document-text" /> {gettext("View logs")}
           </.button>
+          <.button navigate={~p"/admin/duplicates"}>
+            <.icon name="hero-user-group" /> {gettext("Merge duplicates")}
+          </.button>
         </:actions>
       </.header>
 

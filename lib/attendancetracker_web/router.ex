@@ -61,6 +61,7 @@ defmodule AttendanceTrackerWeb.Router do
 
     live "/admin", AdminLive, :index
     live "/admin/logs", AdminLogsLive, :index
+    live "/admin/duplicates", AdminDuplicatesLive, :index
   end
 
   # Other scopes may use custom stacks.
