@@ -59,17 +59,33 @@ defmodule AttendanceTracker.DirectoryTest do
 
     assert {:ok, %{created: 1, linked: 1}} =
              Directory.import_members(%{
-               new: [%{name: "Grace Hopper", phone: "079 222"}],
-               existing: [%{name: "Ada Lovelace"}]
+               new: [
+                 %{
+                   name: "Grace Hopper",
+                   first_name: "Grace",
+                   last_name: "Hopper",
+                   phone: "079 222"
+                 }
+               ],
+               existing: [%{name: "Ada Lovelace", first_name: "Ada", last_name: "Lovelace"}]
              })
 
     participants = Tracker.list_participants()
-    names = Enum.map(participants, & &1.name)
+    names = Enum.map(participants, &AttendanceTracker.Tracker.Participant.full_name(&1))
 
     assert "Grace Hopper" in names
-    assert Enum.count(participants, &(&1.name == "Ada Lovelace")) == 1
 
-    grace = Enum.find(participants, &(&1.name == "Grace Hopper"))
+    assert Enum.count(
+             participants,
+             &(AttendanceTracker.Tracker.Participant.full_name(&1) == "Ada Lovelace")
+           ) == 1
+
+    grace =
+      Enum.find(
+        participants,
+        &(AttendanceTracker.Tracker.Participant.full_name(&1) == "Grace Hopper")
+      )
+
     assert grace.emergency_number == "079 222"
     assert grace.active
     assert grace.source == "webling"

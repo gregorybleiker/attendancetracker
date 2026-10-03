@@ -26,7 +26,9 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Index do
         <:col :let={{_id, participant}} label={gettext("Photo")}>
           <.avatar participant={participant} class="size-10" text_class="text-xs" />
         </:col>
-        <:col :let={{_id, participant}} label={gettext("Name")}>{participant.name}</:col>
+        <:col :let={{_id, participant}} label={gettext("Name")}>
+          {AttendanceTracker.Tracker.Participant.full_name(participant)}
+        </:col>
         <:col :let={{_id, participant}} label={gettext("Active")}>{participant.active}</:col>
         <:action :let={{_id, participant}}>
           <div class="sr-only">

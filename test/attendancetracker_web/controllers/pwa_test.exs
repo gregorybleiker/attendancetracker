@@ -5,6 +5,7 @@ defmodule AttendanceTrackerWeb.PwaTest do
     conn = get(conn, "/manifest.webmanifest")
 
     assert response(conn, 200) =~ "\"name\": \"AttendanceTracker\""
+    assert response(conn, 200) =~ "\"orientation\": \"any\""
     assert get_resp_header(conn, "content-type") == ["application/manifest+json"]
   end
 

@@ -12,13 +12,28 @@ defmodule AttendanceTracker.TrackerFixtures do
 
     {:ok, participant} =
       attrs
+      |> split_name()
       |> Enum.into(%{
         active: true,
-        name: "some name"
+        first_name: "some",
+        last_name: "name"
       })
       |> AttendanceTracker.Tracker.create_participant(source)
 
     participant
+  end
+
+  # Allows tests to pass a single `:name` (convenience); splits it into
+  # first/last name.
+  defp split_name(attrs) do
+    case Map.pop(attrs, :name) do
+      {nil, attrs} ->
+        attrs
+
+      {name, attrs} ->
+        [first | rest] = String.split(name, " ", parts: 2)
+        attrs |> Map.put(:first_name, first) |> Map.put(:last_name, List.first(rest) || "")
+    end
   end
 
   @doc """

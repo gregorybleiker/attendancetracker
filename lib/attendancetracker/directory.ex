@@ -161,7 +161,12 @@ defmodule AttendanceTracker.Directory do
           {created, seen}
         else
           case Tracker.create_participant(
-                 %{name: candidate.name, emergency_number: candidate.phone, active: true},
+                 %{
+                   first_name: candidate.first_name,
+                   last_name: candidate.last_name,
+                   emergency_number: candidate.phone,
+                   active: true
+                 },
                  "webling"
                ) do
             {:ok, _participant} -> {created + 1, MapSet.put(seen, key)}
@@ -250,7 +255,7 @@ defmodule AttendanceTracker.Directory do
   defp participants_by_name do
     Tracker.list_participants()
     |> Enum.reduce(%{}, fn participant, acc ->
-      Map.put_new(acc, normalise_name(participant.name), participant)
+      Map.put_new(acc, normalise_name(Participant.full_name(participant)), participant)
     end)
   end
 

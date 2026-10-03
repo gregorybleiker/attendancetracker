@@ -3,7 +3,8 @@ defmodule AttendanceTracker.Tracker.Participant do
   import Ecto.Changeset
 
   schema "participants" do
-    field :name, :string
+    field :first_name, :string
+    field :last_name, :string
     field :emergency_number, :string
     field :active, :boolean, default: true
 
@@ -26,9 +27,27 @@ defmodule AttendanceTracker.Tracker.Participant do
   @doc false
   def changeset(participant, attrs) do
     participant
-    |> cast(attrs, [:name, :emergency_number, :active])
-    |> validate_required([:name])
+    |> cast(attrs, [:first_name, :last_name, :emergency_number, :active])
+    |> validate_name()
   end
+
+  # At least one of first/last name must be present.
+  defp validate_name(changeset) do
+    if blank?(get_field(changeset, :first_name)) and blank?(get_field(changeset, :last_name)) do
+      add_error(changeset, :first_name, "can't be blank")
+    else
+      changeset
+    end
+  end
+
+  @doc "The participant's display name, e.g. `\"Ada Lovelace\"`."
+  def full_name(%__MODULE__{} = participant) do
+    [participant.first_name, participant.last_name]
+    |> Enum.reject(&blank?/1)
+    |> Enum.join(" ")
+  end
+
+  defp blank?(value), do: value in [nil, ""]
 
   @doc "True when the participant was imported from Webling."
   def webling?(%__MODULE__{source: "webling"}), do: true

@@ -9,33 +9,15 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
     %{conn: log_in(conn)}
   end
 
-  test "requires the admin PIN", %{conn: conn} do
+  test "does not ask for the PIN again when already in admin mode", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin")
 
-    assert has_element?(view, "#admin-unlock-form")
-    refute has_element?(view, "#admin-pin-form")
-  end
-
-  test "rejects a wrong PIN", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/admin")
-
-    html = view |> form("#admin-unlock-form", %{pin: "0000"}) |> render_submit()
-
-    assert html =~ "Wrong PIN"
-    refute has_element?(view, "#admin-pin-form")
-  end
-
-  test "unlocks with the default PIN 1234", %{conn: conn} do
-    {:ok, view, _html} = live(conn, ~p"/admin")
-
-    view |> form("#admin-unlock-form", %{pin: "1234"}) |> render_submit()
-
+    refute has_element?(view, "#admin-unlock-form")
     assert has_element?(view, "#admin-pin-form")
   end
 
   test "changes the admin PIN", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin")
-    view |> form("#admin-unlock-form", %{pin: "1234"}) |> render_submit()
 
     view
     |> form("#admin-pin-form", %{
@@ -50,7 +32,6 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
 
   test "validates the new PIN", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin")
-    view |> form("#admin-unlock-form", %{pin: "1234"}) |> render_submit()
 
     html =
       view
@@ -76,7 +57,6 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
 
   test "sets the session PIN", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin")
-    view |> form("#admin-unlock-form", %{pin: "1234"}) |> render_submit()
 
     view
     |> form("#session-pin-form", %{
@@ -90,7 +70,6 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
 
   test "validates the new session PIN", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin")
-    view |> form("#admin-unlock-form", %{pin: "1234"}) |> render_submit()
 
     html =
       view
@@ -105,8 +84,6 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
 
   test "sets the session expiry", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin")
-    view |> form("#admin-unlock-form", %{pin: "1234"}) |> render_submit()
-
     assert has_element?(view, "#session-expiry-form")
 
     view
@@ -118,7 +95,6 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
 
   test "validates the session expiry", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin")
-    view |> form("#admin-unlock-form", %{pin: "1234"}) |> render_submit()
 
     html =
       view
@@ -131,8 +107,6 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
 
   test "sets the log settings", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin")
-    view |> form("#admin-unlock-form", %{pin: "1234"}) |> render_submit()
-
     assert has_element?(view, "#logs-settings-form")
 
     view
@@ -159,13 +133,8 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
       :ok
     end
 
-    defp unlock(view) do
-      view |> form("#admin-unlock-form", %{pin: "1234"}) |> render_submit()
-    end
-
     test "saves the connector settings", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/admin")
-      unlock(view)
 
       assert has_element?(view, "#directory-settings-form")
 
@@ -186,7 +155,6 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
       participant_fixture(%{name: "Ada Lovelace"})
 
       {:ok, view, _html} = live(conn, ~p"/admin")
-      unlock(view)
 
       view
       |> form("#directory-settings-form", %{directory: %{source: "fake"}})
@@ -206,12 +174,15 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
 
       assert render(view) =~ "Imported 1 participants"
       refute has_element?(view, "#directory-preview")
-      assert Enum.any?(Tracker.list_participants(), &(&1.name == "Grace Hopper"))
+
+      assert Enum.any?(
+               Tracker.list_participants(),
+               &(AttendanceTracker.Tracker.Participant.full_name(&1) == "Grace Hopper")
+             )
     end
 
     test "explains when no training has an alias", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/admin")
-      unlock(view)
 
       view |> element("#directory-preview-btn") |> render_click()
 

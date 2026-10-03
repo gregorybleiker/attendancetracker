@@ -730,7 +730,7 @@ defmodule AttendanceTracker.Tracker do
 
     from(p in Participant,
       where: p.active,
-      order_by: p.name,
+      order_by: [asc: p.last_name, asc: p.first_name],
       preload: [check_ins: ^check_in_query]
     )
     |> with_photo()
@@ -766,7 +766,7 @@ defmodule AttendanceTracker.Tracker do
           Logs.audit(%{
             action: "check_in",
             participant_id: participant.id,
-            participant_name: participant.name,
+            participant_name: Participant.full_name(participant),
             training_session_id: session.id
           })
 
@@ -801,7 +801,7 @@ defmodule AttendanceTracker.Tracker do
           Logs.audit(%{
             action: "check_out",
             participant_id: participant.id,
-            participant_name: participant.name,
+            participant_name: Participant.full_name(participant),
             training_session_id: session.id
           })
 

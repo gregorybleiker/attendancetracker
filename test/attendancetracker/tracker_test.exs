@@ -8,7 +8,7 @@ defmodule AttendanceTracker.TrackerTest do
 
     import AttendanceTracker.TrackerFixtures
 
-    @invalid_attrs %{active: nil, name: nil}
+    @invalid_attrs %{active: nil, first_name: nil, last_name: nil}
 
     test "list_participants/0 returns all participants" do
       participant = participant_fixture()
@@ -21,11 +21,13 @@ defmodule AttendanceTracker.TrackerTest do
     end
 
     test "create_participant/1 with valid data creates a participant" do
-      valid_attrs = %{active: true, name: "some name"}
+      valid_attrs = %{active: true, first_name: "some", last_name: "name"}
 
       assert {:ok, %Participant{} = participant} = Tracker.create_participant(valid_attrs)
       assert participant.active == true
-      assert participant.name == "some name"
+      assert participant.first_name == "some"
+      assert participant.last_name == "name"
+      assert Participant.full_name(participant) == "some name"
     end
 
     test "create_participant/1 with invalid data returns error changeset" do
@@ -34,13 +36,13 @@ defmodule AttendanceTracker.TrackerTest do
 
     test "update_participant/2 with valid data updates the participant" do
       participant = participant_fixture()
-      update_attrs = %{active: false, name: "some updated name"}
+      update_attrs = %{active: false, first_name: "some", last_name: "updated name"}
 
       assert {:ok, %Participant{} = participant} =
                Tracker.update_participant(participant, update_attrs)
 
       assert participant.active == false
-      assert participant.name == "some updated name"
+      assert Participant.full_name(participant) == "some updated name"
     end
 
     test "update_participant/2 with invalid data returns error changeset" do
@@ -585,7 +587,7 @@ defmodule AttendanceTracker.TrackerTest do
                Tracker.list_sessions_for_report(2026)
 
       assert loaded.id == check_in.id
-      assert loaded.participant.name == "some name"
+      assert AttendanceTracker.Tracker.Participant.full_name(loaded.participant) == "some name"
     end
 
     test "list_session_years/0 falls back to the current year without sessions" do

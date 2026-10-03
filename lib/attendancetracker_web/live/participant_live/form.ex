@@ -20,7 +20,8 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Form do
       </.header>
 
       <.form for={@form} id="participant-form" phx-change="validate" phx-submit="save">
-        <.input field={@form[:name]} type="text" label={gettext("Name")} />
+        <.input field={@form[:first_name]} type="text" label={gettext("First name")} />
+        <.input field={@form[:last_name]} type="text" label={gettext("Last name")} />
         <.input
           field={@form[:emergency_number]}
           type="text"

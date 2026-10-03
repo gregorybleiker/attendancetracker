@@ -2,6 +2,7 @@ defmodule AttendanceTrackerWeb.ReportController do
   use AttendanceTrackerWeb, :controller
 
   alias AttendanceTracker.Tracker
+  alias AttendanceTracker.Tracker.Participant
   alias AttendanceTracker.Tracker.Training
   alias AttendanceTracker.Tracker.TrainingSession
 
@@ -45,7 +46,7 @@ defmodule AttendanceTrackerWeb.ReportController do
         [
           training_name(session),
           Date.to_string(session.date),
-          Enum.map_join(session.check_ins, "; ", & &1.participant.name)
+          Enum.map_join(session.check_ins, "; ", &Participant.full_name(&1.participant))
         ]
       end
 

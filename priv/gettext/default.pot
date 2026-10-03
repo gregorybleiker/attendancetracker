@@ -11,7 +11,7 @@
 msgid ""
 msgstr ""
 
-#: lib/attendancetracker_web/live/check_in_live.ex:99
+#: lib/attendancetracker_web/live/check_in_live.ex:100
 #, elixir-autogen, elixir-format
 msgid "%{checked} / %{total} present"
 msgstr ""
@@ -31,19 +31,19 @@ msgstr ""
 msgid "Actions"
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/form.ex:31
-#: lib/attendancetracker_web/live/participant_live/index.ex:30
-#: lib/attendancetracker_web/live/participant_live/show.ex:30
+#: lib/attendancetracker_web/live/participant_live/form.ex:32
+#: lib/attendancetracker_web/live/participant_live/index.ex:32
+#: lib/attendancetracker_web/live/participant_live/show.ex:31
 #, elixir-autogen, elixir-format
 msgid "Active"
 msgstr ""
 
-#: lib/attendancetracker_web/controllers/report_controller.ex:64
+#: lib/attendancetracker_web/controllers/report_controller.ex:65
 #, elixir-autogen, elixir-format
 msgid "Ad-hoc training"
 msgstr ""
 
-#: lib/attendancetracker_web/live/check_in_live.ex:116
+#: lib/attendancetracker_web/live/check_in_live.ex:117
 #, elixir-autogen, elixir-format
 msgid "Add one"
 msgstr ""
@@ -63,7 +63,7 @@ msgid "Admin"
 msgstr ""
 
 #: lib/attendancetracker_web/live/admin_live.ex:27
-#: lib/attendancetracker_web/live/check_in_live.ex:141
+#: lib/attendancetracker_web/live/check_in_live.ex:142
 #: lib/attendancetracker_web/live/login_live.ex:18
 #, elixir-autogen, elixir-format
 msgid "Admin PIN"
@@ -86,12 +86,12 @@ msgstr ""
 msgid "Alias"
 msgstr ""
 
-#: lib/attendancetracker_web/components/participant_components.ex:60
+#: lib/attendancetracker_web/components/participant_components.ex:63
 #, elixir-autogen, elixir-format
 msgid "Also in Webling"
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/index.ex:40
+#: lib/attendancetracker_web/live/participant_live/index.ex:42
 #: lib/attendancetracker_web/live/training_live/index.ex:44
 #, elixir-autogen, elixir-format
 msgid "Are you sure?"
@@ -103,20 +103,20 @@ msgstr ""
 msgid "Attempting to reconnect"
 msgstr ""
 
-#: lib/attendancetracker_web/live/check_in_live.ex:146
-#: lib/attendancetracker_web/live/check_in_live.ex:196
-#: lib/attendancetracker_web/live/participant_live/form.ex:73
+#: lib/attendancetracker_web/live/check_in_live.ex:147
+#: lib/attendancetracker_web/live/check_in_live.ex:197
+#: lib/attendancetracker_web/live/participant_live/form.ex:74
 #: lib/attendancetracker_web/live/training_live/form.ex:38
 #, elixir-autogen, elixir-format
 msgid "Cancel"
 msgstr ""
 
-#: lib/attendancetracker_web/live/check_in_live.ex:187
+#: lib/attendancetracker_web/live/check_in_live.ex:188
 #, elixir-autogen, elixir-format
 msgid "Capture photo"
 msgstr ""
 
-#: lib/attendancetracker_web/live/check_in_live.ex:165
+#: lib/attendancetracker_web/live/check_in_live.ex:166
 #, elixir-autogen, elixir-format
 msgid "Center the face in the preview, then capture. The photo is used on the check-in tile."
 msgstr ""
@@ -126,7 +126,7 @@ msgstr ""
 msgid "Change admin PIN"
 msgstr ""
 
-#: lib/attendancetracker_web/live/check_in_live.ex:22
+#: lib/attendancetracker_web/live/check_in_live.ex:23
 #, elixir-autogen, elixir-format
 msgid "Check in"
 msgstr ""
@@ -137,7 +137,7 @@ msgstr ""
 msgid "Check-in"
 msgstr ""
 
-#: lib/attendancetracker_web/live/check_in_live.ex:147
+#: lib/attendancetracker_web/live/check_in_live.ex:148
 #, elixir-autogen, elixir-format
 msgid "Checking..."
 msgstr ""
@@ -167,7 +167,7 @@ msgstr ""
 msgid "Connector"
 msgstr ""
 
-#: lib/attendancetracker_web/live/check_in_live.ex:397
+#: lib/attendancetracker_web/live/check_in_live.ex:400
 #, elixir-autogen, elixir-format
 msgid "Could not access the camera: %{message}"
 msgstr ""
@@ -177,12 +177,12 @@ msgstr ""
 msgid "Could not reach the user management: %{reason}"
 msgstr ""
 
-#: lib/attendancetracker_web/live/check_in_live.ex:418
+#: lib/attendancetracker_web/live/check_in_live.ex:421
 #, elixir-autogen, elixir-format
 msgid "Could not save the photo, please try again."
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/index.ex:42
+#: lib/attendancetracker_web/live/participant_live/index.ex:44
 #: lib/attendancetracker_web/live/training_live/index.ex:46
 #, elixir-autogen, elixir-format
 msgid "Delete"
@@ -198,13 +198,13 @@ msgstr ""
 msgid "Download the attendance report for a full year as a CSV file."
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/index.ex:35
+#: lib/attendancetracker_web/live/participant_live/index.ex:37
 #: lib/attendancetracker_web/live/training_live/index.ex:39
 #, elixir-autogen, elixir-format
 msgid "Edit"
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/form.ex:100
+#: lib/attendancetracker_web/live/participant_live/form.ex:101
 #, elixir-autogen, elixir-format
 msgid "Edit Participant"
 msgstr ""
@@ -229,7 +229,7 @@ msgstr ""
 msgid "Enter the admin PIN to continue."
 msgstr ""
 
-#: lib/attendancetracker_web/live/check_in_live.ex:134
+#: lib/attendancetracker_web/live/check_in_live.ex:135
 #, elixir-autogen, elixir-format
 msgid "Enter the admin PIN to remove this check-in."
 msgstr ""
@@ -306,7 +306,7 @@ msgid "Language"
 msgstr ""
 
 #: lib/attendancetracker_web/live/participant_live/index.ex:13
-#: lib/attendancetracker_web/live/participant_live/index.ex:54
+#: lib/attendancetracker_web/live/participant_live/index.ex:56
 #, elixir-autogen, elixir-format
 msgid "Listing Participants"
 msgstr ""
@@ -317,9 +317,7 @@ msgstr ""
 msgid "Log in"
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/form.ex:23
 #: lib/attendancetracker_web/live/participant_live/index.ex:29
-#: lib/attendancetracker_web/live/participant_live/show.ex:28
 #, elixir-autogen, elixir-format
 msgid "Name"
 msgstr ""
@@ -329,7 +327,7 @@ msgstr ""
 msgid "New PIN"
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/form.ex:109
+#: lib/attendancetracker_web/live/participant_live/form.ex:110
 #: lib/attendancetracker_web/live/participant_live/index.ex:16
 #, elixir-autogen, elixir-format
 msgid "New Participant"
@@ -346,7 +344,7 @@ msgstr ""
 msgid "New training"
 msgstr ""
 
-#: lib/attendancetracker_web/live/check_in_live.ex:115
+#: lib/attendancetracker_web/live/check_in_live.ex:116
 #, elixir-autogen, elixir-format
 msgid "No active participants yet."
 msgstr ""
@@ -361,23 +359,23 @@ msgstr ""
 msgid "No training has an alias yet. Set an alias on a training first."
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/form.ex:27
-#: lib/attendancetracker_web/live/participant_live/show.ex:29
+#: lib/attendancetracker_web/live/participant_live/form.ex:28
+#: lib/attendancetracker_web/live/participant_live/show.ex:30
 #, elixir-autogen, elixir-format
 msgid "Notfallnummer"
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/form.ex:203
+#: lib/attendancetracker_web/live/participant_live/form.ex:204
 #, elixir-autogen, elixir-format
 msgid "Only JPG, PNG or WebP photos are allowed"
 msgstr ""
 
-#: lib/attendancetracker_web/components/participant_components.ex:61
+#: lib/attendancetracker_web/components/participant_components.ex:64
 #, elixir-autogen, elixir-format
 msgid "Only in AttendanceTracker"
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/form.ex:205
+#: lib/attendancetracker_web/live/participant_live/form.ex:206
 #, elixir-autogen, elixir-format
 msgid "Only one photo allowed"
 msgstr ""
@@ -392,12 +390,12 @@ msgstr ""
 msgid "Participant %{id}"
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/form.ex:150
+#: lib/attendancetracker_web/live/participant_live/form.ex:151
 #, elixir-autogen, elixir-format
 msgid "Participant created successfully"
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/form.ex:135
+#: lib/attendancetracker_web/live/participant_live/form.ex:136
 #, elixir-autogen, elixir-format
 msgid "Participant updated successfully"
 msgstr ""
@@ -413,18 +411,18 @@ msgstr ""
 msgid "Participants with a photo are easier to spot on the check-in screen."
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/form.ex:34
+#: lib/attendancetracker_web/live/participant_live/form.ex:35
 #: lib/attendancetracker_web/live/participant_live/index.ex:26
 #, elixir-autogen, elixir-format
 msgid "Photo"
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/form.ex:200
+#: lib/attendancetracker_web/live/participant_live/form.ex:201
 #, elixir-autogen, elixir-format
 msgid "Photo is too large (max 5 MB)"
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/form.ex:46
+#: lib/attendancetracker_web/live/participant_live/form.ex:47
 #, elixir-autogen, elixir-format
 msgid "Remove photo"
 msgstr ""
@@ -452,7 +450,7 @@ msgstr ""
 msgid "Save PIN"
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/form.ex:71
+#: lib/attendancetracker_web/live/participant_live/form.ex:72
 #, elixir-autogen, elixir-format
 msgid "Save Participant"
 msgstr ""
@@ -482,7 +480,7 @@ msgstr ""
 #: lib/attendancetracker_web/live/admin_live.ex:129
 #: lib/attendancetracker_web/live/admin_live.ex:164
 #: lib/attendancetracker_web/live/admin_live.ex:201
-#: lib/attendancetracker_web/live/participant_live/form.ex:70
+#: lib/attendancetracker_web/live/participant_live/form.ex:71
 #: lib/attendancetracker_web/live/training_live/form.ex:35
 #, elixir-autogen, elixir-format
 msgid "Saving..."
@@ -514,12 +512,12 @@ msgstr ""
 msgid "Session expiry updated"
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/index.ex:33
+#: lib/attendancetracker_web/live/participant_live/index.ex:35
 #, elixir-autogen, elixir-format
 msgid "Show"
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/show.ex:40
+#: lib/attendancetracker_web/live/participant_live/show.ex:41
 #, elixir-autogen, elixir-format
 msgid "Show Participant"
 msgstr ""
@@ -541,22 +539,22 @@ msgstr ""
 msgid "Start session"
 msgstr ""
 
-#: lib/attendancetracker_web/live/check_in_live.ex:306
+#: lib/attendancetracker_web/live/check_in_live.ex:309
 #, elixir-autogen, elixir-format
 msgid "Take a photo"
 msgstr ""
 
-#: lib/attendancetracker_web/live/check_in_live.ex:162
+#: lib/attendancetracker_web/live/check_in_live.ex:163
 #, elixir-autogen, elixir-format
 msgid "Take a photo of %{name}"
 msgstr ""
 
-#: lib/attendancetracker_web/live/check_in_live.ex:254
+#: lib/attendancetracker_web/live/check_in_live.ex:255
 #, elixir-autogen, elixir-format
 msgid "Tap to undo the check-in"
 msgstr ""
 
-#: lib/attendancetracker_web/live/check_in_live.ex:95
+#: lib/attendancetracker_web/live/check_in_live.ex:96
 #, elixir-autogen, elixir-format
 msgid "Tap your photo to check in"
 msgstr ""
@@ -595,7 +593,7 @@ msgstr ""
 
 #: lib/attendancetracker_web/components/layouts.ex:60
 #: lib/attendancetracker_web/components/layouts.ex:99
-#: lib/attendancetracker_web/live/check_in_live.ex:88
+#: lib/attendancetracker_web/live/check_in_live.ex:89
 #: lib/attendancetracker_web/live/training_live/index.ex:12
 #: lib/attendancetracker_web/live/training_live/index.ex:58
 #, elixir-autogen, elixir-format
@@ -612,12 +610,12 @@ msgstr ""
 msgid "Training updated successfully"
 msgstr ""
 
-#: lib/attendancetracker_web/live/check_in_live.ex:148
+#: lib/attendancetracker_web/live/check_in_live.ex:149
 #, elixir-autogen, elixir-format
 msgid "Undo check-in"
 msgstr ""
 
-#: lib/attendancetracker_web/live/check_in_live.ex:131
+#: lib/attendancetracker_web/live/check_in_live.ex:132
 #, elixir-autogen, elixir-format
 msgid "Undo check-in for %{name}?"
 msgstr ""
@@ -632,7 +630,7 @@ msgstr ""
 msgid "Unlocking..."
 msgstr ""
 
-#: lib/attendancetracker_web/live/participant_live/form.ex:208
+#: lib/attendancetracker_web/live/participant_live/form.ex:209
 #, elixir-autogen, elixir-format
 msgid "Upload error: %{error}"
 msgstr ""
@@ -659,7 +657,7 @@ msgid "Weekday"
 msgstr ""
 
 #: lib/attendancetracker_web/live/admin_live.ex:468
-#: lib/attendancetracker_web/live/check_in_live.ex:438
+#: lib/attendancetracker_web/live/check_in_live.ex:441
 #, elixir-autogen, elixir-format
 msgid "Wrong PIN"
 msgstr ""
@@ -975,4 +973,16 @@ msgstr ""
 #: lib/attendancetracker_web/live/admin_logs_live.ex:137
 #, elixir-autogen, elixir-format
 msgid "check_out"
+msgstr ""
+
+#: lib/attendancetracker_web/live/participant_live/form.ex:23
+#: lib/attendancetracker_web/live/participant_live/show.ex:28
+#, elixir-autogen, elixir-format
+msgid "First name"
+msgstr ""
+
+#: lib/attendancetracker_web/live/participant_live/form.ex:24
+#: lib/attendancetracker_web/live/participant_live/show.ex:29
+#, elixir-autogen, elixir-format
+msgid "Last name"
 msgstr ""

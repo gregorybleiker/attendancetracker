@@ -4,6 +4,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   import AttendanceTrackerWeb.ParticipantComponents
 
   alias AttendanceTracker.Tracker
+  alias AttendanceTracker.Tracker.Participant
   alias AttendanceTracker.Tracker.Training
   alias AttendanceTrackerWeb.DateFormat
   alias AttendanceTrackerWeb.TrainingLabels
@@ -128,7 +129,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
       >
         <div class="w-full max-w-sm rounded-2xl bg-base-100 p-6 shadow-xl">
           <h2 class="text-lg font-bold">
-            {gettext("Undo check-in for %{name}?", name: @toggle_participant.name)}
+            {gettext("Undo check-in for %{name}?", name: Participant.full_name(@toggle_participant))}
           </h2>
           <p class="mt-1 text-sm opacity-70">
             {gettext("Enter the admin PIN to remove this check-in.")}
@@ -159,7 +160,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
       >
         <div class="w-full max-w-md rounded-2xl bg-base-100 p-6 shadow-xl">
           <h2 class="text-lg font-bold">
-            {gettext("Take a photo of %{name}", name: @camera_participant.name)}
+            {gettext("Take a photo of %{name}", name: Participant.full_name(@camera_participant))}
           </h2>
           <p class="mt-1 text-sm opacity-70">
             {gettext(
@@ -283,7 +284,9 @@ defmodule AttendanceTrackerWeb.CheckInLive do
           </div>
         </div>
 
-        <span class="text-center text-sm leading-tight font-semibold">{@participant.name}</span>
+        <span class="text-center text-sm leading-tight font-semibold">{Participant.full_name(
+          @participant
+        )}</span>
 
         <span
           :if={@admin_mode && @participant.emergency_number}

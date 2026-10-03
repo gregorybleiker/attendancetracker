@@ -13,11 +13,14 @@ defmodule AttendanceTrackerWeb.ParticipantComponents do
   Renders a participant's photo, or their initials as a fallback.
   """
   def avatar(assigns) do
+    assigns =
+      assign(assigns, :name, AttendanceTracker.Tracker.Participant.full_name(assigns.participant))
+
     ~H"""
     <%= if photo_url(@participant) do %>
       <img
         src={photo_url(@participant)}
-        alt={@participant.name}
+        alt={@name}
         class={[@class, "rounded-full object-cover", @dim && "opacity-60 grayscale"]}
       />
     <% else %>
@@ -27,7 +30,7 @@ defmodule AttendanceTrackerWeb.ParticipantComponents do
         "flex items-center justify-center rounded-full bg-base-300 font-bold",
         @dim && "opacity-60 grayscale"
       ]}>
-        {initials(@participant.name)}
+        {initials(@name)}
       </div>
     <% end %>
     """

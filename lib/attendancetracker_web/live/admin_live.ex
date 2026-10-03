@@ -258,11 +258,11 @@ defmodule AttendanceTrackerWeb.AdminLive do
   end
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
     {:ok,
      socket
      |> assign(:page_title, gettext("Admin"))
-     |> assign(:unlocked, false)
+     |> assign(:unlocked, session["admin_pin_ok"] == true)
      |> assign(:pin_form, to_form(%{"pin" => ""}))
      |> assign(:form, pin_changeset_form())
      |> assign(:session_pin_configured, Tracker.session_pin_configured?())

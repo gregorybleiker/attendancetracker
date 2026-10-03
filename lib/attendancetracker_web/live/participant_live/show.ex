@@ -25,7 +25,8 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Show do
       <.avatar participant={@participant} />
 
       <.list>
-        <:item title={gettext("Name")}>{@participant.name}</:item>
+        <:item title={gettext("First name")}>{@participant.first_name}</:item>
+        <:item title={gettext("Last name")}>{@participant.last_name}</:item>
         <:item title={gettext("Notfallnummer")}>{@participant.emergency_number}</:item>
         <:item title={gettext("Active")}>{@participant.active}</:item>
       </.list>

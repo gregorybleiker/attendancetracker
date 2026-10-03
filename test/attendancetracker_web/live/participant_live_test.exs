@@ -4,9 +4,19 @@ defmodule AttendanceTrackerWeb.ParticipantLiveTest do
   import Phoenix.LiveViewTest
   import AttendanceTracker.TrackerFixtures
 
-  @create_attrs %{active: true, name: "some name", emergency_number: "0151 234567"}
-  @update_attrs %{active: false, name: "some updated name", emergency_number: "0160 987654"}
-  @invalid_attrs %{active: false, name: nil}
+  @create_attrs %{
+    active: true,
+    first_name: "some",
+    last_name: "name",
+    emergency_number: "0151 234567"
+  }
+  @update_attrs %{
+    active: false,
+    first_name: "some",
+    last_name: "updated name",
+    emergency_number: "0160 987654"
+  }
+  @invalid_attrs %{active: false, first_name: nil, last_name: nil}
 
   setup %{conn: conn} do
     %{conn: log_in(conn)}
@@ -25,7 +35,7 @@ defmodule AttendanceTrackerWeb.ParticipantLiveTest do
       {:ok, _index_live, html} = live(conn, ~p"/participants")
 
       assert html =~ "Listing Participants"
-      assert html =~ participant.name
+      assert html =~ AttendanceTracker.Tracker.Participant.full_name(participant)
     end
 
     test "saves new participant", %{conn: conn} do
@@ -98,7 +108,8 @@ defmodule AttendanceTrackerWeb.ParticipantLiveTest do
       {:ok, _show_live, html} = live(conn, ~p"/participants/#{participant}")
 
       assert html =~ "Show Participant"
-      assert html =~ participant.name
+      assert html =~ participant.first_name
+      assert html =~ participant.last_name
     end
 
     test "updates participant and returns to show", %{conn: conn, participant: participant} do
@@ -124,7 +135,7 @@ defmodule AttendanceTrackerWeb.ParticipantLiveTest do
 
       html = render(show_live)
       assert html =~ "Participant updated successfully"
-      assert html =~ "some updated name"
+      assert html =~ "updated name"
       assert html =~ "0160 987654"
     end
   end
