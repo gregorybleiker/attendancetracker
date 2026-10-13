@@ -26,6 +26,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
      |> assign(:training_options, training_options(trainings))
      |> assign(:training_form, to_form(%{"training_id" => selected_id}))
      |> assign(:admin_unlocked, admin_unlocked)
+     |> assign(:show_all, false)
      |> assign(:toggle_participant, nil)
      |> assign(:pin_form, to_form(%{"pin" => ""}))
      |> assign(:camera_participant, nil)
@@ -96,11 +97,32 @@ defmodule AttendanceTrackerWeb.CheckInLive do
           <h1 class="text-2xl font-bold">{gettext("Tap your photo to check in")}</h1>
           <p class="text-sm opacity-70">{DateFormat.long_date(@session.date)}</p>
         </div>
-        <div id="attendance-count" class="rounded-full bg-base-200 px-4 py-1 text-sm font-semibold">
-          {gettext("%{checked} / %{total} present",
-            checked: @checked_in_count,
-            total: @participant_count
-          )}
+        <div class="flex items-center gap-2">
+          <button
+            :if={@session.training_id}
+            id="show-all-toggle"
+            type="button"
+            phx-click="toggle_show_all"
+            class={[
+              "flex cursor-pointer items-center gap-1.5 rounded-full border px-4 py-1 text-sm font-semibold transition-colors",
+              if(@show_all,
+                do: "border-primary bg-primary text-primary-content",
+                else: "border-base-300 bg-base-100 hover:border-primary"
+              )
+            ]}
+          >
+            <.icon name={if @show_all, do: "hero-user-group", else: "hero-users"} class="size-4" />
+            {if @show_all, do: gettext("Show only regulars"), else: gettext("Show all")}
+          </button>
+          <div
+            id="attendance-count"
+            class="rounded-full bg-base-200 px-4 py-1 text-sm font-semibold"
+          >
+            {gettext("%{checked} / %{total} present",
+              checked: @checked_in_count,
+              total: @participant_count
+            )}
+          </div>
         </div>
       </div>
 
@@ -113,8 +135,19 @@ defmodule AttendanceTrackerWeb.CheckInLive do
           id="participants-empty"
           class="hidden only:block rounded-xl border border-dashed border-base-300 p-8 text-center"
         >
-          {gettext("No active participants yet.")}
-          <.link navigate={~p"/participants/new"} class="link link-primary">{gettext("Add one")}</.link>
+          <%= if @show_all or is_nil(@session.training_id) do %>
+            {gettext("No active participants yet.")}
+            <.link navigate={~p"/participants/new"} class="link link-primary">{gettext("Add one")}</.link>
+          <% else %>
+            {gettext("No participants have attended this training yet.")}
+            <button
+              type="button"
+              phx-click="toggle_show_all"
+              class="link link-primary cursor-pointer"
+            >
+              {gettext("Show all")}
+            </button>
+          <% end %>
         </div>
 
         <div :for={{id, participant} <- @streams.participants} id={id}>
@@ -326,13 +359,27 @@ defmodule AttendanceTrackerWeb.CheckInLive do
       Tracker.subscribe(session)
     end
 
-    participants = Tracker.list_participants_with_check_ins(session)
+    participants =
+      Tracker.list_participants_with_check_ins(session, show_all: socket.assigns.show_all)
 
     {:noreply,
      socket
      |> assign(:session, session)
      |> assign(:training_form, to_form(%{"training_id" => training.id}))
      |> assign(:checked_in_count, Tracker.check_in_count(session))
+     |> assign(:participant_count, length(participants))
+     |> stream(:participants, participants, reset: true)}
+  end
+
+  def handle_event("toggle_show_all", _params, socket) do
+    show_all = not socket.assigns.show_all
+
+    participants =
+      Tracker.list_participants_with_check_ins(socket.assigns.session, show_all: show_all)
+
+    {:noreply,
+     socket
+     |> assign(:show_all, show_all)
      |> assign(:participant_count, length(participants))
      |> stream(:participants, participants, reset: true)}
   end
@@ -361,7 +408,10 @@ defmodule AttendanceTrackerWeb.CheckInLive do
       # Unlocking reveals the admin-only UI inside the streamed cards
       # (camera buttons, phone numbers), so the stream must be reset for
       # the toggled assign to take effect on already rendered items.
-      participants = Tracker.list_participants_with_check_ins(socket.assigns.session)
+      participants =
+        Tracker.list_participants_with_check_ins(socket.assigns.session,
+          show_all: socket.assigns.show_all
+        )
 
       socket
       |> assign(:admin_unlocked, true)

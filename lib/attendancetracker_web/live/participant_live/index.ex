@@ -29,6 +29,15 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Index do
         <:col :let={{_id, participant}} label={gettext("Name")}>
           {AttendanceTracker.Tracker.Participant.full_name(participant)}
         </:col>
+        <:col :let={{_id, participant}} label={gettext("Trainings")}>
+          <.trainings_table
+            :if={participant.attended_trainings != []}
+            id={"attended-trainings-#{participant.id}"}
+            trainings={participant.attended_trainings}
+            headers={false}
+          />
+          <span :if={participant.attended_trainings == []} class="opacity-50">–</span>
+        </:col>
         <:col :let={{_id, participant}} label={gettext("Active")}>{participant.active}</:col>
         <:action :let={{_id, participant}}>
           <div class="sr-only">
@@ -66,6 +75,6 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Index do
   end
 
   defp list_participants() do
-    Tracker.list_participants()
+    Tracker.list_participants_with_trainings()
   end
 end

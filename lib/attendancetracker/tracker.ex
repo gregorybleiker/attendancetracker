@@ -26,6 +26,16 @@ defmodule AttendanceTracker.Tracker do
   end
 
   @doc """
+  Like `list_participants/0`, but with each participant's
+  `attended_trainings` populated (the distinct trainings they have ever
+  attended).
+  """
+  def list_participants_with_trainings do
+    list_participants()
+    |> with_attended_trainings()
+  end
+
+  @doc """
   Gets a single participant.
 
   Raises `Ecto.NoResultsError` if the Participant does not exist.
@@ -40,6 +50,16 @@ defmodule AttendanceTracker.Tracker do
 
   """
   def get_participant!(id), do: Repo.get!(with_photo(Participant), id)
+
+  @doc """
+  Gets a single participant with their `attended_trainings` populated.
+
+  Raises `Ecto.NoResultsError` if the Participant does not exist.
+  """
+  def get_participant_with_trainings!(id) do
+    [participant] = with_attended_trainings([get_participant!(id)])
+    participant
+  end
 
   @doc """
   Creates a participant.
@@ -724,21 +744,26 @@ defmodule AttendanceTracker.Tracker do
   @doc """
   Lists active participants (alphabetical) with their check-in for the
   given session preloaded (`participant.check_ins` is `[]` or has one entry).
+
+  By default, when the session belongs to a training, only participants who
+  have ever attended that training are returned (its "regulars"). Pass
+  `show_all: true` to list every active participant regardless of the
+  training.
   """
-  def list_participants_with_check_ins(%TrainingSession{} = session) do
+  def list_participants_with_check_ins(%TrainingSession{} = session, opts \\ []) do
     check_in_query = from c in CheckIn, where: c.training_session_id == ^session.id
 
-    from(p in Participant,
-      where: p.active,
-      order_by: [asc: p.last_name, asc: p.first_name],
-      preload: [check_ins: ^check_in_query]
-    )
+    from(p in Participant, as: :participant)
+    |> where([p], p.active)
+    |> filter_attended_training(session, opts)
+    |> order_by([p], asc: p.last_name, asc: p.first_name)
+    |> preload([p], check_ins: ^check_in_query)
     |> with_photo()
     |> Repo.all()
   end
 
   @doc """
-  Same as `list_participants_with_check_ins/1`, but for a single participant.
+  Same as `list_participants_with_check_ins/2`, but for a single participant.
   """
   def get_participant_with_check_ins(%TrainingSession{} = session, participant_id) do
     check_in_query = from c in CheckIn, where: c.training_session_id == ^session.id
@@ -749,6 +774,50 @@ defmodule AttendanceTracker.Tracker do
     )
     |> with_photo()
     |> Repo.one!()
+  end
+
+  # When the session belongs to a training and `show_all` is not set, keep
+  # only participants who have attended that training in some past session.
+  defp filter_attended_training(query, %TrainingSession{training_id: nil}, _opts), do: query
+
+  defp filter_attended_training(query, %TrainingSession{training_id: training_id}, opts) do
+    if Keyword.get(opts, :show_all, false) do
+      query
+    else
+      from p in query,
+        where:
+          exists(
+            from c in CheckIn,
+              join: s in assoc(c, :training_session),
+              where: c.participant_id == parent_as(:participant).id,
+              where: s.training_id == ^training_id
+          )
+    end
+  end
+
+  # Adds the `attended_trainings` virtual field to participants using a single
+  # grouped query (distinct trainings per participant, ordered like the
+  # training list).
+  defp with_attended_trainings([]), do: []
+
+  defp with_attended_trainings(participants) when is_list(participants) do
+    ids = Enum.map(participants, & &1.id)
+
+    trainings_by_participant =
+      from(c in CheckIn,
+        join: s in assoc(c, :training_session),
+        join: t in assoc(s, :training),
+        where: c.participant_id in ^ids,
+        distinct: true,
+        order_by: [asc: t.weekday, asc: t.starts_at],
+        select: {c.participant_id, t}
+      )
+      |> Repo.all()
+      |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+
+    Enum.map(participants, fn participant ->
+      %{participant | attended_trainings: Map.get(trainings_by_participant, participant.id, [])}
+    end)
   end
 
   @doc """

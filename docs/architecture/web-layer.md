@@ -117,6 +117,25 @@ collections, and updates are surgical DOM patches.
   displays when it's the sole child of the grid.
 - *Changing collections* (switching training) → refetch + `reset: true`.
 
+# Kiosk: regulars vs. everyone
+
+When a training is selected, the kiosk lists only that training's **regulars**
+— participants who have ever attended it — by default
+(`list_participants_with_check_ins/2` adds an `exists` subquery over past
+check-ins; ad-hoc sessions without a training skip the filter). A **Show all**
+toggle button, reachable without the admin PIN, re-streams everyone
+(`show_all: true`, `reset: true`).
+
+Which trainings a participant has attended is shown in the admin area, not on
+the kiosk tiles: `with_attended_trainings/1` runs one grouped query and merges
+the result into the `attended_trainings` virtual field, which backs the
+**Trainings** column (`ParticipantLive.Index` via
+`list_participants_with_trainings/0`) and the trainings table on the
+participant detail page (`ParticipantLive.Show` via
+`get_participant_with_trainings!/1`). Both render the shared
+`ParticipantComponents.trainings_table/1` (name/weekday/time; the nested one in
+the listing hides its header row).
+
 # Forms: `to_form/2` everywhere
 
 Two flavors are used:

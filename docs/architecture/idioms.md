@@ -24,7 +24,9 @@ sources:
 | Module attributes as constants | `@pubsub`, `@default_admin_pin`, `@weekday_names` |
 | Erlang interop | `:calendar.local_time()` |
 | Ecto changesets & constraints | all schemas; unique + partial indexes in migrations |
-| Filtered preloads | `list_participants_with_check_ins/1` |
+| Filtered preloads | `list_participants_with_check_ins/2` |
+| `exists` subquery + `parent_as` | kiosk "regulars" filter (ever attended the selected training) |
+| Grouped query → virtual field | `attended_trainings` in the participants list |
 | Upserts | `on_conflict: :nothing` (sessions), `insert_or_update` (PIN), photo replace |
 | Schemaless changesets | `change_admin_pin/1` |
 | Phoenix.PubSub | check-in/check-out fan-out to all kiosks |

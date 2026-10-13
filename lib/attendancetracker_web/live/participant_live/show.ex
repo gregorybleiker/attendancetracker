@@ -30,6 +30,20 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Show do
         <:item title={gettext("Notfallnummer")}>{@participant.emergency_number}</:item>
         <:item title={gettext("Active")}>{@participant.active}</:item>
       </.list>
+
+      <section class="mt-6 space-y-2">
+        <h2 class="text-lg font-semibold">{gettext("Trainings")}</h2>
+
+        <.trainings_table
+          :if={@participant.attended_trainings != []}
+          id="attended-trainings"
+          trainings={@participant.attended_trainings}
+        />
+
+        <p :if={@participant.attended_trainings == []} class="text-sm opacity-70">
+          {gettext("No trainings attended yet.")}
+        </p>
+      </section>
     </Layouts.app>
     """
   end
@@ -39,6 +53,6 @@ defmodule AttendanceTrackerWeb.ParticipantLive.Show do
     {:ok,
      socket
      |> assign(:page_title, gettext("Show Participant"))
-     |> assign(:participant, Tracker.get_participant!(id))}
+     |> assign(:participant, Tracker.get_participant_with_trainings!(id))}
   end
 end

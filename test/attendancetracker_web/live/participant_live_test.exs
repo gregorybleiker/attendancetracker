@@ -90,6 +90,19 @@ defmodule AttendanceTrackerWeb.ParticipantLiveTest do
       assert html =~ "some updated name"
     end
 
+    test "shows which trainings a participant has attended", %{conn: conn} do
+      participant = participant_fixture(%{name: "Attendee"})
+      training = training_fixture(%{name: "Advanced Judo"})
+      session = training_session_fixture(%{training_id: training.id})
+      check_in_fixture(%{participant: participant, training_session: session})
+
+      {:ok, index_live, _html} = live(conn, ~p"/participants")
+
+      assert has_element?(index_live, "#participants-#{participant.id}", "Advanced Judo")
+      assert has_element?(index_live, "#attended-trainings-#{participant.id}", "Advanced Judo")
+      assert has_element?(index_live, "#attended-trainings-#{participant.id}", "Monday")
+    end
+
     test "deletes participant in listing", %{conn: conn, participant: participant} do
       {:ok, index_live, _html} = live(conn, ~p"/participants")
 
@@ -110,6 +123,27 @@ defmodule AttendanceTrackerWeb.ParticipantLiveTest do
       assert html =~ "Show Participant"
       assert html =~ participant.first_name
       assert html =~ participant.last_name
+    end
+
+    test "lists the trainings the participant has attended", %{conn: conn} do
+      participant = participant_fixture(%{name: "Attendee"})
+
+      training =
+        training_fixture(%{
+          name: "Advanced Judo",
+          weekday: 1,
+          starts_at: ~T[19:00:00],
+          ends_at: ~T[21:30:00]
+        })
+
+      session = training_session_fixture(%{training_id: training.id})
+      check_in_fixture(%{participant: participant, training_session: session})
+
+      {:ok, show_live, _html} = live(conn, ~p"/participants/#{participant}")
+
+      assert has_element?(show_live, "#attended-trainings", "Advanced Judo")
+      assert has_element?(show_live, "#attended-trainings", "Monday")
+      assert has_element?(show_live, "#attended-trainings", "19:00")
     end
 
     test "updates participant and returns to show", %{conn: conn, participant: participant} do

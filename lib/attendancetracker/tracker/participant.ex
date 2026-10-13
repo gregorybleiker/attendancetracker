@@ -18,6 +18,10 @@ defmodule AttendanceTracker.Tracker.Participant do
     field :has_photo, :boolean, virtual: true, default: false
     field :photo_updated_at, :utc_datetime, virtual: true
 
+    # Populated by the context's queries (see `Tracker.with_attended_trainings/1`):
+    # the distinct trainings this participant has ever attended.
+    field :attended_trainings, :any, virtual: true, default: []
+
     has_one :photo, AttendanceTracker.Tracker.ParticipantPhoto
     has_many :check_ins, AttendanceTracker.Tracker.CheckIn
 

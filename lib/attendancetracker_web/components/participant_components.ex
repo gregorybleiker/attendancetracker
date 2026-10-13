@@ -4,6 +4,8 @@ defmodule AttendanceTrackerWeb.ParticipantComponents do
   """
   use AttendanceTrackerWeb, :html
 
+  alias AttendanceTrackerWeb.TrainingLabels
+
   attr :participant, :map, required: true
   attr :class, :string, default: "size-24 sm:size-28"
   attr :text_class, :string, default: "text-3xl"
@@ -77,6 +79,41 @@ defmodule AttendanceTrackerWeb.ParticipantComponents do
         class="size-3"
       />
     </span>
+    """
+  end
+
+  attr :trainings, :list, required: true
+  attr :id, :string, required: true
+  attr :headers, :boolean, default: true, doc: "render the column header row"
+
+  @doc """
+  Renders the trainings a participant has attended as a table (name, weekday,
+  and time). Used both on the participant detail page and inside the
+  participants listing.
+  """
+  def trainings_table(assigns) do
+    ~H"""
+    <table id={@id} class="table table-sm">
+      <thead :if={@headers}>
+        <tr>
+          <th>{gettext("Training")}</th>
+          <th>{gettext("Weekday")}</th>
+          <th>{gettext("Time")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr :for={training <- @trainings}>
+          <td>{training.name || "–"}</td>
+          <td>{TrainingLabels.weekday_label(training.weekday)}</td>
+          <td>
+            {Calendar.strftime(training.starts_at, "%H:%M")}–{Calendar.strftime(
+              training.ends_at,
+              "%H:%M"
+            )}
+          </td>
+        </tr>
+      </tbody>
+    </table>
     """
   end
 
