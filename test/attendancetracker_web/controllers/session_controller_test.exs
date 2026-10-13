@@ -75,6 +75,35 @@ defmodule AttendanceTrackerWeb.SessionControllerTest do
     end
   end
 
+  describe "kiosk session on_mount hook" do
+    alias AttendanceTracker.Tracker
+    alias AttendanceTrackerWeb.KioskSessionHook
+    alias Phoenix.LiveView.Socket
+
+    test "redirects to /start without a kiosk token in the session" do
+      {:ok, _} = Tracker.update_session_pin("2468")
+
+      assert {:halt, socket} = KioskSessionHook.on_mount(:default, %{}, %{}, %Socket{})
+      assert socket.redirected == {:redirect, %{to: "/start", status: 302}}
+    end
+
+    test "continues when no session PIN is configured" do
+      assert {:cont, %Socket{}} = KioskSessionHook.on_mount(:default, %{}, %{}, %Socket{})
+    end
+
+    test "continues with a valid kiosk token in the session" do
+      {:ok, _} = Tracker.update_session_pin("2468")
+
+      token =
+        Phoenix.Token.sign(AttendanceTrackerWeb.Endpoint, "kiosk_session", %{
+          fingerprint: Tracker.session_pin_fingerprint()
+        })
+
+      assert {:cont, %Socket{}} =
+               KioskSessionHook.on_mount(:default, %{}, %{"kiosk_token" => token}, %Socket{})
+    end
+  end
+
   describe "session unlock page" do
     alias AttendanceTracker.Tracker
 

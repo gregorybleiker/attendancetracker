@@ -41,7 +41,9 @@ defmodule AttendanceTrackerWeb.Router do
   scope "/", AttendanceTrackerWeb do
     pipe_through [:browser, :kiosk]
 
-    live "/", CheckInLive, :index
+    live_session :kiosk, on_mount: [AttendanceTrackerWeb.KioskSessionHook] do
+      live "/", CheckInLive, :index
+    end
   end
 
   scope "/", AttendanceTrackerWeb do

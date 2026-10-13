@@ -332,5 +332,20 @@ event, because only a controller can write the session. On success,
 flash error. The flag lives in the session cookie, so the login survives page
 reloads and navigation between LiveViews.
 
+**Kiosk session PIN (two layers).** The kiosk is guarded on *two* levels,
+because LiveView live navigation reuses the WebSocket and does not run plugs:
+
+- `Plugs.RequireKioskSession` guards full page loads. It reads the dedicated
+  `kiosk_session` cookie (`KioskSession`, a `Phoenix.Token` carrying the
+  fingerprint of the current session PIN so a PIN change invalidates old
+  sessions), redirects to `/start` when it is missing/invalid, and otherwise
+  mirrors the token into the Plug session (`:kiosk_token`).
+- `KioskSessionHook` is an `on_mount` hook attached to the dedicated
+  `live_session :kiosk` around the kiosk route. It re-checks `:kiosk_token` on
+  every mount, so live navigation (e.g. the navbar "Check-in" link from
+  `/start`) cannot slip past the plug. Grouping the route in its own
+  `live_session` also makes cross-scope navigation a full page load, which runs
+  the plug again.
+
 See also [Real-time](/architecture/real-time.md),
 [Imports](/architecture/imports.md), and [End-to-end flows](/architecture/flows.md).
