@@ -183,6 +183,104 @@ defmodule AttendanceTracker.TrackerTest do
     end
   end
 
+  describe "training members" do
+    import AttendanceTracker.TrackerFixtures
+
+    test "add_training_member/2 links a participant to a training idempotently" do
+      training = training_fixture()
+      participant = participant_fixture()
+
+      assert {:ok, :created} = Tracker.add_training_member(training, participant)
+      assert {:ok, :exists} = Tracker.add_training_member(training, participant)
+
+      assert Enum.map(Tracker.list_training_members(training), & &1.id) == [participant.id]
+    end
+
+    test "list_training_members/1 returns only that training's members, by first name" do
+      training = training_fixture()
+      other = training_fixture(%{weekday: 2})
+
+      grace = participant_fixture(%{name: "Grace Hopper"})
+      ada = participant_fixture(%{name: "Ada Lovelace"})
+      _outsider = participant_fixture(%{name: "Alan Turing"})
+
+      {:ok, :created} = Tracker.add_training_member(training, grace)
+      {:ok, :created} = Tracker.add_training_member(training, ada)
+      {:ok, :created} = Tracker.add_training_member(other, ada)
+
+      assert Enum.map(Tracker.list_training_members(training), & &1.id) == [ada.id, grace.id]
+    end
+  end
+
+  describe "events" do
+    import AttendanceTracker.TrackerFixtures
+
+    alias AttendanceTracker.Tracker.Event
+
+    @invalid_event_attrs %{name: nil, date: nil}
+
+    test "create_event/1 with valid data creates an event" do
+      valid_attrs = %{name: "Fight Night", date: ~D[2026-10-10]}
+
+      assert {:ok, %Event{} = event} = Tracker.create_event(valid_attrs)
+      assert event.name == "Fight Night"
+      assert event.date == ~D[2026-10-10]
+    end
+
+    test "create_event/1 requires a name and a date" do
+      assert {:error, %Ecto.Changeset{}} = Tracker.create_event(@invalid_event_attrs)
+    end
+
+    test "create_event/1 requires the end to be after the start" do
+      attrs = %{
+        name: "X",
+        date: ~D[2026-10-10],
+        starts_at: ~T[10:00:00],
+        ends_at: ~T[09:00:00]
+      }
+
+      assert {:error, %Ecto.Changeset{} = changeset} = Tracker.create_event(attrs)
+      assert "must be after the start time" in errors_on(changeset).ends_at
+    end
+
+    test "list_events/0 returns events ordered by date" do
+      later = event_fixture(%{date: ~D[2026-12-01]})
+      earlier = event_fixture(%{date: ~D[2026-01-01]})
+
+      assert Tracker.list_events() == [earlier, later]
+    end
+
+    test "update_event/2 and delete_event/1" do
+      event = event_fixture()
+
+      assert {:ok, %Event{} = event} = Tracker.update_event(event, %{name: "Renamed"})
+      assert event.name == "Renamed"
+
+      assert {:ok, %Event{}} = Tracker.delete_event(event)
+      assert_raise Ecto.NoResultsError, fn -> Tracker.get_event!(event.id) end
+    end
+
+    test "event participants are selected idempotently and listed by first name" do
+      event = event_fixture()
+      grace = participant_fixture(%{name: "Grace Hopper"})
+      ada = participant_fixture(%{name: "Ada Lovelace"})
+
+      assert {:ok, :created} = Tracker.add_event_participant(event, grace)
+      assert {:ok, :exists} = Tracker.add_event_participant(event, grace)
+      assert {:ok, :created} = Tracker.add_event_participant(event, ada)
+
+      assert Tracker.event_participant?(event, ada)
+      assert Enum.map(Tracker.list_event_participants(event), & &1.id) == [ada.id, grace.id]
+
+      assert Enum.sort(Tracker.list_event_participant_ids(event)) ==
+               Enum.sort([ada.id, grace.id])
+
+      assert {:ok, _} = Tracker.remove_event_participant(event, ada)
+      refute Tracker.event_participant?(event, ada)
+      assert {:ok, :not_selected} = Tracker.remove_event_participant(event, ada)
+    end
+  end
+
   describe "training schedule" do
     alias AttendanceTracker.Tracker.Training
 
@@ -392,6 +490,20 @@ defmodule AttendanceTracker.TrackerTest do
       assert {:ok, %CheckIn{}} = Tracker.check_in(participant, session)
       assert {:error, :already_checked_in} = Tracker.check_in(participant, session)
       assert Tracker.check_in_count(session) == 1
+    end
+
+    test "check_in/2 adds the participant to the session's training members" do
+      training = training_fixture()
+      session = training_session_fixture(%{training_id: training.id})
+      participant = participant_fixture()
+
+      assert Tracker.list_training_members(training) == []
+
+      assert {:ok, %CheckIn{}} = Tracker.check_in(participant, session)
+      assert Enum.map(Tracker.list_training_members(training), & &1.id) == [participant.id]
+
+      assert {:error, :already_checked_in} = Tracker.check_in(participant, session)
+      assert Enum.map(Tracker.list_training_members(training), & &1.id) == [participant.id]
     end
 
     test "check_in/2 broadcasts to session subscribers" do

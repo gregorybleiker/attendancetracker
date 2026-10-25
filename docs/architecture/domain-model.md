@@ -46,6 +46,11 @@ schema "trainings" do
 
   has_many :training_sessions, AttendanceTracker.Tracker.TrainingSession
 
+  has_many :training_members, AttendanceTracker.Tracker.TrainingMember
+
+  many_to_many :participants, AttendanceTracker.Tracker.Participant,
+    join_through: AttendanceTracker.Tracker.TrainingMember
+
   timestamps(type: :utc_datetime)
 end
 ```
@@ -92,6 +97,16 @@ Key points:
   |> unique_constraint(:date)                        # ad-hoc sessions (partial index)
   |> unique_constraint([:training_id, :date])    # one session per training per date
   ```
+
+- **`TrainingMember`** is a join schema (`training_members`, unique on
+  `[:training_id, :participant_id]`) linking a participant to a training they
+  are a *member* of — imported from user management, distinct from a `CheckIn`,
+  which records attendance at a single dated `TrainingSession`.
+
+- **`Event`** (`events`) is a one-off, single-day counterpart of `Training`:
+  `name`, `date`, and optional `starts_at`/`ends_at`. `EventParticipant`
+  (`event_participants`, unique on `[:event_id, :participant_id]`) is the join
+  schema for its hand-picked participants. See [Events](/architecture/events.md).
 
 # Schemaless changesets
 

@@ -4,6 +4,8 @@ defmodule AttendanceTrackerWeb.TrainingLiveTest do
   import Phoenix.LiveViewTest
   import AttendanceTracker.TrackerFixtures
 
+  alias AttendanceTracker.Tracker
+
   setup %{conn: conn} do
     %{conn: log_in(conn)}
   end
@@ -34,6 +36,21 @@ defmodule AttendanceTrackerWeb.TrainingLiveTest do
       |> render_click()
 
       refute has_element?(view, "#trainings-#{training.id}")
+    end
+  end
+
+  describe "Show" do
+    test "lists the training's members", %{conn: conn} do
+      training = training_fixture(%{name: "Kids Judo"})
+      member = participant_fixture(%{name: "Ada Lovelace"})
+      _outsider = participant_fixture(%{name: "Alan Turing"})
+      {:ok, :created} = Tracker.add_training_member(training, member)
+
+      {:ok, view, html} = live(conn, ~p"/training/#{training}")
+
+      assert html =~ "Members of this training."
+      assert has_element?(view, "#training-members", "Ada Lovelace")
+      refute has_element?(view, "#training-members", "Alan Turing")
     end
   end
 

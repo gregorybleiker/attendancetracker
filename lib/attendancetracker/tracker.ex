@@ -21,6 +21,7 @@ defmodule AttendanceTracker.Tracker do
   """
   def list_participants do
     Participant
+    |> order_by([p], asc: p.first_name, asc: p.last_name)
     |> with_photo()
     |> Repo.all()
   end
@@ -187,6 +188,7 @@ defmodule AttendanceTracker.Tracker do
   end
 
   alias AttendanceTracker.Tracker.Training
+  alias AttendanceTracker.Tracker.TrainingMember
 
   @doc """
   Returns the list of trainings, ordered by weekday and start time.
@@ -280,6 +282,175 @@ defmodule AttendanceTracker.Tracker do
   """
   def change_training(%Training{} = training, attrs \\ %{}) do
     Training.changeset(training, attrs)
+  end
+
+  @doc """
+  Returns the participants who are members of a training, ordered by first then
+  last name (with their photo preloaded).
+  """
+  def list_training_members(%Training{} = training) do
+    from(p in Participant,
+      join: tm in assoc(p, :training_members),
+      where: tm.training_id == ^training.id,
+      order_by: [asc: p.first_name, asc: p.last_name]
+    )
+    |> with_photo()
+    |> Repo.all()
+  end
+
+  @doc """
+  Adds a participant to a training's member list. Idempotent: returns
+  `{:ok, :exists}` when the participant is already a member.
+  """
+  def add_training_member(%Training{} = training, %Participant{} = participant) do
+    if Repo.get_by(TrainingMember, training_id: training.id, participant_id: participant.id) do
+      {:ok, :exists}
+    else
+      %TrainingMember{}
+      |> TrainingMember.changeset(%{training_id: training.id, participant_id: participant.id})
+      |> Repo.insert()
+      |> case do
+        {:ok, _training_member} -> {:ok, :created}
+        {:error, changeset} -> {:error, changeset}
+      end
+    end
+  end
+
+  alias AttendanceTracker.Tracker.Event
+  alias AttendanceTracker.Tracker.EventParticipant
+
+  @doc """
+  Returns the list of events, chronologically by date then start time.
+  """
+  def list_events do
+    Repo.all(from e in Event, order_by: [asc: e.date, asc: e.starts_at])
+  end
+
+  @doc """
+  Gets a single event.
+
+  Raises `Ecto.NoResultsError` if the Event does not exist.
+  """
+  def get_event!(id), do: Repo.get!(Event, id)
+
+  @doc """
+  Creates an event.
+  """
+  def create_event(attrs) do
+    %Event{}
+    |> Event.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates an event.
+  """
+  def update_event(%Event{} = event, attrs) do
+    event
+    |> Event.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes an event.
+  """
+  def delete_event(%Event{} = event), do: Repo.delete(event)
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking event changes.
+  """
+  def change_event(%Event{} = event, attrs \\ %{}) do
+    Event.changeset(event, attrs)
+  end
+
+  @doc """
+  Returns the participants selected for an event, ordered by first then last
+  name (with their photo preloaded).
+  """
+  def list_event_participants(%Event{} = event) do
+    from(p in Participant,
+      join: ep in assoc(p, :event_participants),
+      where: ep.event_id == ^event.id,
+      order_by: [asc: p.first_name, asc: p.last_name]
+    )
+    |> with_photo()
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the ids of the participants selected for an event.
+  """
+  def list_event_participant_ids(%Event{} = event) do
+    from(ep in EventParticipant, where: ep.event_id == ^event.id, select: ep.participant_id)
+    |> Repo.all()
+  end
+
+  @doc """
+  Selects a participant for an event. Idempotent: returns `{:ok, :exists}`
+  when the participant is already selected.
+  """
+  def add_event_participant(%Event{} = event, %Participant{} = participant) do
+    if Repo.get_by(EventParticipant, event_id: event.id, participant_id: participant.id) do
+      {:ok, :exists}
+    else
+      %EventParticipant{}
+      |> EventParticipant.changeset(%{event_id: event.id, participant_id: participant.id})
+      |> Repo.insert()
+      |> case do
+        {:ok, _event_participant} -> {:ok, :created}
+        {:error, changeset} -> {:error, changeset}
+      end
+    end
+  end
+
+  @doc """
+  Removes a participant from an event. Idempotent: returns `{:ok, :not_selected}`
+  when the participant is not selected.
+  """
+  def remove_event_participant(%Event{} = event, %Participant{} = participant) do
+    case Repo.get_by(EventParticipant, event_id: event.id, participant_id: participant.id) do
+      %EventParticipant{} = event_participant -> Repo.delete(event_participant)
+      nil -> {:ok, :not_selected}
+    end
+  end
+
+  @doc """
+  True when the participant is selected for the event.
+  """
+  def event_participant?(%Event{} = event, %Participant{} = participant) do
+    Repo.exists?(
+      from ep in EventParticipant,
+        where: ep.event_id == ^event.id and ep.participant_id == ^participant.id
+    )
+  end
+
+  @doc """
+  Lists the active participants with their selection for the event preloaded
+  (`participant.event_participants` is `[]` or has one entry), ordered by first
+  name. Used by the event participant picker.
+  """
+  def list_participants_for_event(%Event{} = event) do
+    from(p in Participant, where: p.active)
+    |> event_selection(event)
+    |> order_by([p], asc: p.first_name, asc: p.last_name)
+    |> with_photo()
+    |> Repo.all()
+  end
+
+  @doc """
+  Same as `list_participants_for_event/1`, but for a single participant.
+  """
+  def get_participant_for_event(%Event{} = event, participant_id) do
+    from(p in Participant, where: p.id == ^participant_id)
+    |> event_selection(event)
+    |> with_photo()
+    |> Repo.one!()
+  end
+
+  defp event_selection(query, %Event{} = event) do
+    selection = from ep in EventParticipant, where: ep.event_id == ^event.id
+
+    from(p in query, preload: [event_participants: ^selection])
   end
 
   alias AttendanceTracker.Tracker.TrainingSession
@@ -746,17 +917,16 @@ defmodule AttendanceTracker.Tracker do
   given session preloaded (`participant.check_ins` is `[]` or has one entry).
 
   By default, when the session belongs to a training, only participants who
-  have ever attended that training are returned (its "regulars"). Pass
-  `show_all: true` to list every active participant regardless of the
-  training.
+  are members of that training are returned. Pass `show_all: true` to list
+  every active participant regardless of the training.
   """
   def list_participants_with_check_ins(%TrainingSession{} = session, opts \\ []) do
     check_in_query = from c in CheckIn, where: c.training_session_id == ^session.id
 
     from(p in Participant, as: :participant)
     |> where([p], p.active)
-    |> filter_attended_training(session, opts)
-    |> order_by([p], asc: p.last_name, asc: p.first_name)
+    |> filter_training_members(session, opts)
+    |> order_by([p], asc: p.first_name, asc: p.last_name)
     |> preload([p], check_ins: ^check_in_query)
     |> with_photo()
     |> Repo.all()
@@ -777,20 +947,20 @@ defmodule AttendanceTracker.Tracker do
   end
 
   # When the session belongs to a training and `show_all` is not set, keep
-  # only participants who have attended that training in some past session.
-  defp filter_attended_training(query, %TrainingSession{training_id: nil}, _opts), do: query
+  # only participants who are members of that training. `show_all: true`
+  # bypasses the filter and lists every active participant.
+  defp filter_training_members(query, %TrainingSession{training_id: nil}, _opts), do: query
 
-  defp filter_attended_training(query, %TrainingSession{training_id: training_id}, opts) do
+  defp filter_training_members(query, %TrainingSession{training_id: training_id}, opts) do
     if Keyword.get(opts, :show_all, false) do
       query
     else
       from p in query,
         where:
           exists(
-            from c in CheckIn,
-              join: s in assoc(c, :training_session),
-              where: c.participant_id == parent_as(:participant).id,
-              where: s.training_id == ^training_id
+            from tm in TrainingMember,
+              where: tm.participant_id == parent_as(:participant).id,
+              where: tm.training_id == ^training_id
           )
     end
   end
@@ -824,28 +994,44 @@ defmodule AttendanceTracker.Tracker do
   Checks a participant into a training session. Idempotent: if the
   participant is already checked in, `{:error, :already_checked_in}`
   is returned. Broadcasts `{:checked_in, check_in}` to subscribers.
+
+  When the session belongs to a training, the participant is also added to
+  that training's member list (if not already a member).
   """
   def check_in(%Participant{} = participant, %TrainingSession{} = session) do
-    %CheckIn{}
-    |> CheckIn.changeset(%{participant_id: participant.id, training_session_id: session.id})
-    |> Repo.insert()
-    |> case do
-      {:ok, check_in} ->
-        _ =
-          Logs.audit(%{
-            action: "check_in",
-            participant_id: participant.id,
-            participant_name: Participant.full_name(participant),
-            training_session_id: session.id
-          })
+    result =
+      %CheckIn{}
+      |> CheckIn.changeset(%{participant_id: participant.id, training_session_id: session.id})
+      |> Repo.insert()
+      |> case do
+        {:ok, check_in} ->
+          _ =
+            Logs.audit(%{
+              action: "check_in",
+              participant_id: participant.id,
+              participant_name: Participant.full_name(participant),
+              training_session_id: session.id
+            })
 
-        Phoenix.PubSub.broadcast(@pubsub, topic(session.id), {:checked_in, check_in})
-        {:ok, check_in}
+          Phoenix.PubSub.broadcast(@pubsub, topic(session.id), {:checked_in, check_in})
+          {:ok, check_in}
 
-      {:error, %Ecto.Changeset{} = changeset} ->
-        if unique_violation?(changeset),
-          do: {:error, :already_checked_in},
-          else: {:error, changeset}
+        {:error, %Ecto.Changeset{} = changeset} ->
+          if unique_violation?(changeset),
+            do: {:error, :already_checked_in},
+            else: {:error, changeset}
+      end
+
+    ensure_training_membership(participant, session)
+    result
+  end
+
+  defp ensure_training_membership(%Participant{}, %TrainingSession{training_id: nil}), do: :ok
+
+  defp ensure_training_membership(%Participant{} = participant, %TrainingSession{training_id: id}) do
+    case Repo.get(Training, id) do
+      %Training{} = training -> add_training_member(training, participant)
+      nil -> :ok
     end
   end
 

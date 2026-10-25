@@ -112,7 +112,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
             ]}
           >
             <.icon name={if @show_all, do: "hero-user-group", else: "hero-users"} class="size-4" />
-            {if @show_all, do: gettext("Show only regulars"), else: gettext("Show all")}
+            {if @show_all, do: gettext("Show only members"), else: gettext("Show all")}
           </button>
           <div
             id="attendance-count"
@@ -139,7 +139,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
             {gettext("No active participants yet.")}
             <.link navigate={~p"/participants/new"} class="link link-primary">{gettext("Add one")}</.link>
           <% else %>
-            {gettext("No participants have attended this training yet.")}
+            {gettext("No members in this training yet.")}
             <button
               type="button"
               phx-click="toggle_show_all"

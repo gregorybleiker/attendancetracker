@@ -53,11 +53,17 @@ defmodule AttendanceTrackerWeb.Layouts do
 
         <nav class="hidden items-center gap-1 lg:flex">
           <.link navigate={~p"/"} class="btn btn-ghost">{gettext("Check-in")}</.link>
+          <.link navigate={~p"/event-check-in"} class="btn btn-ghost">
+            {gettext("Event check-in")}
+          </.link>
           <.link :if={@admin_mode} navigate={~p"/participants"} class="btn btn-ghost">
             {gettext("Participants")}
           </.link>
           <.link :if={@admin_mode} navigate={~p"/training"} class="btn btn-ghost">
             {gettext("Training")}
+          </.link>
+          <.link :if={@admin_mode} navigate={~p"/events"} class="btn btn-ghost">
+            {gettext("Events")}
           </.link>
           <.link :if={@admin_mode} navigate={~p"/reporting"} class="btn btn-ghost">
             {gettext("Reporting")}
@@ -89,6 +95,11 @@ defmodule AttendanceTrackerWeb.Layouts do
             <li>
               <.link navigate={~p"/"}><.icon name="hero-home" class="size-5" /> {gettext("Check-in")}</.link>
             </li>
+            <li>
+              <.link navigate={~p"/event-check-in"}>
+                <.icon name="hero-ticket" class="size-5" /> {gettext("Event check-in")}
+              </.link>
+            </li>
             <li :if={@admin_mode}>
               <.link navigate={~p"/participants"}>
                 <.icon name="hero-user-group" class="size-5" /> {gettext("Participants")}
@@ -97,6 +108,11 @@ defmodule AttendanceTrackerWeb.Layouts do
             <li :if={@admin_mode}>
               <.link navigate={~p"/training"}>
                 <.icon name="hero-calendar-days" class="size-5" /> {gettext("Training")}
+              </.link>
+            </li>
+            <li :if={@admin_mode}>
+              <.link navigate={~p"/events"}>
+                <.icon name="hero-ticket" class="size-5" /> {gettext("Events")}
               </.link>
             </li>
             <li :if={@admin_mode}>

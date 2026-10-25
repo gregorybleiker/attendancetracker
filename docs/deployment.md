@@ -60,6 +60,11 @@ builds the production image and pushes it to GitHub Container Registry as
 Dockerfile breakage is caught before merge. No secrets are needed for this:
 the workflow authenticates with the automatic `GITHUB_TOKEN`.
 
+The workflow passes the commit as a `GIT_SHA` build arg, which the release
+bakes in (falling back to the local git revision, or `"unknown"`, when absent)
+and shows in the admin area next to the version — see [Web
+layer](/architecture/web-layer.md).
+
 The VPS therefore never builds — it just pulls. If the GitHub repo is
 **private**, the package is private too, so log the VPS in once:
 

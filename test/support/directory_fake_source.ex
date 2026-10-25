@@ -1,7 +1,7 @@
 defmodule AttendanceTracker.Directory.FakeSource do
   @moduledoc """
   A test `AttendanceTracker.Directory.Source` that returns fixed members and
-  records the training names it was asked about.
+  records the config it was called with.
   """
 
   @behaviour AttendanceTracker.Directory.Source
@@ -15,13 +15,13 @@ defmodule AttendanceTracker.Directory.FakeSource do
   end
 
   @impl true
-  def fetch_members(training_names, config) do
-    send(self(), {:fake_fetch, training_names, config})
+  def fetch_members(config) do
+    send(self(), {:fake_fetch, config})
 
     {:ok,
      [
-       %{first_name: "Ada", last_name: "Lovelace", phone: "079 111"},
-       %{first_name: "Grace", last_name: "Hopper", phone: "079 222"}
+       %{first_name: "Ada", last_name: "Lovelace", phone: "079 111", trainings: ["Kids Judo"]},
+       %{first_name: "Grace", last_name: "Hopper", phone: "079 222", trainings: ["Kung Fu"]}
      ]}
   end
 end

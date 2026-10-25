@@ -18,6 +18,11 @@ defmodule AttendanceTracker.Tracker.Training do
 
     has_many :training_sessions, AttendanceTracker.Tracker.TrainingSession
 
+    has_many :training_members, AttendanceTracker.Tracker.TrainingMember
+
+    many_to_many :participants, AttendanceTracker.Tracker.Participant,
+      join_through: AttendanceTracker.Tracker.TrainingMember
+
     timestamps(type: :utc_datetime)
   end
 

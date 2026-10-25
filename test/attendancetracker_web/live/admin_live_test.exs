@@ -4,9 +4,17 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
   import Phoenix.LiveViewTest
 
   alias AttendanceTracker.Tracker
+  alias AttendanceTracker.Version
 
   setup %{conn: conn} do
     %{conn: log_in(conn)}
+  end
+
+  test "shows the application version", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin")
+
+    assert has_element?(view, "#app-version")
+    assert has_element?(view, "#app-version", "Version #{Version.full()}")
   end
 
   test "does not ask for the PIN again when already in admin mode", %{conn: conn} do
@@ -179,15 +187,28 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
                Tracker.list_participants(),
                &(AttendanceTracker.Tracker.Participant.full_name(&1) == "Grace Hopper")
              )
+
+      assert Enum.any?(Tracker.list_trainings(), &(&1.name == "Kung Fu"))
     end
 
-    test "explains when no training has an alias", %{conn: conn} do
+    test "previews the trainings that will be created", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/admin")
+
+      view
+      |> form("#directory-settings-form", %{directory: %{source: "fake"}})
+      |> render_change()
+
+      view
+      |> form("#directory-settings-form", %{directory: %{source: "fake", token: "x"}})
+      |> render_submit()
 
       view |> element("#directory-preview-btn") |> render_click()
 
-      assert render(view) =~ "No training has an alias"
-      refute has_element?(view, "#directory-preview")
+      assert has_element?(
+               view,
+               "#directory-preview",
+               "New trainings will be created: Kids Judo, Kung Fu"
+             )
     end
   end
 end

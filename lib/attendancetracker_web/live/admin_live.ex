@@ -4,6 +4,7 @@ defmodule AttendanceTrackerWeb.AdminLive do
   alias AttendanceTracker.Directory
   alias AttendanceTracker.Logs
   alias AttendanceTracker.Tracker
+  alias AttendanceTracker.Version
 
   @impl true
   def render(assigns) do
@@ -21,6 +22,10 @@ defmodule AttendanceTrackerWeb.AdminLive do
           </.button>
         </:actions>
       </.header>
+
+      <p id="app-version" class="text-xs opacity-60">
+        {gettext("Version %{version}", version: @version)}
+      </p>
 
       <div :if={not @unlocked} class="max-w-sm">
         <.form for={@pin_form} id="admin-unlock-form" phx-submit="unlock">
@@ -176,7 +181,7 @@ defmodule AttendanceTrackerWeb.AdminLive do
             <h2 class="text-lg font-semibold">{gettext("User management import")}</h2>
             <p class="mt-1 text-sm opacity-70">
               {gettext(
-                "Fetch members from an external user management system and create participants for members enrolled in a training whose name equals a training's alias."
+                "Fetch members from an external user management system and create a participant for each, excluding members with an exit date. Missing trainings are created automatically."
               )}
             </p>
           </div>
@@ -235,10 +240,15 @@ defmodule AttendanceTrackerWeb.AdminLive do
           >
             <p>
               {gettext(
-                "%{new} new, %{existing} matched to existing participants (%{total} in matching trainings).",
+                "%{new} new, %{existing} matched to existing participants (%{total} members fetched).",
                 new: length(@import_preview.new),
                 existing: length(@import_preview.existing),
                 total: @import_preview.total
+              )}
+            </p>
+            <p :if={@import_preview.new_trainings != []} class="opacity-70">
+              {gettext("New trainings will be created: %{names}",
+                names: Enum.join(@import_preview.new_trainings, ", ")
               )}
             </p>
             <ul :if={@import_preview.new != []} class="divide-y divide-base-200">
@@ -265,6 +275,7 @@ defmodule AttendanceTrackerWeb.AdminLive do
     {:ok,
      socket
      |> assign(:page_title, gettext("Admin"))
+     |> assign(:version, Version.full())
      |> assign(:unlocked, session["admin_pin_ok"] == true)
      |> assign(:pin_form, to_form(%{"pin" => ""}))
      |> assign(:form, pin_changeset_form())
@@ -395,15 +406,18 @@ defmodule AttendanceTrackerWeb.AdminLive do
   def handle_event("import_directory", _params, socket) do
     case socket.assigns.import_preview do
       %{new: _} = preview ->
-        {:ok, %{created: created, linked: linked}} = Directory.import_members(preview)
+        {:ok, %{created: created, linked: linked, trainings_created: trainings_created}} =
+          Directory.import_members(preview)
 
         {:noreply,
          socket
          |> put_flash(
            :info,
-           gettext("Imported %{created} participants (%{linked} linked to Webling)",
+           gettext(
+             "Imported %{created} participants (%{linked} linked to Webling, %{trainings} trainings created)",
              created: created,
-             linked: linked
+             linked: linked,
+             trainings: trainings_created
            )
          )
          |> assign(:import_preview, nil)}
@@ -463,16 +477,13 @@ defmodule AttendanceTrackerWeb.AdminLive do
   defp directory_field_label(%{key: :base_url}), do: gettext("Base URL")
   defp directory_field_label(%{key: :apikey}), do: gettext("API key")
   defp directory_field_label(%{key: :training_field}), do: gettext("Training field")
+  defp directory_field_label(%{key: :exit_field}), do: gettext("Exit field")
   defp directory_field_label(%{key: :first_name_property}), do: gettext("First-name field")
   defp directory_field_label(%{key: :last_name_property}), do: gettext("Last-name field")
   defp directory_field_label(%{key: :phone_property}), do: gettext("Phone field")
   defp directory_field_label(%{label: label}), do: label
 
   defp wrong_pin_error, do: [pin: {gettext("Wrong PIN"), []}]
-
-  defp directory_error(:no_named_trainings) do
-    gettext("No training has an alias yet. Set an alias on a training first.")
-  end
 
   defp directory_error(:missing_apikey), do: gettext("Add the user management API key first.")
 

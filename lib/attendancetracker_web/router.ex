@@ -43,6 +43,7 @@ defmodule AttendanceTrackerWeb.Router do
 
     live_session :kiosk, on_mount: [AttendanceTrackerWeb.KioskSessionHook] do
       live "/", CheckInLive, :index
+      live "/event-check-in", EventCheckInLive, :index
     end
   end
 
@@ -56,7 +57,13 @@ defmodule AttendanceTrackerWeb.Router do
 
     live "/training", TrainingLive.Index, :index
     live "/training/new", TrainingLive.Form, :new
+    live "/training/:id", TrainingLive.Show, :show
     live "/training/:id/edit", TrainingLive.Form, :edit
+
+    live "/events", EventLive.Index, :index
+    live "/events/new", EventLive.Form, :new
+    live "/events/:id", EventLive.Show, :show
+    live "/events/:id/edit", EventLive.Form, :edit
 
     live "/reporting", ReportLive, :index
     get "/reporting/download", ReportController, :download

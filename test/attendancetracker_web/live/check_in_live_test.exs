@@ -212,11 +212,10 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
     defp other_weekday(today_weekday), do: rem(today_weekday, 7) + 1
   end
 
-  describe "regulars and show all" do
+  describe "members and show all" do
     alias AttendanceTracker.Tracker
 
-    test "shows only participants who have attended the selected training by default",
-         %{conn: conn} do
+    test "shows only the selected training's members by default", %{conn: conn} do
       today_weekday = Date.day_of_week(Tracker.local_today())
 
       training =
@@ -229,24 +228,22 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
 
       other = training_fixture(%{name: "Other Training", weekday: other_weekday(today_weekday)})
 
-      regular = participant_fixture(%{name: "Regular Person", active: true})
-      other_regular = participant_fixture(%{name: "Other Person", active: true})
+      member = participant_fixture(%{name: "Member Person", active: true})
+      other_member = participant_fixture(%{name: "Other Person", active: true})
       newcomer = participant_fixture(%{name: "Newcomer", active: true})
 
-      past_session = training_session_fixture(%{training_id: training.id, date: ~D[2026-01-05]})
-      other_session = training_session_fixture(%{training_id: other.id, date: ~D[2026-01-06]})
-      check_in_fixture(%{participant: regular, training_session: past_session})
-      check_in_fixture(%{participant: other_regular, training_session: other_session})
+      {:ok, :created} = Tracker.add_training_member(training, member)
+      {:ok, :created} = Tracker.add_training_member(other, other_member)
 
       {:ok, view, _html} = live(conn, ~p"/")
 
-      assert has_element?(view, "#check-in-btn-#{regular.id}")
-      refute has_element?(view, "#check-in-btn-#{other_regular.id}")
+      assert has_element?(view, "#check-in-btn-#{member.id}")
+      refute has_element?(view, "#check-in-btn-#{other_member.id}")
       refute has_element?(view, "#check-in-btn-#{newcomer.id}")
       assert render(view) =~ "0 / 1 present"
     end
 
-    test "the show all button reveals every participant", %{conn: conn} do
+    test "the show all button reveals every participant regardless of training", %{conn: conn} do
       today_weekday = Date.day_of_week(Tracker.local_today())
 
       _training =

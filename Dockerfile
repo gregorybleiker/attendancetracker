@@ -56,6 +56,11 @@ RUN mix assets.setup
 
 COPY priv priv
 
+# The git revision baked into the release (shown in the admin area). Passed by
+# the publish workflow; empty gives "unknown" when git isn't available.
+ARG GIT_SHA=""
+ENV GIT_SHA=${GIT_SHA}
+
 COPY lib lib
 
 # Compile the release

@@ -36,6 +36,9 @@ defmodule AttendanceTrackerWeb.TrainingLive.Index do
           )}
         </:col>
         <:action :let={{_id, training}}>
+          <.link navigate={~p"/training/#{training}"}>{gettext("Members")}</.link>
+        </:action>
+        <:action :let={{_id, training}}>
           <.link navigate={~p"/training/#{training}/edit"}>{gettext("Edit")}</.link>
         </:action>
         <:action :let={{id, training}}>

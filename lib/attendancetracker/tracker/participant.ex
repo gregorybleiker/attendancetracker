@@ -24,6 +24,14 @@ defmodule AttendanceTracker.Tracker.Participant do
 
     has_one :photo, AttendanceTracker.Tracker.ParticipantPhoto
     has_many :check_ins, AttendanceTracker.Tracker.CheckIn
+    has_many :training_members, AttendanceTracker.Tracker.TrainingMember
+    has_many :event_participants, AttendanceTracker.Tracker.EventParticipant
+
+    many_to_many :trainings, AttendanceTracker.Tracker.Training,
+      join_through: AttendanceTracker.Tracker.TrainingMember
+
+    many_to_many :events, AttendanceTracker.Tracker.Event,
+      join_through: AttendanceTracker.Tracker.EventParticipant
 
     timestamps(type: :utc_datetime)
   end

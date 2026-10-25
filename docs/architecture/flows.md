@@ -35,7 +35,9 @@ tap → `handle_event("check_in")` → `Tracker.check_in/2` (idempotent thanks t
 the unique constraint — double taps are safe) → broadcast → every connected
 kiosk (including the sender) receives `{:checked_in, …}` → `handle_info`
 re-preloads that one participant and `stream_insert`s it → emerald card, count
-+1.
++1. When the session belongs to a training, `check_in/2` also adds the
+participant to that training's member list (add-only, see
+[Imports](/architecture/imports.md)).
 
 # Auto-selecting the training
 

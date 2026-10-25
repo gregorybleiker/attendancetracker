@@ -13,7 +13,7 @@ defmodule AttendanceTracker.Directory.WeblingTest do
     :ok
   end
 
-  test "matches members whose training field equals a configured training" do
+  test "returns every member with their trainings" do
     Req.Test.stub(__MODULE__, fn conn ->
       params = URI.decode_query(conn.query_string)
       assert params["format"] == "full"
@@ -41,31 +41,36 @@ defmodule AttendanceTracker.Directory.WeblingTest do
 
     config = %{"base_url" => "https://demo.webling.ch", "apikey" => "key"}
 
-    assert {:ok, [member]} = Webling.fetch_members(["Kids Judo"], config)
-    assert member.first_name == "Ada"
-    assert member.last_name == "Lovelace"
-    assert member.phone == "079 123"
+    assert {:ok, [ada, bob]} = Webling.fetch_members(config)
+    assert ada.first_name == "Ada"
+    assert ada.last_name == "Lovelace"
+    assert ada.phone == "079 123"
+    assert ada.trainings == ["Kids Judo"]
+    assert bob.trainings == ["Erwachsene"]
   end
 
-  test "matches case-insensitively and trims whitespace" do
+  test "excludes members whose exit field is not empty" do
     Req.Test.stub(__MODULE__, fn conn ->
       Req.Test.json(conn, %{
         "objects" => [
+          %{"properties" => %{"Vorname" => "Ada", "Name" => "L", "Training" => "Kids Judo"}},
           %{
             "properties" => %{
-              "Vorname" => "Ada",
-              "Name" => "Lovelace",
-              "Training" => "  kids judo "
+              "Vorname" => "Bob",
+              "Name" => "M",
+              "Training" => "Kids Judo",
+              "Austritt" => "2026-08-31"
             }
           }
         ]
       })
     end)
 
-    assert {:ok, [_]} = Webling.fetch_members(["Kids Judo"], %{"apikey" => "key"})
+    assert {:ok, [member]} = Webling.fetch_members(%{"apikey" => "key"})
+    assert member.first_name == "Ada"
   end
 
-  test "matches when the alias is contained in the field text" do
+  test "splits delimited training values" do
     Req.Test.stub(__MODULE__, fn conn ->
       Req.Test.json(conn, %{
         "objects" => [
@@ -73,29 +78,15 @@ defmodule AttendanceTracker.Directory.WeblingTest do
             "properties" => %{
               "Vorname" => "Ada",
               "Name" => "L",
-              "Training" => "Kids Judo; Erwachsene"
+              "Training" => "Kids Judo; Erwachsene, Wettkampf "
             }
-          },
-          %{
-            "properties" => %{
-              "Vorname" => "Bob",
-              "Name" => "M",
-              "Training" => "Erwachsene Anfänger"
-            }
-          },
-          %{"properties" => %{"Vorname" => "Cid", "Name" => "N", "Training" => "Wettkampf"}}
+          }
         ]
       })
     end)
 
-    assert {:ok, members} =
-             Webling.fetch_members(["Kids Judo", "Erwachsene"], %{"apikey" => "key"})
-
-    first_names = Enum.map(members, & &1.first_name)
-
-    assert "Ada" in first_names
-    assert "Bob" in first_names
-    refute "Cid" in first_names
+    assert {:ok, [member]} = Webling.fetch_members(%{"apikey" => "key"})
+    assert member.trainings == ["Kids Judo", "Erwachsene", "Wettkampf"]
   end
 
   test "supports multi-value (list) training properties" do
@@ -113,10 +104,11 @@ defmodule AttendanceTracker.Directory.WeblingTest do
       })
     end)
 
-    assert {:ok, [_]} = Webling.fetch_members(["Erwachsene"], %{"apikey" => "key"})
+    assert {:ok, [member]} = Webling.fetch_members(%{"apikey" => "key"})
+    assert member.trainings == ["Kids Judo", "Erwachsene"]
   end
 
-  test "uses the configured training field and property names" do
+  test "uses the configured training, exit and property names" do
     Req.Test.stub(__MODULE__, fn conn ->
       Req.Test.json(conn, %{
         "objects" => [
@@ -125,7 +117,16 @@ defmodule AttendanceTracker.Directory.WeblingTest do
               "firstname" => "Tim",
               "lastname" => "Muster",
               "mobile" => "076 000",
-              "Kurs" => "Kids Judo"
+              "Kurs" => "Kids Judo",
+              "Ausgetreten" => ""
+            }
+          },
+          %{
+            "properties" => %{
+              "firstname" => "Gone",
+              "lastname" => "Away",
+              "Kurs" => "Kids Judo",
+              "Ausgetreten" => "yes"
             }
           }
         ]
@@ -135,23 +136,21 @@ defmodule AttendanceTracker.Directory.WeblingTest do
     config = %{
       "apikey" => "key",
       "training_field" => "Kurs",
+      "exit_field" => "Ausgetreten",
       "first_name_property" => "firstname",
       "last_name_property" => "lastname",
       "phone_property" => "mobile"
     }
 
-    assert {:ok, [member]} = Webling.fetch_members(["Kids Judo"], config)
+    assert {:ok, [member]} = Webling.fetch_members(config)
     assert member.first_name == "Tim"
     assert member.last_name == "Muster"
     assert member.phone == "076 000"
-  end
-
-  test "returns no members without training names" do
-    assert {:ok, []} = Webling.fetch_members([], %{"apikey" => "key"})
+    assert member.trainings == ["Kids Judo"]
   end
 
   test "requires an API key" do
-    assert {:error, :missing_apikey} = Webling.fetch_members(["X"], %{})
+    assert {:error, :missing_apikey} = Webling.fetch_members(%{})
   end
 
   test "returns an error when the API responds with a failure" do
@@ -162,6 +161,6 @@ defmodule AttendanceTracker.Directory.WeblingTest do
     end)
 
     assert {:error, {:webling_http_error, 401, "Unauthorized"}} =
-             Webling.fetch_members(["X"], %{"apikey" => "bad"})
+             Webling.fetch_members(%{"apikey" => "bad"})
   end
 end

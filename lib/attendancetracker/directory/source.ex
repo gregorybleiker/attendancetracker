@@ -13,14 +13,16 @@ defmodule AttendanceTracker.Directory.Source do
   """
 
   @typedoc """
-  A normalised member. `first_name`/`last_name` are required (they make up the
-  participant name); `phone` and `training` are optional.
+  A normalised member. `first_name`/`last_name` make up the participant name
+  (at least one is required); `phone` and `trainings` are optional. `trainings`
+  lists the trainings the member is enrolled in, so the importer can create any
+  that don't exist yet.
   """
   @type member :: %{
           required(:first_name) => String.t() | nil,
           required(:last_name) => String.t() | nil,
           optional(:phone) => String.t() | nil,
-          optional(:training) => String.t() | nil
+          optional(:trainings) => [String.t()]
         }
 
   @typedoc """
@@ -41,12 +43,12 @@ defmodule AttendanceTracker.Directory.Source do
   @callback config_fields() :: [config_field()]
 
   @doc """
-  Returns the members belonging to a training whose name matches one of the
-  given `training_names` (the aliases of the configured trainings).
+  Returns the members to import.
 
-  Implementations decide how to match (REST filters, in-memory comparison, ...)
-  and must return `{:ok, []}` when `training_names` is empty.
+  Implementations return one normalised map per member that should become a
+  participant, excluding former members (e.g. via a configurable exit field).
+  The importer creates a participant for each and creates any missing trainings
+  named in `:trainings`.
   """
-  @callback fetch_members(training_names :: [String.t()], config :: map()) ::
-              {:ok, [member()]} | {:error, term()}
+  @callback fetch_members(config :: map()) :: {:ok, [member()]} | {:error, term()}
 end

@@ -124,4 +124,47 @@ defmodule AttendanceTrackerWeb.ParticipantComponents do
     |> Enum.map_join(&String.first/1)
     |> String.upcase()
   end
+
+  attr :participant, :map, required: true
+  attr :id_prefix, :string, default: "event-participant"
+  attr :click, :string, default: "toggle"
+
+  @doc """
+  A tappable participant tile for selecting participants for an event, styled
+  like the check-in kiosk tiles. Highlights (emerald + check) when the
+  participant's `event_participants` preload contains the event, and toggles the
+  selection on click.
+  """
+  def selectable_card(assigns) do
+    ~H"""
+    <% selected = @participant.event_participants != [] %>
+    <button
+      id={"#{@id_prefix}-#{@participant.id}"}
+      phx-click={@click}
+      phx-value-id={@participant.id}
+      class={[
+        "group relative flex w-full cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all duration-200",
+        if(selected,
+          do: "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30",
+          else:
+            "border-base-300 bg-base-100 hover:-translate-y-0.5 hover:border-primary hover:shadow-lg active:scale-95"
+        )
+      ]}
+    >
+      <div class="relative">
+        <.avatar participant={@participant} dim={not selected} />
+
+        <div :if={selected} class="absolute -right-1 -bottom-1">
+          <div class="rounded-full bg-emerald-500 p-1 text-white">
+            <.icon name="hero-check" class="size-4" />
+          </div>
+        </div>
+      </div>
+
+      <span class="text-center text-sm leading-tight font-semibold">
+        {AttendanceTracker.Tracker.Participant.full_name(@participant)}
+      </span>
+    </button>
+    """
+  end
 end

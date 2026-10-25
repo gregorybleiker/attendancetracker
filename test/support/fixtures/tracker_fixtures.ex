@@ -92,4 +92,16 @@ defmodule AttendanceTracker.TrackerFixtures do
 
     check_in
   end
+
+  @doc """
+  Generate an event.
+  """
+  def event_fixture(attrs \\ %{}) do
+    {:ok, event} =
+      attrs
+      |> Enum.into(%{name: "Club championships", date: ~D[2026-09-12]})
+      |> AttendanceTracker.Tracker.create_event()
+
+    event
+  end
 end

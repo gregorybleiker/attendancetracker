@@ -117,14 +117,14 @@ collections, and updates are surgical DOM patches.
   displays when it's the sole child of the grid.
 - *Changing collections* (switching training) → refetch + `reset: true`.
 
-# Kiosk: regulars vs. everyone
+# Kiosk: members vs. everyone
 
-When a training is selected, the kiosk lists only that training's **regulars**
-— participants who have ever attended it — by default
-(`list_participants_with_check_ins/2` adds an `exists` subquery over past
-check-ins; ad-hoc sessions without a training skip the filter). A **Show all**
-toggle button, reachable without the admin PIN, re-streams everyone
-(`show_all: true`, `reset: true`).
+When a training is selected, the kiosk lists only that training's **members**
+(the `training_members` join table) by default
+(`list_participants_with_check_ins/2` adds an `exists` subquery over
+`training_members`; ad-hoc sessions without a training skip the filter). A
+**Show all** toggle button, reachable without the admin PIN, re-streams everyone
+regardless of the training (`show_all: true`, `reset: true`).
 
 Which trainings a participant has attended is shown in the admin area, not on
 the kiosk tiles: `with_attended_trainings/1` runs one grouped query and merges
@@ -135,6 +135,23 @@ participant detail page (`ParticipantLive.Show` via
 `get_participant_with_trainings!/1`). Both render the shared
 `ParticipantComponents.trainings_table/1` (name/weekday/time; the nested one in
 the listing hides its header row).
+
+A training's **members** (the `training_members` join table, populated by the
+import — not attendance) are listed on `TrainingLive.Show`
+(`/training/:id`, reached via the **Members** action in `TrainingLive.Index`);
+`Tracker.list_training_members/1` returns them ordered by first name with
+photos preloaded.
+
+**Events** live in their own tab (`/events`) with `EventLive.Index/Form/Show`.
+The show page is a participant picker: it reuses the kiosk's tile grid (avatar,
+first name, tap to toggle) and highlights the selected participants, backed by
+`Tracker.list_participants_for_event/1` and
+`Tracker.add_event_participant/2` / `remove_event_participant/2`.
+
+An **Event check-in** kiosk tab (`/event-check-in`, `EventCheckInLive`, in the
+`:kiosk` `live_session`) mirrors the check-in page but with an events dropdown;
+it shares `ParticipantComponents.selectable_card/1` with the admin picker.
+See [Events](/architecture/events.md).
 
 # Forms: `to_form/2` everywhere
 
@@ -301,6 +318,12 @@ end
 The modal is plain markup toggled by `:if={@toggle_participant}` — modals need
 no JS framework in LiveView, just assigns. `AdminLive` uses the same pattern:
 one boolean (`@unlocked`) swaps the whole page between PIN prompt and settings.
+
+**Version banner.** The admin header shows the running version and git
+revision (`AttendanceTracker.Version`, e.g. `0.1.0+g1a2b3c4`), always visible
+regardless of the PIN, so a deployment can be identified without shell access.
+The revision is baked in at build time from the `GIT_SHA` build arg (see
+[Deployment](/deployment.md)).
 
 **Admin mode on the kiosk.** The same `@admin_unlocked` assign doubles as the
 kiosk's admin mode: it starts from the session flag

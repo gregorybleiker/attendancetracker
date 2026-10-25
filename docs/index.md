@@ -21,6 +21,7 @@ LiveView, Ecto + SQLite). It supersedes the former repository-root
 * [Real-time](/architecture/real-time.md) - Phoenix.PubSub fan-out between connected kiosks.
 * [Web layer](/architecture/web-layer.md) - Router, LiveView lifecycle, streams, forms, components, JS commands, colocated hooks, photo storage, CSV report, PIN gating.
 * [Imports](/architecture/imports.md) - The Webling connector and the source-agnostic import pipeline.
+* [Events](/architecture/events.md) - One-off, single-day events with their own participant list.
 * [PWA](/architecture/pwa.md) - Web app manifest and service worker.
 * [Localisation](/architecture/localization.md) - Gettext English/German and locale detection.
 * [Logs](/architecture/logs.md) - Audit and program logs with periodic retention.

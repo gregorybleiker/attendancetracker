@@ -7,8 +7,8 @@ defmodule AttendanceTracker.Directory do
   configured from the admin area without a redeploy.
 
   The import is a two-step, source-agnostic flow: `preview/0` fetches the
-  members and reports which would be created, then `import_members/1` creates
-  the missing participants.
+  members and reports which would be created and which trainings are missing,
+  then `import_members/1` creates the missing trainings and participants.
   """
 
   import Ecto.Changeset
@@ -101,56 +101,66 @@ defmodule AttendanceTracker.Directory do
   end
 
   @doc """
-  Fetches members for the trainings that have an alias and splits them into
-  those that would be created (`new`) and those matching an existing
-  participant (`existing`, which the import flags as Webling members).
+  Fetches all importable members and splits them into those that would be
+  created (`new`) and those matching an existing participant (`existing`, which
+  the import flags as Webling members).
 
-  Returns `{:ok, %{new: [candidate], existing: [candidate], total: integer}}`,
-  `{:error, :no_named_trainings}` when no training has an alias, or
-  `{:error, reason}` when the connector fails.
+  Also reports the `new_trainings` — the trainings the fetched members are
+  enrolled in that don't exist yet — which `import_members/1` creates.
+
+  Returns `{:ok, %{new: [candidate], existing: [candidate], total: integer,
+  new_trainings: [String.t()]}}` or `{:error, reason}` when the connector fails.
   """
   def preview do
-    case named_trainings() do
-      [] ->
-        {:error, :no_named_trainings}
+    source_id = source()
+    module = source_module(source_id)
+    config = config(source_id)
 
-      names ->
-        source_id = source()
-        module = source_module(source_id)
-        config = config(source_id)
+    case module.fetch_members(config) do
+      {:ok, members} ->
+        candidates =
+          members
+          |> Enum.map(&to_candidate/1)
+          |> Enum.reject(&is_nil/1)
+          |> Enum.uniq_by(&normalise_name(&1.name))
 
-        case module.fetch_members(names, config) do
-          {:ok, members} ->
-            candidates =
-              members
-              |> Enum.map(&to_candidate/1)
-              |> Enum.reject(&is_nil/1)
-              |> Enum.uniq_by(&normalise_name(&1.name))
+        by_name = participants_by_name()
 
-            by_name = participants_by_name()
+        {existing, new} =
+          Enum.split_with(candidates, &Map.has_key?(by_name, normalise_name(&1.name)))
 
-            {existing, new} =
-              Enum.split_with(candidates, &Map.has_key?(by_name, normalise_name(&1.name)))
+        log_fetch(source_id, config, {:ok, length(members)})
 
-            log_fetch(source_id, config, names, {:ok, length(members)})
+        {:ok,
+         %{
+           new: new,
+           existing: existing,
+           total: length(candidates),
+           new_trainings: missing_trainings(members)
+         }}
 
-            {:ok, %{new: new, existing: existing, total: length(candidates)}}
-
-          {:error, reason} = error ->
-            log_fetch(source_id, config, names, {:error, reason})
-            error
-        end
+      {:error, reason} = error ->
+        log_fetch(source_id, config, {:error, reason})
+        error
     end
   end
 
   @doc """
-  Creates a participant (source `"webling"`) for every new candidate and flags
-  the name-matched existing participants as Webling members.
+  Creates any missing trainings the members are enrolled in, then creates a
+  participant (source `"webling"`) for every new candidate and flags the
+  name-matched existing participants as Webling members.
 
-  Takes the result of `preview/0` and returns
-  `{:ok, %{created: integer, linked: integer}}`.
+  Member-training relationships are **additive**: a membership is added when the
+  remote data lists the member in a training, but no membership is ever removed
+  — memberships that exist locally but are not in the remote data are left
+  untouched (see `link_memberships/1`).
+
+  Takes the result of `preview/0` and returns `{:ok, %{created: integer,
+  linked: integer, trainings_created: integer, memberships: integer}}`.
   """
-  def import_members(%{new: new, existing: existing}) do
+  def import_members(%{new: new, existing: existing} = preview) do
+    trainings_created = ensure_trainings(Map.get(preview, :new_trainings, []))
+
     {created, _seen} =
       Enum.reduce(new, {0, participants_by_name() |> Map.keys() |> MapSet.new()}, fn candidate,
                                                                                      {created,
@@ -193,21 +203,99 @@ defmodule AttendanceTracker.Directory do
         end
       end)
 
+    memberships = link_memberships(new ++ existing)
+
     Logs.program(%{
       source: source(),
       command: "import",
       status: "ok",
       request: "import #{length(new) + length(existing)} candidate(s)",
-      result: "created #{created}, linked #{linked}"
+      result:
+        "created #{created}, linked #{linked}, trainings #{length(trainings_created)}, " <>
+          "memberships #{memberships}"
     })
 
-    {:ok, %{created: created, linked: linked}}
+    {:ok,
+     %{
+       created: created,
+       linked: linked,
+       trainings_created: length(trainings_created),
+       memberships: memberships
+     }}
   end
 
-  defp log_fetch(source_id, config, names, result) do
+  @training_defaults %{weekday: 1, starts_at: ~T[19:00:00], ends_at: ~T[21:30:00]}
+
+  defp ensure_trainings(names) do
+    Enum.reduce(names, [], fn name, created ->
+      case Tracker.create_training(Map.put(@training_defaults, :name, name)) do
+        {:ok, training} -> [training | created]
+        {:error, _changeset} -> created
+      end
+    end)
+    |> Enum.reverse()
+  end
+
+  # Links every candidate to the trainings named in their training field,
+  # resolving names to the trainings created or reused during the import.
+  defp link_memberships(candidates) do
+    by_participant = participants_by_name()
+    by_training = trainings_by_name()
+
+    Enum.reduce(candidates, 0, fn candidate, count ->
+      case Map.get(by_participant, normalise_name(candidate.name)) do
+        %Participant{} = participant ->
+          candidate
+          |> Map.get(:trainings, [])
+          |> Enum.reduce(count, fn name, acc ->
+            link_membership(participant, name, by_training, acc)
+          end)
+
+        nil ->
+          count
+      end
+    end)
+  end
+
+  defp link_membership(participant, name, by_training, count) do
+    case Map.get(by_training, normalise_name(name)) do
+      %{id: id} = training when not is_nil(id) ->
+        case Tracker.add_training_member(training, participant) do
+          {:ok, :created} -> count + 1
+          _ -> count
+        end
+
+      _ ->
+        count
+    end
+  end
+
+  defp trainings_by_name do
+    Tracker.list_trainings()
+    |> Enum.reduce(%{}, fn training, acc ->
+      key = normalise_name(training.name)
+      if key == "", do: acc, else: Map.put_new(acc, key, training)
+    end)
+  end
+
+  defp missing_trainings(members) do
+    existing =
+      Tracker.list_trainings()
+      |> Enum.map(&normalise_name(&1.name))
+      |> MapSet.new()
+
+    members
+    |> Enum.flat_map(&Map.get(&1, :trainings, []))
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.uniq_by(&normalise_name/1)
+    |> Enum.reject(&MapSet.member?(existing, normalise_name(&1)))
+  end
+
+  defp log_fetch(source_id, config, result) do
     {status, text} =
       case result do
-        {:ok, count} -> {"ok", "#{count} member(s) matched"}
+        {:ok, count} -> {"ok", "#{count} member(s) fetched"}
         {:error, reason} -> {"error", inspect(reason)}
       end
 
@@ -215,18 +303,9 @@ defmodule AttendanceTracker.Directory do
       source: source_id,
       command: "fetch_members",
       status: status,
-      request:
-        "#{source_id} #{Map.get(config, "base_url", "")} · trainings: #{Enum.join(names, ", ")}",
+      request: "#{source_id} #{Map.get(config, "base_url", "")}",
       result: text
     })
-  end
-
-  defp named_trainings do
-    Tracker.list_trainings()
-    |> Enum.map(& &1.name)
-    |> Enum.map(&if(is_binary(&1), do: String.trim(&1), else: ""))
-    |> Enum.reject(&(&1 == ""))
-    |> Enum.uniq()
   end
 
   defp to_candidate(member) do
@@ -237,8 +316,22 @@ defmodule AttendanceTracker.Directory do
     if name == "" do
       nil
     else
-      %{name: name, first_name: first, last_name: last, phone: clean(member[:phone])}
+      %{
+        name: name,
+        first_name: first,
+        last_name: last,
+        phone: clean(member[:phone]),
+        trainings: member_trainings(member)
+      }
     end
+  end
+
+  defp member_trainings(member) do
+    member
+    |> Map.get(:trainings, [])
+    |> List.wrap()
+    |> Enum.map(&clean/1)
+    |> Enum.reject(&is_nil/1)
   end
 
   defp clean(nil), do: nil

@@ -3,13 +3,14 @@ defmodule AttendanceTracker.Directory.Webling do
   `AttendanceTracker.Directory.Source` connector for the
   [Webling](https://www.webling.ch) member database API.
 
-  Members are matched by a configurable member property (`training_field`): a
-  member is returned when that property contains the whole text of one of the
-  configured training aliases (case-insensitive substring match). The property
-  may be a multi-value (list) property or a single string.
+  Every member is returned, except those whose configurable `exit_field`
+  property is non-empty (former members). The trainings a member is enrolled in
+  are read from the configurable `training_field` property (a multi-value list
+  or a delimited string) and handed to the importer, which creates any that
+  don't exist yet.
 
   Configuration keys (all strings): `base_url`, `apikey`, `training_field`,
-  `first_name_property`, `last_name_property`, `phone_property`.
+  `exit_field`, `first_name_property`, `last_name_property`, `phone_property`.
   """
 
   @behaviour AttendanceTracker.Directory.Source
@@ -32,6 +33,7 @@ defmodule AttendanceTracker.Directory.Webling do
       },
       %{key: :apikey, label: "API key", default: "", secret: true},
       %{key: :training_field, label: "Training field", default: "Training", secret: false},
+      %{key: :exit_field, label: "Exit field", default: "Austritt", secret: false},
       %{key: :first_name_property, label: "First-name field", default: "Vorname", secret: false},
       %{key: :last_name_property, label: "Last-name field", default: "Name", secret: false},
       %{key: :phone_property, label: "Phone field", default: "Telefon", secret: false}
@@ -39,57 +41,54 @@ defmodule AttendanceTracker.Directory.Webling do
   end
 
   @impl true
-  def fetch_members(training_names, config) do
-    names = normalise_names(training_names)
+  def fetch_members(config) do
+    if get_config(config, "apikey", "") == "" do
+      {:error, :missing_apikey}
+    else
+      with {:ok, objects} <- fetch_all(config, "/member", format: "full") do
+        members =
+          objects
+          |> Enum.reject(&exited?(&1, config))
+          |> Enum.map(&normalise_member(&1, config))
+          |> Enum.reject(&is_nil/1)
 
-    cond do
-      names == [] ->
-        {:ok, []}
-
-      get_config(config, "apikey", "") == "" ->
-        {:error, :missing_apikey}
-
-      true ->
-        with {:ok, objects} <- fetch_all(config, "/member", format: "full") do
-          members =
-            objects
-            |> Enum.filter(&member_in_trainings?(&1, names, config))
-            |> Enum.map(&normalise_member(&1, config))
-            |> Enum.reject(&is_nil/1)
-
-          {:ok, members}
-        end
+        {:ok, members}
+      end
     end
   end
 
-  defp normalise_names(names) do
-    names
+  defp exited?(%{"properties" => properties}, config) when is_map(properties) do
+    field = get_config(config, "exit_field", default("exit_field"))
+    properties |> Map.get(field) |> present?()
+  end
+
+  defp exited?(_object, _config), do: false
+
+  defp present?(value) when is_binary(value), do: String.trim(value) != ""
+  defp present?(value) when is_integer(value), do: value != 0
+  defp present?(value) when is_list(value), do: Enum.any?(value, &present?/1)
+  defp present?(_value), do: false
+
+  defp training_names(properties, config) do
+    field = get_config(config, "training_field", default("training_field"))
+    properties |> Map.get(field) |> split_trainings()
+  end
+
+  defp split_trainings(value) when is_list(value) do
+    value |> Enum.flat_map(&split_trainings/1) |> Enum.uniq()
+  end
+
+  defp split_trainings(value) when is_integer(value), do: [Integer.to_string(value)]
+
+  defp split_trainings(value) when is_binary(value) do
+    value
+    |> String.split([";", ",", "\n"])
     |> Enum.map(&String.trim/1)
     |> Enum.reject(&(&1 == ""))
     |> Enum.uniq()
   end
 
-  defp member_in_trainings?(%{"properties" => properties}, names, config)
-       when is_map(properties) do
-    field = get_config(config, "training_field", default("training_field"))
-    haystacks = properties |> Map.get(field) |> field_values()
-    wanted = names |> Enum.map(&normalise_token/1) |> Enum.reject(&(&1 == ""))
-
-    Enum.any?(wanted, fn name -> Enum.any?(haystacks, &String.contains?(&1, name)) end)
-  end
-
-  defp member_in_trainings?(_object, _names, _config), do: false
-
-  defp field_values(value) when is_list(value), do: Enum.map(value, &normalise_token/1)
-  defp field_values(value) when is_binary(value), do: [normalise_token(value)]
-  defp field_values(value) when is_integer(value), do: [Integer.to_string(value)]
-  defp field_values(_value), do: []
-
-  defp normalise_token(value) when is_binary(value),
-    do: value |> String.trim() |> String.downcase()
-
-  defp normalise_token(value) when is_integer(value), do: Integer.to_string(value)
-  defp normalise_token(_value), do: ""
+  defp split_trainings(_value), do: []
 
   defp fetch_all(config, path, params, page \\ 1, acc \\ []) do
     params = Keyword.merge(params, page: page, per_page: @per_page)
@@ -141,7 +140,8 @@ defmodule AttendanceTracker.Directory.Webling do
     %{
       first_name: property(properties, config, "first_name_property"),
       last_name: property(properties, config, "last_name_property"),
-      phone: property(properties, config, "phone_property")
+      phone: property(properties, config, "phone_property"),
+      trainings: training_names(properties, config)
     }
   end
 
