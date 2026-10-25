@@ -71,22 +71,47 @@ defmodule AttendanceTrackerWeb.EventLiveTest do
   end
 
   describe "Show (participant selection)" do
+    test "shows only selected participants by default and reveals all on demand", %{conn: conn} do
+      event = event_fixture()
+      ada = participant_fixture(%{name: "Ada Lovelace"})
+      grace = participant_fixture(%{name: "Grace Hopper"})
+      {:ok, _} = Tracker.add_event_participant(event, grace)
+
+      {:ok, view, _html} = live(conn, ~p"/events/#{event}")
+
+      assert render(view) =~ "1 selected"
+      assert has_element?(view, "#event-participant-#{grace.id}")
+      refute has_element?(view, "#event-participant-#{ada.id}")
+
+      view |> element("#event-show-all-toggle") |> render_click()
+
+      assert has_element?(view, "#event-participant-#{ada.id}")
+      assert has_element?(view, "#event-participant-#{grace.id}")
+    end
+
     test "selects and deselects participants", %{conn: conn} do
       event = event_fixture()
       participant = participant_fixture(%{name: "Ada Lovelace"})
 
       {:ok, view, _html} = live(conn, ~p"/events/#{event}")
 
-      assert has_element?(view, "#event-participant-#{participant.id}")
       assert render(view) =~ "0 selected"
+      refute has_element?(view, "#event-participant-#{participant.id}")
+
+      view |> element("#event-show-all-toggle") |> render_click()
+      assert has_element?(view, "#event-participant-#{participant.id}")
 
       view |> element("#event-participant-#{participant.id}") |> render_click()
       assert Tracker.event_participant?(event, participant)
       assert render(view) =~ "1 selected"
 
+      view |> element("#event-show-all-toggle") |> render_click()
+      assert has_element?(view, "#event-participant-#{participant.id}")
+
       view |> element("#event-participant-#{participant.id}") |> render_click()
       refute Tracker.event_participant?(event, participant)
       assert render(view) =~ "0 selected"
+      refute has_element?(view, "#event-participant-#{participant.id}")
     end
   end
 end

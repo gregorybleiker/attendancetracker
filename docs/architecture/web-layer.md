@@ -143,9 +143,11 @@ import — not attendance) are listed on `TrainingLive.Show`
 photos preloaded.
 
 **Events** live in their own tab (`/events`) with `EventLive.Index/Form/Show`.
-The show page is a participant picker: it reuses the kiosk's tile grid (avatar,
-first name, tap to toggle) and highlights the selected participants, backed by
-`Tracker.list_participants_for_event/1` and
+The show page is a participant picker: by default it lists only the event's
+selected participants, with a **Show all** toggle to reveal every active
+participant. It reuses the kiosk's tile grid (avatar, first name, tap to
+toggle), backed by `Tracker.list_participants_for_event/2` (with
+`only_selected: true` for the default view) and
 `Tracker.add_event_participant/2` / `remove_event_participant/2`.
 
 An **Event check-in** kiosk tab (`/event-check-in`, `EventCheckInLive`, in the

@@ -1,6 +1,8 @@
 # Bundle Update Log
 
 ## 2026-10-25
+* **Update**: The event participant picker (`/events/:id`) now shows only the participants selected for the event by default, with a **Show all** toggle to reveal every active participant when adding more. Added a `only_selected` option to `Tracker.list_participants_for_event/2`. Documented in [Events](/architecture/events.md) and [Web layer](/architecture/web-layer.md).
+* **Update**: Added `start.sh`, a Podman convenience script that runs the published image with the SQLite database in `./data/at.db`, reading `SECRET_KEY_BASE` from `.env` and running migrations before boot. Documented in [Deployment](/deployment.md).
 * **Update**: Added an **Event check-in** kiosk tab (`/event-check-in`) mirroring the check-in page but with an events dropdown instead of trainings; it toggles event participants via a shared `ParticipantComponents.selectable_card/1`. Documented in [Events](/architecture/events.md) and [Web layer](/architecture/web-layer.md).
 * **Update**: Added an **Events** tab: one-off, single-day events (name, date, optional times) with their own participant list, managed under `/events` (`EventLive.Index/Form/Show`). The event page is a check-in-style picker that toggles participants, stored in the new `event_participants` join table. Documented in [Events](/architecture/events.md), [Domain model](/architecture/domain-model.md), and [Web layer](/architecture/web-layer.md).
 * **Update**: Members/participants are now sorted by first name (the training members page, the check-in kiosk, and the participants listing).

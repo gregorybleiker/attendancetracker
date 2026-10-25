@@ -428,17 +428,31 @@ defmodule AttendanceTracker.Tracker do
   Lists the active participants with their selection for the event preloaded
   (`participant.event_participants` is `[]` or has one entry), ordered by first
   name. Used by the event participant picker.
+
+  Pass `only_selected: true` to list just the participants selected for the
+  event.
   """
-  def list_participants_for_event(%Event{} = event) do
+  def list_participants_for_event(%Event{} = event, opts \\ []) do
     from(p in Participant, where: p.active)
+    |> only_selected_for_event(event, opts)
     |> event_selection(event)
     |> order_by([p], asc: p.first_name, asc: p.last_name)
     |> with_photo()
     |> Repo.all()
   end
 
+  defp only_selected_for_event(query, %Event{} = event, opts) do
+    if Keyword.get(opts, :only_selected, false) do
+      from p in query,
+        join: ep in assoc(p, :event_participants),
+        where: ep.event_id == ^event.id
+    else
+      query
+    end
+  end
+
   @doc """
-  Same as `list_participants_for_event/1`, but for a single participant.
+  Same as `list_participants_for_event/2`, but for a single participant.
   """
   def get_participant_for_event(%Event{} = event, participant_id) do
     from(p in Participant, where: p.id == ^participant_id)

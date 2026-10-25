@@ -49,6 +49,7 @@ Relevant files:
 | `.github/workflows/docker-publish.yml` | CI: builds the image and pushes it to `ghcr.io` on every push to `main` |
 | `compose.yml` | `app` (pinned to the registry image) + `caddy` services, volumes, restart policy |
 | `caddy/Caddyfile` | Reverse proxy + automatic HTTPS for your domain |
+| `start.sh` | Local convenience script: runs the published image with Podman, mounting `./data` at `/data` |
 | `.env` (gitignored, create from `.env.example`) | `SECRET_KEY_BASE`, `PHX_HOST` |
 
 # Publishing
@@ -136,6 +137,23 @@ Public repos need no login to pull.
 6. **Open `https://<your-domain>`**, log in with the default admin PIN
    `1234`, and **change the PIN under Admin immediately** (seeds don't run
    in production, so the default is active until you change it).
+
+# Running the image locally with Podman
+
+`start.sh` runs the published image with Podman on port 4001, keeping the
+SQLite database in `./data/at.db` (the repository's `./data` directory is
+mounted at `/data`):
+
+```bash
+cp .env.example .env   # fill in SECRET_KEY_BASE
+./start.sh
+```
+
+The script reads `SECRET_KEY_BASE` and `PHX_HOST` from `.env` (override them
+via the environment), runs `/app/bin/migrate`, then starts `/app/bin/server`.
+`IMAGE`, `HOST_PORT`, and `DATA_DIR` can also be overridden. On first run it
+creates `DATA_DIR` and hands it to the container's `nobody` user (UID 65534)
+with `podman unshare chown`.
 
 # Updating
 

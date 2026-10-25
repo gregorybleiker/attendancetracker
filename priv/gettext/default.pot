@@ -40,7 +40,7 @@ msgid "Ad-hoc training"
 msgstr ""
 
 #: lib/attendancetracker_web/live/check_in_live.ex:140
-#: lib/attendancetracker_web/live/event_live/show.ex:52
+#: lib/attendancetracker_web/live/event_live/show.ex:70
 #, elixir-autogen, elixir-format
 msgid "Add one"
 msgstr ""
@@ -344,7 +344,7 @@ msgstr ""
 
 #: lib/attendancetracker_web/live/check_in_live.ex:139
 #: lib/attendancetracker_web/live/event_check_in_live.ex:91
-#: lib/attendancetracker_web/live/event_live/show.ex:51
+#: lib/attendancetracker_web/live/event_live/show.ex:69
 #, elixir-autogen, elixir-format
 msgid "No active participants yet."
 msgstr ""
@@ -1045,6 +1045,8 @@ msgstr ""
 
 #: lib/attendancetracker_web/live/check_in_live.ex:115
 #: lib/attendancetracker_web/live/check_in_live.ex:148
+#: lib/attendancetracker_web/live/event_live/show.ex:48
+#: lib/attendancetracker_web/live/event_live/show.ex:78
 #, elixir-autogen, elixir-format
 msgid "Show all"
 msgstr ""
@@ -1121,7 +1123,7 @@ msgid "Show only members"
 msgstr ""
 
 #: lib/attendancetracker_web/live/event_check_in_live.ex:78
-#: lib/attendancetracker_web/live/event_live/show.ex:38
+#: lib/attendancetracker_web/live/event_live/show.ex:54
 #, elixir-autogen, elixir-format
 msgid "%{count} selected"
 msgstr ""
@@ -1207,4 +1209,14 @@ msgstr ""
 #: lib/attendancetracker_web/live/event_check_in_live.ex:51
 #, elixir-autogen, elixir-format
 msgid "No events yet."
+msgstr ""
+
+#: lib/attendancetracker_web/live/event_live/show.ex:72
+#, elixir-autogen, elixir-format
+msgid "No participants selected yet."
+msgstr ""
+
+#: lib/attendancetracker_web/live/event_live/show.ex:48
+#, elixir-autogen, elixir-format
+msgid "Show selected"
 msgstr ""

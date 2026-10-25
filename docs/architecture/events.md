@@ -39,9 +39,11 @@ Events are managed in their own admin tab (`Admin mode → Events`, route
   create/edit/delete; the **Participants** action opens the event.
 - `EventLive.Form` (`/events/new`, `/events/:id/edit`) creates and edits the
   event. Saving a new event navigates straight to its participant picker.
-- `EventLive.Show` (`/events/:id`) is the participant picker: every active
-  participant is rendered as a tile, exactly like the check-in kiosk, and
-  tapping toggles the selection for this event.
+- `EventLive.Show` (`/events/:id`) is the participant picker: it shows only
+  the participants selected for this event by default, with a **Show all**
+  toggle that reveals every active participant (each rendered as a tile,
+  exactly like the check-in kiosk). Tapping toggles the selection for this
+  event; deselecting someone in the selected-only view removes their tile.
 
 There is also an **Event check-in** kiosk tab (`/event-check-in`,
 `EventCheckInLive`, in the `:kiosk` `live_session` next to `/`): like the

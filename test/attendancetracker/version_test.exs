@@ -4,7 +4,7 @@ defmodule AttendanceTracker.VersionTest do
   alias AttendanceTracker.Version
 
   test "version/0 reports the application version" do
-    assert Version.version() == "0.4.0"
+    assert Version.version() == "0.5.0"
   end
 
   test "git_hash/0 reports a revision" do
