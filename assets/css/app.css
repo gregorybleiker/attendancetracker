@@ -103,3 +103,10 @@
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
 /* This file is for your main application CSS */
+
+/* Kiosk/tablet: keep a fixed zoom level. Scrolling stays enabled, but
+   pinch-to-zoom and double-tap zoom are suppressed. */
+html,
+body {
+  touch-action: pan-x pan-y;
+}

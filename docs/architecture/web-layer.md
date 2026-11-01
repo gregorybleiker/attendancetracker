@@ -73,7 +73,7 @@ mount/3        ── runs TWICE: once for the initial HTTP render, once when th
                   WebSocket connects → side effects are guarded:
                   `if connected?(socket), do: Tracker.subscribe(session)`
 
-handle_event/3 ── user interactions ("check_in", "select_training", ...)
+handle_event/3 ── user interactions ("check_in", "select_session", ...)
 
 handle_info/3  ── PubSub messages from other clients
 ```
@@ -115,7 +115,7 @@ collections, and updates are surgical DOM patches.
   (`@checked_in_count`), incremented/decremented in `handle_info`.
 - *No empty state* → pure-CSS trick: a `.hidden only:block` div that only
   displays when it's the sole child of the grid.
-- *Changing collections* (switching training) → refetch + `reset: true`.
+- *Changing collections* (switching training or date) → refetch + `reset: true`.
 
 # Kiosk: members vs. everyone
 
@@ -174,7 +174,7 @@ Validation on every change (`phx-change`) re-assigns
 `to_form(changeset, action: :validate)` — errors only render once the changeset
 has an **action**, which is how a fresh form shows no errors.
 
-**Param-map-backed** (PIN prompts, training selector):
+**Param-map-backed** (PIN prompts, date/training selector):
 
 ```elixir
 to_form(%{"pin" => ""}, errors: [pin: {"Wrong PIN", []}])

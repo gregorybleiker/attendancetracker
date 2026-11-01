@@ -139,10 +139,41 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
   describe "training selection" do
     alias AttendanceTracker.Tracker
 
-    test "hides the dropdown when no trainings are configured", %{conn: conn} do
+    test "shows the date picker without a training dropdown when no trainings exist", %{
+      conn: conn
+    } do
       {:ok, view, _html} = live(conn, ~p"/")
 
-      refute has_element?(view, "#training-select")
+      assert has_element?(view, "#session-date")
+      refute has_element?(view, "#session-training")
+    end
+
+    test "selecting a date switches the session independently of the training", %{conn: conn} do
+      today_weekday = Date.day_of_week(Tracker.local_today())
+
+      _current =
+        training_fixture(%{
+          weekday: today_weekday,
+          starts_at: ~T[00:00:00],
+          ends_at: ~T[23:59:59]
+        })
+
+      participant = participant_fixture(%{name: "Date Picker", active: true})
+      other_date = Date.add(Tracker.local_today(), -1)
+
+      {:ok, view, _html} = live(conn, ~p"/")
+
+      view |> element("#show-all-toggle") |> render_click()
+      view |> element("#check-in-btn-#{participant.id}") |> render_click()
+      assert render(view) =~ "1 / 1 present"
+
+      view
+      |> element("#session-select")
+      |> render_change(%{"date" => Date.to_iso8601(other_date)})
+
+      assert has_element?(view, "#session-date[value='#{Date.to_iso8601(other_date)}']")
+      assert render(view) =~ "0 / 1 present"
+      refute has_element?(view, "#checked-in-badge-#{participant.id}")
     end
 
     test "pre-selects the training in progress", %{conn: conn} do
@@ -162,7 +193,7 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
 
       assert has_element?(
                view,
-               "#training-select option[value='#{current.id}'][selected]"
+               "#session-select option[value='#{current.id}'][selected]"
              )
 
       # the dropdown shows the alias
@@ -193,16 +224,16 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
 
       # Switch to the other training: separate session, nobody checked in
       view
-      |> element("#training-select")
+      |> element("#session-select")
       |> render_change(%{"training_id" => to_string(other.id)})
 
       assert render(view) =~ "0 / 1 present"
       refute has_element?(view, "#checked-in-badge-#{participant.id}")
-      assert has_element?(view, "#training-select option[value='#{other.id}'][selected]")
+      assert has_element?(view, "#session-select option[value='#{other.id}'][selected]")
 
       # Switching back restores the check-in
       view
-      |> element("#training-select")
+      |> element("#session-select")
       |> render_change(%{"training_id" => to_string(current.id)})
 
       assert render(view) =~ "1 / 1 present"

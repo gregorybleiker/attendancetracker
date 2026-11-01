@@ -870,16 +870,20 @@ defmodule AttendanceTracker.Tracker do
   Returns the ad-hoc training session for today (not tied to a training),
   creating it if needed.
   """
-  def todays_session do
-    today = local_today()
+  def todays_session, do: session_for_date(local_today())
 
+  @doc """
+  Returns the ad-hoc training session for the given date (not tied to a
+  training), creating it if needed.
+  """
+  def session_for_date(%Date{} = date) do
     %TrainingSession{}
-    |> TrainingSession.changeset(%{date: today})
+    |> TrainingSession.changeset(%{date: date})
     |> Repo.insert(on_conflict: :nothing)
 
     Repo.one!(
       from s in TrainingSession,
-        where: s.date == ^today and is_nil(s.training_id)
+        where: s.date == ^date and is_nil(s.training_id)
     )
   end
 

@@ -13,7 +13,8 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   def mount(_params, lv_session, socket) do
     admin_unlocked = lv_session["admin_pin_ok"] == true
     trainings = Tracker.list_trainings()
-    {session, selected_id} = resolve_session(trainings)
+    {training, date} = resolve_selection(trainings)
+    session = session_for(training, date)
     participants = Tracker.list_participants_with_check_ins(session)
 
     if connected?(socket), do: Tracker.subscribe(session)
@@ -24,7 +25,9 @@ defmodule AttendanceTrackerWeb.CheckInLive do
      |> assign(:session, session)
      |> assign(:trainings, trainings)
      |> assign(:training_options, training_options(trainings))
-     |> assign(:training_form, to_form(%{"training_id" => selected_id}))
+     |> assign(:selected_training_id, training && training.id)
+     |> assign(:selected_date, date)
+     |> assign(:session_form, session_form(training && training.id, date))
      |> assign(:admin_unlocked, admin_unlocked)
      |> assign(:show_all, false)
      |> assign(:toggle_participant, nil)
@@ -37,25 +40,31 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   end
 
   # Without configured trainings, fall back to a single session per day.
-  defp resolve_session([]), do: {Tracker.todays_session(), nil}
+  defp resolve_selection([]), do: {nil, Tracker.local_today()}
 
-  defp resolve_session(trainings) do
+  defp resolve_selection(trainings) do
     today = Tracker.local_today()
     now = Tracker.local_time_now()
 
     training = Tracker.current_training(trainings, today, now)
-    date = Training.occurrence_on_or_before(training, today)
+    {training, Training.occurrence_on_or_before(training, today)}
+  end
 
-    {Tracker.session_for_training(training, date), training.id}
+  defp session_for(nil, date), do: Tracker.session_for_date(date)
+
+  defp session_for(%Training{} = training, date),
+    do: Tracker.session_for_training(training, date)
+
+  defp session_form(training_id, date) do
+    to_form(%{
+      "date" => Date.to_iso8601(date),
+      "training_id" => training_id
+    })
   end
 
   defp training_options(trainings) do
-    today = Tracker.local_today()
-
     for training <- trainings do
-      date = Training.occurrence_on_or_before(training, today)
-      label = training_label(training)
-      {"#{label} · #{DateFormat.short_date(date)}", training.id}
+      {training_label(training), training.id}
     end
   end
 
@@ -78,15 +87,22 @@ defmodule AttendanceTrackerWeb.CheckInLive do
     ~H"""
     <Layouts.app flash={@flash} admin_mode={@admin_mode}>
       <.form
-        :if={@trainings != []}
-        for={@training_form}
-        id="training-select"
-        phx-change="select_training"
-        class="max-w-md"
+        for={@session_form}
+        id="session-select"
+        phx-change="select_session"
+        class="flex max-w-xl flex-wrap items-end gap-4"
       >
         <.input
-          field={@training_form[:training_id]}
+          field={@session_form[:date]}
+          type="date"
+          id="session-date"
+          label={gettext("Date")}
+        />
+        <.input
+          :if={@trainings != []}
+          field={@session_form[:training_id]}
           type="select"
+          id="session-training"
           label={gettext("Training")}
           options={@training_options}
         />
@@ -349,10 +365,12 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   end
 
   @impl true
-  def handle_event("select_training", %{"training_id" => id}, socket) do
-    training = Tracker.get_training!(id)
-    date = Training.occurrence_on_or_before(training, Tracker.local_today())
-    session = Tracker.session_for_training(training, date)
+  def handle_event("select_session", params, socket) do
+    date = parse_date(params["date"]) || socket.assigns.selected_date
+    training_id = params["training_id"] || socket.assigns.selected_training_id
+
+    training = if training_id, do: Tracker.get_training!(training_id)
+    session = session_for(training, date)
 
     if connected?(socket) do
       Tracker.unsubscribe(socket.assigns.session)
@@ -365,7 +383,9 @@ defmodule AttendanceTrackerWeb.CheckInLive do
     {:noreply,
      socket
      |> assign(:session, session)
-     |> assign(:training_form, to_form(%{"training_id" => training.id}))
+     |> assign(:selected_date, date)
+     |> assign(:selected_training_id, training && training.id)
+     |> assign(:session_form, session_form(training && training.id, date))
      |> assign(:checked_in_count, Tracker.check_in_count(session))
      |> assign(:participant_count, length(participants))
      |> stream(:participants, participants, reset: true)}
@@ -490,6 +510,15 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   defp pin_form_with_error do
     to_form(%{"pin" => ""}, errors: [pin: {gettext("Wrong PIN"), []}])
   end
+
+  defp parse_date(value) when is_binary(value) do
+    case Date.from_iso8601(value) do
+      {:ok, date} -> date
+      _ -> nil
+    end
+  end
+
+  defp parse_date(_value), do: nil
 
   @impl true
   def handle_info({:checked_in, check_in}, socket) do

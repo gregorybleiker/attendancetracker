@@ -42,3 +42,11 @@ A small service worker (`priv/static/service-worker.js`) is registered from
 stale-while-revalidates the bundled CSS/JS, images and fonts, and deliberately
 does **not** intercept LiveView websockets or check-in traffic — the kiosk
 stays online-first, never serving stale data.
+
+# Locked zoom
+
+The root layout uses a fixed-scale viewport (`maximum-scale=1`,
+`user-scalable=no`) and `touch-action: pan-x pan-y` on `html`/`body`, so a
+tablet kiosk keeps the same layout while still allowing scrolling. Safari
+ignores `user-scalable=no`, so `app.js` also prevents `gesturestart` /
+`gesturechange` / `gestureend` and multi-touch `touchmove` default actions.

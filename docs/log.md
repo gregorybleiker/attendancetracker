@@ -1,5 +1,9 @@
 # Bundle Update Log
 
+## 2026-11-01
+* **Update**: Locked the kiosk/tablet zoom level: fixed-scale viewport meta, `touch-action: pan-x pan-y` on the page, and Safari gesture/multi-touch prevention in `app.js`. Scrolling is unaffected. Documented in [PWA](/architecture/pwa.md).
+* **Update**: The check-in kiosk now has separate **date** and **training** selectors. Either can change independently; a training resolves via `session_for_training/2` and no training via the new `Tracker.session_for_date/1` (with `todays_session/0` delegating to it). Training labels no longer embed the date. Documented in [End-to-end flows](/architecture/flows.md) and [Domain logic](/architecture/domain-logic.md).
+
 ## 2026-10-25
 * **Update**: The event participant picker (`/events/:id`) now shows only the participants selected for the event by default, with a **Show all** toggle to reveal every active participant when adding more. Added a `only_selected` option to `Tracker.list_participants_for_event/2`. Documented in [Events](/architecture/events.md) and [Web layer](/architecture/web-layer.md).
 * **Update**: Added `start.sh`, a Podman convenience script that runs the published image with the SQLite database in `./data/at.db`, reading `SECRET_KEY_BASE` from `.env` and running migrations before boot. Documented in [Deployment](/deployment.md).

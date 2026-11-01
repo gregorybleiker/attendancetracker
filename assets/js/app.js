@@ -26,6 +26,20 @@ import {hooks as colocatedHooks} from "phoenix-colocated/attendancetracker"
 import topbar from "../vendor/topbar"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
+
+// Kiosk/tablet: lock the zoom level. `touch-action` handles most browsers;
+// these gesture handlers cover Safari/iOS, which ignores `user-scalable=no`.
+document.addEventListener("gesturestart", event => event.preventDefault())
+document.addEventListener("gesturechange", event => event.preventDefault())
+document.addEventListener("gestureend", event => event.preventDefault())
+document.addEventListener(
+  "touchmove",
+  event => {
+    if (event.touches.length > 1) event.preventDefault()
+  },
+  {passive: false}
+)
+
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},

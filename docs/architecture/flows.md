@@ -42,9 +42,18 @@ participant to that training's member list (add-only, see
 # Auto-selecting the training
 
 mount → `list_trainings/0` → `current_training/3` (in progress →
-upcoming today → most recent) → `occurrence_on_or_before/2` gives the concrete
+upcoming today → most recent) → `occurrence_on_or_before/2` gives the initial
 date → `session_for_training/2` get-or-creates the session. No trainings
-configured → fall back to one ad-hoc session per day (`[]` clause).
+configured → fall back to one ad-hoc session per day (`[]` clause), selected
+with `session_for_date/1`.
+
+# Selecting date and training
+
+The kiosk form carries an independent **date** picker and a **training**
+dropdown. Changing either one re-resolves the concrete session: a training
+uses `session_for_training/2`, no training uses `session_for_date/1`. This
+lets an admin catch up on attendance for a past date without changing the
+training.
 
 # Switching training
 
