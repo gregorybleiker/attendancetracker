@@ -1,6 +1,7 @@
 # Bundle Update Log
 
 ## 2026-11-08
+* **Update** (0.6.0): Densified the participant grid — 6 columns at `lg`, `gap-2`, smaller tiles (`size-12 sm:size-16` avatars, `p-2`/`gap-1`, `text-xs` names) and reduced page padding — so many more rows fit the kiosk. Documented in [Web layer](/architecture/web-layer.md).
 * **Update**: Made the app header more compact (`min-h-0`, reduced padding, smaller logo/hamburger) and dropped the visible date/training labels in the kiosk toolbar, freeing vertical space for the participant grid. Documented in [Web layer](/architecture/web-layer.md).
 * **Update**: Dismissing the kiosk info mode (by tap or the **Show info** button) now always returns to the main check-in screen — an info screen shown on the event check-in tab navigates back to `/`. Documented in [Info screen](/architecture/info-screen.md).
 * **Update**: Added a **Show info** button to the kiosk's left flyout menu (via a new `<:menu>` layout slot + `Layouts.drawer_button/1`) that starts the info slideshow on demand, without waiting for the idle timeout. Documented in [Info screen](/architecture/info-screen.md).

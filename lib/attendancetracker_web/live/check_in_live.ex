@@ -185,7 +185,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
       <div
         id="participants"
         phx-update="stream"
-        class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+        class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
       >
         <div
           id="participants-empty"
@@ -348,7 +348,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
         phx-value-id={@participant.id}
         title={if(checked_in, do: gettext("Tap to undo the check-in"))}
         class={[
-          "group relative flex w-full cursor-pointer flex-col items-center gap-1.5 rounded-2xl border-2 p-3 transition-all duration-200",
+          "group relative flex w-full cursor-pointer flex-col items-center gap-1 rounded-2xl border-2 p-2 transition-all duration-200",
           if(checked_in,
             do:
               "border-emerald-500 bg-emerald-50 hover:-translate-y-0.5 hover:border-amber-400 hover:shadow-lg active:scale-95 dark:bg-emerald-950/30",
@@ -360,8 +360,8 @@ defmodule AttendanceTrackerWeb.CheckInLive do
         <div class="relative">
           <.avatar
             participant={@participant}
-            class="size-16 sm:size-20"
-            text_class="text-2xl"
+            class="size-12 sm:size-16"
+            text_class="text-xl"
             dim={is_nil(checked_in)}
           />
 
@@ -383,7 +383,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
           </div>
         </div>
 
-        <span class="text-center text-sm leading-tight font-semibold">{Participant.full_name(
+        <span class="text-center text-xs leading-tight font-semibold">{Participant.full_name(
           @participant
         )}</span>
 

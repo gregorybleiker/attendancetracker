@@ -121,11 +121,11 @@ collections, and updates are surgical DOM patches.
   displays when it's the sole child of the grid.
 - *Changing collections* (switching training or date) → refetch + `reset: true`.
 
-**Tile sizing.** The participant grid (`grid-cols-2 … lg:grid-cols-5`, `gap-3`)
-is tuned so a 1920×1200 kiosk shows 20 participants at once (4 rows × 5 columns):
-the kiosk and event-picker tiles cap the avatar at `size-16 sm:size-20` with
-`p-3`/`gap-1.5` padding, while the participant detail page keeps the larger
-`size-24 sm:size-28` avatar default.
+**Tile sizing.** The participant grid (`grid-cols-2 … lg:grid-cols-6`, `gap-2`)
+is tuned for a dense kiosk wall: the kiosk and event-picker tiles cap the
+avatar at `size-12 sm:size-16` with `p-2`/`gap-1` padding and `text-xs` names,
+while the participant detail page keeps the larger `size-24 sm:size-28` avatar
+default.
 
 # Kiosk: members vs. everyone
 
