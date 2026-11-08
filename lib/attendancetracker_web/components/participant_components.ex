@@ -143,7 +143,7 @@ defmodule AttendanceTrackerWeb.ParticipantComponents do
       phx-click={@click}
       phx-value-id={@participant.id}
       class={[
-        "group relative flex w-full cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all duration-200",
+        "group relative flex w-full cursor-pointer flex-col items-center gap-1.5 rounded-2xl border-2 p-3 transition-all duration-200",
         if(selected,
           do: "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30",
           else:
@@ -152,7 +152,12 @@ defmodule AttendanceTrackerWeb.ParticipantComponents do
       ]}
     >
       <div class="relative">
-        <.avatar participant={@participant} dim={not selected} />
+        <.avatar
+          participant={@participant}
+          class="size-16 sm:size-20"
+          text_class="text-2xl"
+          dim={not selected}
+        />
 
         <div :if={selected} class="absolute -right-1 -bottom-1">
           <div class="rounded-full bg-emerald-500 p-1 text-white">

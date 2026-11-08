@@ -1,17 +1,20 @@
 defmodule AttendanceTrackerWeb.CheckInLive do
   use AttendanceTrackerWeb, :live_view
 
+  import AttendanceTrackerWeb.InfoComponents
   import AttendanceTrackerWeb.ParticipantComponents
 
+  alias AttendanceTracker.AdminSession
   alias AttendanceTracker.Tracker
   alias AttendanceTracker.Tracker.Participant
   alias AttendanceTracker.Tracker.Training
-  alias AttendanceTrackerWeb.DateFormat
   alias AttendanceTrackerWeb.TrainingLabels
 
   @impl true
   def mount(_params, lv_session, socket) do
-    admin_unlocked = lv_session["admin_pin_ok"] == true
+    admin_unlocked =
+      AdminSession.active?(lv_session["admin_token"], Tracker.admin_timeout_seconds())
+
     trainings = Tracker.list_trainings()
     {training, date} = resolve_selection(trainings)
     session = session_for(training, date)
@@ -24,7 +27,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
      |> assign(:page_title, gettext("Check in"))
      |> assign(:session, session)
      |> assign(:trainings, trainings)
-     |> assign(:training_options, training_options(trainings))
+     |> assign(:training_options, training_options(trainings, date))
      |> assign(:selected_training_id, training && training.id)
      |> assign(:selected_date, date)
      |> assign(:session_form, session_form(training && training.id, date))
@@ -36,6 +39,9 @@ defmodule AttendanceTrackerWeb.CheckInLive do
      |> assign(:camera_error, nil)
      |> assign(:checked_in_count, Tracker.check_in_count(session))
      |> assign(:participant_count, length(participants))
+     |> assign(:infos, Tracker.list_active_infos())
+     |> assign(:idle_timeout_ms, Tracker.idle_timeout_ms())
+     |> assign(:rotation_ms, Tracker.info_rotation_ms())
      |> stream(:participants, participants)}
   end
 
@@ -62,10 +68,38 @@ defmodule AttendanceTrackerWeb.CheckInLive do
     })
   end
 
-  defp training_options(trainings) do
-    for training <- trainings do
+  # The dropdown lists only the trainings that run on the selected date's
+  # weekday, so a date always maps to a training that actually occurs on it.
+  defp training_options(trainings, date) do
+    weekday = Date.day_of_week(date)
+
+    for training <- trainings, training.weekday == weekday do
       {training_label(training), training.id}
     end
+  end
+
+  # Keeps the selected training only when it runs on `date`'s weekday,
+  # otherwise falls back to the first training scheduled that day.
+  defp selected_training(training_id, date, trainings) do
+    weekday = Date.day_of_week(date)
+
+    case training_id do
+      id when id in [nil, ""] ->
+        first_training_on(trainings, weekday)
+
+      id ->
+        training = Tracker.get_training!(id)
+
+        if training.weekday == weekday do
+          training
+        else
+          first_training_on(trainings, weekday)
+        end
+    end
+  end
+
+  defp first_training_on(trainings, weekday) do
+    Enum.find(trainings, &(&1.weekday == weekday))
   end
 
   # Like `Training.label/1`, but with the weekday translated in the web layer.
@@ -86,66 +120,72 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} admin_mode={@admin_mode}>
-      <.form
-        for={@session_form}
-        id="session-select"
-        phx-change="select_session"
-        class="flex max-w-xl flex-wrap items-end gap-4"
-      >
-        <.input
-          field={@session_form[:date]}
-          type="date"
-          id="session-date"
-          label={gettext("Date")}
-        />
-        <.input
-          :if={@trainings != []}
-          field={@session_form[:training_id]}
-          type="select"
-          id="session-training"
-          label={gettext("Training")}
-          options={@training_options}
-        />
-      </.form>
+      <:header>
+        <.form
+          for={@session_form}
+          id="session-select"
+          phx-change="select_session"
+          class="flex flex-wrap items-center gap-2 [&>div]:mb-0"
+        >
+          <.input
+            field={@session_form[:date]}
+            type="date"
+            id="session-date"
+            class="input input-sm w-auto"
+          />
+          <.input
+            :if={@training_options != []}
+            field={@session_form[:training_id]}
+            type="select"
+            id="session-training"
+            options={@training_options}
+            class="select select-sm w-auto"
+          />
+        </.form>
 
-      <div class="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h1 class="text-2xl font-bold">{gettext("Tap your photo to check in")}</h1>
-          <p class="text-sm opacity-70">{DateFormat.long_date(@session.date)}</p>
+        <button
+          :if={@session.training_id}
+          id="show-all-toggle"
+          type="button"
+          phx-click="toggle_show_all"
+          class={[
+            "flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold transition-colors",
+            if(@show_all,
+              do: "border-primary bg-primary text-primary-content",
+              else: "border-base-300 bg-base-100 hover:border-primary"
+            )
+          ]}
+        >
+          <.icon name={if @show_all, do: "hero-user-group", else: "hero-users"} class="size-4" />
+          {if @show_all, do: gettext("Show only members"), else: gettext("Show all")}
+        </button>
+
+        <div
+          id="attendance-count"
+          class="rounded-full bg-base-200 px-3 py-1 text-sm font-semibold"
+        >
+          {gettext("%{checked} / %{total} present",
+            checked: @checked_in_count,
+            total: @participant_count
+          )}
         </div>
-        <div class="flex items-center gap-2">
-          <button
-            :if={@session.training_id}
-            id="show-all-toggle"
-            type="button"
-            phx-click="toggle_show_all"
-            class={[
-              "flex cursor-pointer items-center gap-1.5 rounded-full border px-4 py-1 text-sm font-semibold transition-colors",
-              if(@show_all,
-                do: "border-primary bg-primary text-primary-content",
-                else: "border-base-300 bg-base-100 hover:border-primary"
-              )
-            ]}
-          >
-            <.icon name={if @show_all, do: "hero-user-group", else: "hero-users"} class="size-4" />
-            {if @show_all, do: gettext("Show only members"), else: gettext("Show all")}
-          </button>
-          <div
-            id="attendance-count"
-            class="rounded-full bg-base-200 px-4 py-1 text-sm font-semibold"
-          >
-            {gettext("%{checked} / %{total} present",
-              checked: @checked_in_count,
-              total: @participant_count
-            )}
-          </div>
-        </div>
-      </div>
+      </:header>
+
+      <:menu>
+        <Layouts.drawer_button
+          :if={@infos != []}
+          id="show-info-mode-btn"
+          click={JS.dispatch("info-mode:show", to: "#info-mode")}
+          icon="hero-presentation-chart-bar"
+        >
+          {gettext("Show info")}
+        </Layouts.drawer_button>
+      </:menu>
 
       <div
         id="participants"
         phx-update="stream"
-        class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+        class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
       >
         <div
           id="participants-empty"
@@ -248,11 +288,16 @@ defmodule AttendanceTrackerWeb.CheckInLive do
         </div>
       </div>
 
+      <.info_mode
+        infos={@infos}
+        idle_timeout_ms={@idle_timeout_ms}
+        rotation_ms={@rotation_ms}
+      />
+
       <script :type={Phoenix.LiveView.ColocatedHook} name=".CameraCapture">
         export default {
           async mounted() {
             this.video = this.el.querySelector("video")
-
             try {
               this.stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: { ideal: "user" } },
@@ -303,7 +348,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
         phx-value-id={@participant.id}
         title={if(checked_in, do: gettext("Tap to undo the check-in"))}
         class={[
-          "group relative flex w-full cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 p-4 transition-all duration-200",
+          "group relative flex w-full cursor-pointer flex-col items-center gap-1.5 rounded-2xl border-2 p-3 transition-all duration-200",
           if(checked_in,
             do:
               "border-emerald-500 bg-emerald-50 hover:-translate-y-0.5 hover:border-amber-400 hover:shadow-lg active:scale-95 dark:bg-emerald-950/30",
@@ -313,7 +358,12 @@ defmodule AttendanceTrackerWeb.CheckInLive do
         ]}
       >
         <div class="relative">
-          <.avatar participant={@participant} dim={is_nil(checked_in)} />
+          <.avatar
+            participant={@participant}
+            class="size-16 sm:size-20"
+            text_class="text-2xl"
+            dim={is_nil(checked_in)}
+          />
 
           <div :if={@admin_mode} class="absolute -top-1 -left-1">
             <.source_badge participant={@participant} />
@@ -367,9 +417,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   @impl true
   def handle_event("select_session", params, socket) do
     date = parse_date(params["date"]) || socket.assigns.selected_date
-    training_id = params["training_id"] || socket.assigns.selected_training_id
-
-    training = if training_id, do: Tracker.get_training!(training_id)
+    training = selected_training(params["training_id"], date, socket.assigns.trainings)
     session = session_for(training, date)
 
     if connected?(socket) do
@@ -384,11 +432,17 @@ defmodule AttendanceTrackerWeb.CheckInLive do
      socket
      |> assign(:session, session)
      |> assign(:selected_date, date)
+     |> assign(:training_options, training_options(socket.assigns.trainings, date))
      |> assign(:selected_training_id, training && training.id)
      |> assign(:session_form, session_form(training && training.id, date))
      |> assign(:checked_in_count, Tracker.check_in_count(session))
      |> assign(:participant_count, length(participants))
      |> stream(:participants, participants, reset: true)}
+  end
+
+  def handle_event("info_mode_dismissed", _params, socket) do
+    # Already on the check-in screen; nothing to navigate to.
+    {:noreply, socket}
   end
 
   def handle_event("toggle_show_all", _params, socket) do

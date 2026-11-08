@@ -687,6 +687,113 @@ defmodule AttendanceTracker.TrackerTest do
     end
   end
 
+  describe "admin session timeout" do
+    test "admin_timeout_minutes/0 defaults to 10" do
+      assert Tracker.admin_timeout_minutes() == 10
+      assert Tracker.admin_timeout_seconds() == 600
+    end
+
+    test "update_admin_timeout_minutes/1 persists the value" do
+      assert {:ok, _setting} = Tracker.update_admin_timeout_minutes(45)
+
+      assert Tracker.admin_timeout_minutes() == 45
+      assert Tracker.admin_timeout_seconds() == 45 * 60
+    end
+
+    test "change_admin_timeout_minutes/1 requires minutes within 1..1440" do
+      assert Tracker.change_admin_timeout_minutes(%{minutes: 30}).valid?
+
+      for invalid <- [0, -1, 1441] do
+        refute Tracker.change_admin_timeout_minutes(%{minutes: invalid}).valid?,
+               "expected #{invalid} to be invalid"
+      end
+    end
+  end
+
+  describe "info screen settings" do
+    test "idle_timeout_minutes/0 defaults to 10" do
+      assert Tracker.idle_timeout_minutes() == 10
+      assert Tracker.idle_timeout_ms() == 600_000
+    end
+
+    test "update_idle_timeout_minutes/1 persists the value" do
+      assert {:ok, _setting} = Tracker.update_idle_timeout_minutes(20)
+
+      assert Tracker.idle_timeout_minutes() == 20
+      assert Tracker.idle_timeout_ms() == 20 * 60_000
+    end
+
+    test "change_idle_timeout_minutes/1 requires minutes within 1..1440" do
+      assert Tracker.change_idle_timeout_minutes(%{minutes: 5}).valid?
+
+      for invalid <- [0, -1, 1441] do
+        refute Tracker.change_idle_timeout_minutes(%{minutes: invalid}).valid?,
+               "expected #{invalid} to be invalid"
+      end
+    end
+
+    test "info_rotation_seconds/0 defaults to 15" do
+      assert Tracker.info_rotation_seconds() == 15
+      assert Tracker.info_rotation_ms() == 15_000
+    end
+
+    test "update_info_rotation_seconds/1 persists the value" do
+      assert {:ok, _setting} = Tracker.update_info_rotation_seconds(30)
+
+      assert Tracker.info_rotation_seconds() == 30
+      assert Tracker.info_rotation_ms() == 30_000
+    end
+
+    test "change_info_rotation_seconds/1 requires seconds within 1..3600" do
+      assert Tracker.change_info_rotation_seconds(%{seconds: 10}).valid?
+
+      for invalid <- [0, -1, 3601] do
+        refute Tracker.change_info_rotation_seconds(%{seconds: invalid}).valid?,
+               "expected #{invalid} to be invalid"
+      end
+    end
+  end
+
+  describe "info slides" do
+    test "create_info/1, list_infos/0 and get_info!/1" do
+      assert {:ok, info} = Tracker.create_info(%{title: "Welcome", body: "<p>Hello</p>"})
+
+      assert [%{title: "Welcome"}] = Tracker.list_infos()
+      assert Tracker.get_info!(info.id).body == "<p>Hello</p>"
+    end
+
+    test "list_infos/0 orders by position" do
+      {:ok, second} = Tracker.create_info(%{body: "<p>2</p>", position: 2})
+      {:ok, _first} = Tracker.create_info(%{body: "<p>1</p>", position: 1})
+
+      assert [%{id: id1}, %{id: id2}] = Tracker.list_infos()
+      assert id1 != second.id
+      assert id2 == second.id
+    end
+
+    test "list_active_infos/0 excludes hidden slides" do
+      {:ok, _shown} = Tracker.create_info(%{body: "<p>shown</p>", active: true})
+      {:ok, _hidden} = Tracker.create_info(%{body: "<p>hidden</p>", active: false})
+
+      assert [%{body: "<p>shown</p>"}] = Tracker.list_active_infos()
+    end
+
+    test "create_info/1 requires a body" do
+      assert {:error, changeset} = Tracker.create_info(%{title: "No body"})
+      assert %{body: ["can't be blank"]} = errors_on(changeset)
+    end
+
+    test "update_info/2 and delete_info/1" do
+      {:ok, info} = Tracker.create_info(%{body: "<p>Hello</p>"})
+
+      assert {:ok, updated} = Tracker.update_info(info, %{title: "Updated"})
+      assert updated.title == "Updated"
+
+      assert {:ok, _} = Tracker.delete_info(updated)
+      assert Tracker.list_infos() == []
+    end
+  end
+
   describe "report" do
     import AttendanceTracker.TrackerFixtures
 

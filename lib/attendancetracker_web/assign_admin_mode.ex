@@ -7,11 +7,15 @@ defmodule AttendanceTrackerWeb.AssignAdminMode do
 
   import Phoenix.Component, only: [assign: 3]
 
+  alias AttendanceTracker.AdminSession
+  alias AttendanceTracker.Tracker
   alias AttendanceTrackerWeb.Locales
 
   def on_mount(:default, _params, session, socket) do
     Gettext.put_locale(AttendanceTrackerWeb.Gettext, session["locale"] || Locales.default())
 
-    {:cont, assign(socket, :admin_mode, session["admin_pin_ok"] == true)}
+    admin_mode = AdminSession.active?(session["admin_token"], Tracker.admin_timeout_seconds())
+
+    {:cont, assign(socket, :admin_mode, admin_mode)}
   end
 end

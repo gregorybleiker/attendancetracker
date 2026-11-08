@@ -30,6 +30,7 @@ lib/
       training_session.ex
       check_in.ex
       setting.ex
+      info.ex                     # Idle-kiosk slide (title, rich-text body, position, active)
     directory.ex                  # Context: connector registry + import pipeline
     directory/
       source.ex                   # Behaviour for user-management connectors
@@ -39,13 +40,18 @@ lib/
       audit_log.ex                # Ecto schema (user interactions)
       program_log.ex              # Ecto schema (sync calls + results)
       pruner.ex                   # Periodic retention GenServer
+    admin_session.ex              # In-memory registry of admin sessions (idle timeout)
     duplicates.ex                 # Detect + merge likely duplicate participants
   attendancetracker_web/
     router.ex                     # Routes (all LiveView)
+    assign_admin_mode.ex          # on_mount: expose active-session flag as @admin_mode
+    admin_session_hook.ex         # on_mount: enforce the admin idle timeout on LiveViews
+    kiosk_session_hook.ex         # on_mount: re-check the kiosk session PIN
     components/
       layouts.ex                  # App shell: navbar, theme toggle, flash group
       core_components.ex          # <.button>, <.input>, <.table>, <.icon>, …
       participant_components.ex   # Domain components: <.avatar>, <.source_badge>
+      info_components.ex          # Kiosk info-mode overlay + admin WYSIWYG editor
     live/
       check_in_live.ex            # The kiosk: photo grid, check-in, PIN, camera
       login_live.ex               # Login page: PIN form POSTed to the session controller
@@ -55,6 +61,7 @@ lib/
       admin_live.ex               # PIN-gated admin area
       admin_logs_live.ex          # Scrollable audit/program log viewer
       admin_duplicates_live.ex    # Detect + merge duplicate participants
+      admin_infos_live.ex         # CRUD + WYSIWYG editor for idle info slides
     controllers/
       session_controller.ex       # Login: checks the PIN, marks the session
       report_controller.ex        # CSV download of a full year's attendance

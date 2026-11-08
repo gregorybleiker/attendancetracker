@@ -58,10 +58,14 @@ a 404 at runtime.
 
 **Everything except the check-in kiosk sits behind a login guard.** The
 `:authenticated` pipeline runs `Plugs.RequireAdminPin`, which redirects to
-`/login` until the client has entered the admin PIN once
-(`get_session(conn, :admin_pin_ok)`). The kiosk `/` (so participants can tap
-their photos), `/login` itself — a LiveView form and the `POST /login` it
-submits to `SessionController` — are exempt.
+`/login` unless the client holds an active admin session token
+(`get_session(conn, :admin_token)`). A successful login mints a random token
+that is tracked in memory by `AttendanceTracker.AdminSession`; a session is
+inactive once it has been idle longer than the configurable admin timeout
+(`admin_timeout_minutes`, default 10, edited on the admin page). The kiosk `/`
+(so participants can tap their photos), `/login` itself — a LiveView form and
+the `POST /login` it submits to `SessionController` — are exempt. Because the
+token registry is in-memory, restarting the app logs every admin out.
 
 # LiveView lifecycle
 
@@ -117,6 +121,12 @@ collections, and updates are surgical DOM patches.
   displays when it's the sole child of the grid.
 - *Changing collections* (switching training or date) → refetch + `reset: true`.
 
+**Tile sizing.** The participant grid (`grid-cols-2 … lg:grid-cols-5`, `gap-3`)
+is tuned so a 1920×1200 kiosk shows 20 participants at once (4 rows × 5 columns):
+the kiosk and event-picker tiles cap the avatar at `size-16 sm:size-20` with
+`p-3`/`gap-1.5` padding, while the participant detail page keeps the larger
+`size-24 sm:size-28` avatar default.
+
 # Kiosk: members vs. everyone
 
 When a training is selected, the kiosk lists only that training's **members**
@@ -125,6 +135,12 @@ When a training is selected, the kiosk lists only that training's **members**
 `training_members`; ad-hoc sessions without a training skip the filter). A
 **Show all** toggle button, reachable without the admin PIN, re-streams everyone
 regardless of the training (`show_all: true`, `reset: true`).
+
+The header's **Training** dropdown is filtered to the selected date's weekday
+(`training_options/2`): only trainings whose `weekday` matches the date are
+listed, and `selected_training/3` keeps the current pick only if it still runs
+that day (otherwise it falls back to the first matching training, or to a
+training-less ad-hoc session when none match).
 
 Which trainings a participant has attended is shown in the admin area, not on
 the kiosk tiles: `with_attended_trainings/1` runs one grouped query and merges
@@ -252,6 +268,12 @@ it next to the markup:
 </script>
 ```
 
+The same pattern powers the kiosk's idle **info mode** (`.InfoMode`, an
+off-screen overlay that appears after a configurable idle timeout and rotates
+admin-authored slides) and the admin area's **WYSIWYG editor**
+(`.WysiwygEditor`, a contenteditable area that mirrors its HTML into a hidden
+textarea). See [Info screen](/architecture/info-screen.md).
+
 **Idioms highlighted:**
 
 - **`phx-update="ignore"` + unique DOM id** — mandatory when a hook manages its
@@ -328,34 +350,63 @@ The revision is baked in at build time from the `GIT_SHA` build arg (see
 [Deployment](/deployment.md)).
 
 **Admin mode on the kiosk.** The same `@admin_unlocked` assign doubles as the
-kiosk's admin mode: it starts from the session flag
-(`lv_session["admin_pin_ok"]` in `mount/3`, set by the "Admin mode" menu item
-→ `/login` → `SessionController`) and is also set by the in-page PIN unlock
-above. Only in admin mode do the participant cards show the camera button and
-the emergency number; `open_camera` additionally ignores its event when not
-unlocked. Because those elements live inside the stream, flipping the assign
-in `submit_pin` re-streams the participants (`stream(..., reset: true)`) so the
-already rendered cards pick up the new UI.
+kiosk's admin mode: it starts from the admin session token
+(`lv_session["admin_token"]` checked against `AdminSession.active?/2` in
+`mount/3`, set by the "Admin mode" menu item → `/login` → `SessionController`)
+and is also set by the in-page PIN unlock above. Only in admin mode do the
+participant cards show the camera button and the emergency number; `open_camera`
+additionally ignores its event when not unlocked. Because those elements live
+inside the stream, flipping the assign in `submit_pin` re-streams the
+participants (`stream(..., reset: true)`) so the already rendered cards pick up
+the new UI.
+
+**Left flyout navigation.** All menu items live in an off-canvas drawer that
+slides in from the left, opened by the hamburger button (`#menu-toggle`) in the
+header. `<Layouts.app>` keeps the drawer in the DOM (`#nav-overlay` wrapping
+`#nav-drawer`) and toggles it with LiveView `JS` commands that set a
+`data-open` attribute on the overlay; Tailwind arbitrary variants
+(`data-[open=true]:…` / `group-data-[open=true]:…`) drive the fade-in backdrop
+and the slide-in transform, and `inert` keeps the hidden drawer out of the tab
+order. The backdrop and the close button collapse it again, and a LiveView
+navigation re-renders the layout so the drawer resets closed.
+
+`<Layouts.app>` also takes an optional `<:header>` slot rendered right-aligned
+inside the same header bar. The check-in kiosk uses it for its whole toolbar —
+the **date** and **training** selectors (`#session-select`), the **Show all**
+toggle, and the **present** count pill — so the page body is just the tile
+grid and keeps the full viewport height (the old title/date heading was
+dropped). The header is deliberately compact (`min-h-0`, `py-1`, small logo and
+hamburger; the selectors use `input-sm`/`select-sm` with no visible labels) to
+maximise the grid area. The header bar and the page body share the same
+centered `mx-auto max-w-5xl` container (and horizontal padding), so their left
+and right edges line up.
 
 **Navbar toggle and logout.** A global `on_mount` hook
 (`AssignAdminMode`, attached in the `live_view` quote in `my_app_web.ex`)
-exposes the session flag to every LiveView as `@admin_mode`, and each
-template passes it to `<Layouts.app>`. The navbar shows "Admin mode" (→
+exposes the active-session flag to every LiveView as `@admin_mode`, and each
+template passes it to `<Layouts.app>`. The flyout shows "Admin mode" (→
 `/login`) when logged out and "Exit admin mode" when logged in — the latter
-is a `DELETE /logout` link (`SessionController.delete/2` drops
-`:admin_pin_ok` from the session and redirects to `/`). Note the two assigns
-stay separate on purpose: the transient in-page PIN unlock reveals the kiosk
-cards via `@admin_unlocked` but does not flip the session-backed `@admin_mode`
-in the navbar.
+is a `DELETE /logout` link (`SessionController.delete/2` forgets the token,
+drops `:admin_token` from the session, and redirects to `/`). Note the two
+assigns stay separate on purpose: the transient in-page PIN unlock reveals the
+kiosk cards via `@admin_unlocked` but does not flip the session-backed
+`@admin_mode` in the navbar.
 
 **Logging in (first connection).** Before any of that, every new client must
 enter the admin PIN once. `LoginLive` renders a plain `<.form
 action={~p"/login"} method="post">` — a *regular* HTTP POST, not a LiveView
 event, because only a controller can write the session. On success,
-`SessionController.create/2` renews the session and marks it
-(`put_session(:admin_pin_ok, true)`); on failure it redirects back with a
-flash error. The flag lives in the session cookie, so the login survives page
-reloads and navigation between LiveViews.
+`SessionController.create/2` renews the session, mints a token via
+`AdminSession.start/0`, and stores it (`put_session(:admin_token, token)`); on
+failure it redirects back with a flash error. The token lives in the session
+cookie, so the login survives page reloads and navigation between LiveViews.
+Its *lifetime* is idle-based, though: `Plugs.RequireAdminPin` refreshes the
+token on every authenticated request, and the
+`AttendanceTrackerWeb.AdminSessionHook` `on_mount` hook (attached to the
+`:authenticated` `live_session`) does the same for WebSocket mounts, events,
+and live navigation, redirecting an idle tab to `/login` once the timeout
+elapses. Both read the timeout from the `admin_timeout_minutes` setting
+(default 10 minutes, editable on the admin page, validated to 1–1440 minutes).
 
 **Kiosk session PIN (two layers).** The kiosk is guarded on *two* levels,
 because LiveView live navigation reuses the WebSocket and does not run plugs:

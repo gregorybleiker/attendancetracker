@@ -1,6 +1,7 @@
 defmodule AttendanceTrackerWeb.EventCheckInLive do
   use AttendanceTrackerWeb, :live_view
 
+  import AttendanceTrackerWeb.InfoComponents
   import AttendanceTrackerWeb.ParticipantComponents
 
   alias AttendanceTracker.Tracker
@@ -16,6 +17,9 @@ defmodule AttendanceTrackerWeb.EventCheckInLive do
      |> assign(:page_title, gettext("Event check-in"))
      |> assign(:events, events)
      |> assign(:event_options, event_options(events))
+     |> assign(:infos, Tracker.list_active_infos())
+     |> assign(:idle_timeout_ms, Tracker.idle_timeout_ms())
+     |> assign(:rotation_ms, Tracker.info_rotation_ms())
      |> assign_event(List.first(events))}
   end
 
@@ -44,6 +48,17 @@ defmodule AttendanceTrackerWeb.EventCheckInLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} admin_mode={@admin_mode}>
+      <:menu>
+        <Layouts.drawer_button
+          :if={@infos != []}
+          id="show-info-mode-btn"
+          click={JS.dispatch("info-mode:show", to: "#info-mode")}
+          icon="hero-presentation-chart-bar"
+        >
+          {gettext("Show info")}
+        </Layouts.drawer_button>
+      </:menu>
+
       <div
         :if={@events == []}
         class="rounded-xl border border-dashed border-base-300 p-8 text-center"
@@ -82,7 +97,7 @@ defmodule AttendanceTrackerWeb.EventCheckInLive do
         <div
           id="event-participants"
           phx-update="stream"
-          class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+          class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
         >
           <div
             id="event-participants-empty"
@@ -96,11 +111,22 @@ defmodule AttendanceTrackerWeb.EventCheckInLive do
           </div>
         </div>
       </div>
+
+      <.info_mode
+        infos={@infos}
+        idle_timeout_ms={@idle_timeout_ms}
+        rotation_ms={@rotation_ms}
+      />
     </Layouts.app>
     """
   end
 
   @impl true
+  def handle_event("info_mode_dismissed", _params, socket) do
+    # After the idle info mode, always return to the main check-in screen.
+    {:noreply, push_navigate(socket, to: ~p"/")}
+  end
+
   def handle_event("select_event", %{"event_id" => id}, socket) do
     {:noreply, assign_event(socket, Tracker.get_event!(id))}
   end

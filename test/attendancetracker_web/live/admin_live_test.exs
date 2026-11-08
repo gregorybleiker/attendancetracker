@@ -113,6 +113,67 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
     assert Tracker.session_expiry_days() == 30
   end
 
+  test "sets the admin session timeout", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin")
+    assert has_element?(view, "#admin-timeout-form")
+
+    view
+    |> form("#admin-timeout-form", %{admin_timeout: %{minutes: 45}})
+    |> render_submit()
+
+    assert Tracker.admin_timeout_minutes() == 45
+  end
+
+  test "validates the admin session timeout", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin")
+
+    html =
+      view
+      |> form("#admin-timeout-form", %{admin_timeout: %{minutes: 0}})
+      |> render_submit()
+
+    assert html =~ "must be between 1 and 1440 minutes"
+    assert Tracker.admin_timeout_minutes() == 10
+  end
+
+  test "sets the idle timeout and info rotation", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin")
+    assert has_element?(view, "#idle-timeout-form")
+    assert has_element?(view, "#info-rotation-form")
+
+    view
+    |> form("#idle-timeout-form", %{idle_timeout: %{minutes: 20}})
+    |> render_submit()
+
+    view
+    |> form("#info-rotation-form", %{info_rotation: %{seconds: 30}})
+    |> render_submit()
+
+    assert Tracker.idle_timeout_minutes() == 20
+    assert Tracker.info_rotation_seconds() == 30
+  end
+
+  test "validates the idle timeout and info rotation", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/admin")
+
+    html =
+      view
+      |> form("#idle-timeout-form", %{idle_timeout: %{minutes: 0}})
+      |> render_submit()
+
+    assert html =~ "must be between 1 and 1440 minutes"
+
+    html =
+      view
+      |> form("#info-rotation-form", %{info_rotation: %{seconds: 0}})
+      |> render_submit()
+
+    assert html =~ "must be between 1 and 3600 seconds"
+
+    assert Tracker.idle_timeout_minutes() == 10
+    assert Tracker.info_rotation_seconds() == 15
+  end
+
   test "sets the log settings", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/admin")
     assert has_element?(view, "#logs-settings-form")

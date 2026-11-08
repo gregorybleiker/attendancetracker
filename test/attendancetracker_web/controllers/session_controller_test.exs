@@ -28,6 +28,42 @@ defmodule AttendanceTrackerWeb.SessionControllerTest do
     assert redirected_to(conn) == ~p"/"
   end
 
+  describe "admin session timeout" do
+    alias AttendanceTracker.AdminSession
+    alias AttendanceTracker.Tracker
+
+    test "a logged-in admin can access guarded routes", %{conn: conn} do
+      conn = log_in(conn)
+
+      assert get_session(conn, :admin_token)
+      assert {:ok, _view, _html} = live(conn, ~p"/admin")
+    end
+
+    test "an idle admin session is redirected to /login", %{conn: conn} do
+      conn = log_in(conn)
+      token = get_session(conn, :admin_token)
+
+      {:ok, _} = Tracker.update_admin_timeout_minutes(1)
+      AdminSession.backdate(token, 61_000)
+
+      conn = get(conn, ~p"/admin")
+
+      assert redirected_to(conn) == ~p"/login"
+    end
+
+    test "logging out invalidates the admin session", %{conn: conn} do
+      conn = log_in(conn)
+      token = get_session(conn, :admin_token)
+
+      assert {:ok, _} = Tracker.update_admin_timeout_minutes(10)
+
+      conn = delete(conn, ~p"/logout")
+      assert redirected_to(conn) == ~p"/"
+
+      refute AdminSession.active?(token, Tracker.admin_timeout_seconds())
+    end
+  end
+
   describe "kiosk session PIN" do
     alias AttendanceTracker.Tracker
 

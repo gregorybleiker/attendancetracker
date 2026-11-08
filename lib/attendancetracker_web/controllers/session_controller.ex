@@ -1,14 +1,17 @@
 defmodule AttendanceTrackerWeb.SessionController do
   use AttendanceTrackerWeb, :controller
 
+  alias AttendanceTracker.AdminSession
   alias AttendanceTracker.Tracker
   alias AttendanceTrackerWeb.KioskSession
 
   def create(conn, %{"pin" => pin}) do
     if Tracker.admin_pin_valid?(pin) do
+      token = AdminSession.start()
+
       conn
       |> configure_session(renew: true)
-      |> put_session(:admin_pin_ok, true)
+      |> put_session(:admin_token, token)
       |> redirect(to: ~p"/")
     else
       conn
@@ -18,8 +21,10 @@ defmodule AttendanceTrackerWeb.SessionController do
   end
 
   def delete(conn, _params) do
+    AdminSession.forget(get_session(conn, :admin_token))
+
     conn
-    |> delete_session(:admin_pin_ok)
+    |> delete_session(:admin_token)
     |> put_flash(:info, "Admin mode off")
     |> redirect(to: ~p"/")
   end

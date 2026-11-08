@@ -110,3 +110,55 @@ html,
 body {
   touch-action: pan-x pan-y;
 }
+
+/* Rich text produced by the admin WYSIWYG editor, rendered in the info mode
+   overlay and inside the editor itself. Sizes are relative so the same markup
+   scales from the editor to the full-screen kiosk view. */
+.rich-text > :first-child {
+  margin-top: 0;
+}
+
+.rich-text > :last-child {
+  margin-bottom: 0;
+}
+
+.rich-text h1 {
+  margin: 0.5em 0;
+  font-size: 2em;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.rich-text h2 {
+  margin: 0.5em 0;
+  font-size: 1.5em;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.rich-text h3 {
+  margin: 0.5em 0;
+  font-size: 1.25em;
+  font-weight: 700;
+}
+
+.rich-text p {
+  margin: 0.5em 0;
+}
+
+.rich-text ul {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+  list-style: disc;
+}
+
+.rich-text ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+  list-style: decimal;
+}
+
+.rich-text a {
+  color: var(--color-primary);
+  text-decoration: underline;
+}

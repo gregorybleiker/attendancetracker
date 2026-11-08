@@ -12,6 +12,13 @@ defmodule AttendanceTrackerWeb.EventCheckInLiveTest do
     assert html =~ "No events yet."
   end
 
+  test "dismissing info mode returns to the check-in screen", %{conn: conn} do
+    {:ok, view, _html} = live(conn, ~p"/event-check-in")
+
+    assert {:error, {:live_redirect, %{to: "/"}}} =
+             render_hook(view, "info_mode_dismissed", %{})
+  end
+
   test "toggles a participant's selection for the selected event", %{conn: conn} do
     event = event_fixture(%{name: "Summer camp", date: ~D[2026-07-01]})
     participant = participant_fixture(%{name: "Ada Lovelace"})

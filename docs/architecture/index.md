@@ -16,6 +16,7 @@ Code tour of AttendanceTracker, split into concepts. See also the bundle
 * [PWA](/architecture/pwa.md) - Web app manifest and service worker.
 * [Localisation](/architecture/localization.md) - Gettext English/German and locale detection.
 * [Logs](/architecture/logs.md) - Audit and program logs with retention.
+* [Info screen](/architecture/info-screen.md) - Idle full-screen kiosk slideshow with a WYSIWYG editor.
 * [Merging duplicates](/architecture/duplicates.md) - Detect and merge likely duplicate participants.
 
 # Reference

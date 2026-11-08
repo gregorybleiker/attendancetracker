@@ -24,10 +24,15 @@ sources:
 # First connection (login)
 
 any guarded URL → `RequireAdminPin` plug → 302 to `/login` → PIN form POST →
-`Tracker.admin_pin_valid?/1` → session marked → redirect to `/`. Wrong PIN →
-flash error, back to `/login`. The kiosk `/` itself never requires a login.
+`Tracker.admin_pin_valid?/1` → `AdminSession.start/0` mints a token stored in
+the session → redirect to `/`. Wrong PIN → flash error, back to `/login`. The
+kiosk `/` itself never requires a login. The session then expires after the
+configurable idle timeout (`admin_timeout_minutes`, default 10): the plug
+refreshes the token on every request and `AdminSessionHook` does so for
+LiveView mounts/events/navigation, redirecting an idle client to `/login`.
 Leaving admin mode works the same way in reverse: "Exit admin mode" →
-`DELETE /logout` → session flag cleared → redirect to `/`.
+`DELETE /logout` → `AdminSession.forget/1` + session token cleared → redirect
+to `/`.
 
 # Check-in (multi-client)
 
@@ -50,10 +55,14 @@ with `session_for_date/1`.
 # Selecting date and training
 
 The kiosk form carries an independent **date** picker and a **training**
-dropdown. Changing either one re-resolves the concrete session: a training
-uses `session_for_training/2`, no training uses `session_for_date/1`. This
-lets an admin catch up on attendance for a past date without changing the
-training.
+dropdown, rendered into the app header via the layout's `<:header>` slot. The
+dropdown only lists trainings that run on the selected date's weekday (each
+training's weekday is configurable in `TrainingLive.Form`), so picking a date
+always maps to a training that actually occurs on it. Choosing a date that has
+no matching training falls back to an ad-hoc, training-less session. Changing
+either field re-resolves the concrete session: a training uses
+`session_for_training/2`, no training uses `session_for_date/1`. This lets an
+admin catch up on attendance for a past date without changing the training.
 
 # Switching training
 

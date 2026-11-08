@@ -148,6 +148,21 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
       refute has_element?(view, "#session-training")
     end
 
+    test "places the date and training selection in the app header", %{conn: conn} do
+      training_fixture(%{
+        name: "Header Training",
+        weekday: Date.day_of_week(Tracker.local_today())
+      })
+
+      {:ok, view, _html} = live(conn, ~p"/")
+
+      document = render(view) |> LazyHTML.from_fragment()
+
+      refute LazyHTML.filter(document, "header #session-select") == []
+      refute LazyHTML.filter(document, "header #session-date") == []
+      refute LazyHTML.filter(document, "header #session-training") == []
+    end
+
     test "selecting a date switches the session independently of the training", %{conn: conn} do
       today_weekday = Date.day_of_week(Tracker.local_today())
 
@@ -200,20 +215,43 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
       assert render(view) =~ "Kids Judo Today"
     end
 
+    test "only lists trainings that run on the selected date's weekday", %{conn: conn} do
+      today_weekday = Date.day_of_week(Tracker.local_today())
+
+      today_training = training_fixture(%{name: "Today Training", weekday: today_weekday})
+
+      other_training =
+        training_fixture(%{name: "Tomorrow Training", weekday: other_weekday(today_weekday)})
+
+      {:ok, view, _html} = live(conn, ~p"/")
+
+      assert has_element?(view, "#session-select option[value='#{today_training.id}']")
+      refute has_element?(view, "#session-select option[value='#{other_training.id}']")
+
+      # Changing the date swaps the available trainings for that weekday.
+      tomorrow = Date.add(Tracker.local_today(), 1)
+
+      view
+      |> element("#session-select")
+      |> render_change(%{"date" => Date.to_iso8601(tomorrow)})
+
+      assert has_element?(view, "#session-select option[value='#{other_training.id}']")
+      refute has_element?(view, "#session-select option[value='#{today_training.id}']")
+    end
+
     test "switching the training switches the session", %{conn: conn} do
       today_weekday = Date.day_of_week(Tracker.local_today())
 
-      current =
-        training_fixture(%{
-          weekday: today_weekday,
-          starts_at: ~T[00:00:00],
-          ends_at: ~T[23:59:59]
-        })
-
-      other = training_fixture(%{weekday: other_weekday(today_weekday)})
+      current = training_fixture(%{name: "Current Training", weekday: today_weekday})
+      other = training_fixture(%{name: "Other Training", weekday: today_weekday})
       participant = participant_fixture(%{name: "Switcher", active: true})
 
       {:ok, view, _html} = live(conn, ~p"/")
+
+      # Pick the training explicitly so the selected session is deterministic.
+      view
+      |> element("#session-select")
+      |> render_change(%{"training_id" => to_string(current.id)})
 
       # The switcher has not attended yet, so reveal everyone first.
       view |> element("#show-all-toggle") |> render_click()
@@ -222,7 +260,7 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
       view |> element("#check-in-btn-#{participant.id}") |> render_click()
       assert render(view) =~ "1 / 1 present"
 
-      # Switch to the other training: separate session, nobody checked in
+      # Switch to the other training (same weekday): separate session, nobody checked in
       view
       |> element("#session-select")
       |> render_change(%{"training_id" => to_string(other.id)})
@@ -392,6 +430,43 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
 
       assert has_element?(view, "#source-webling-#{webling.id}")
       assert has_element?(view, "#source-local-#{local.id}")
+    end
+  end
+
+  describe "info mode" do
+    alias AttendanceTracker.Tracker
+
+    test "renders the info overlay with active slides", %{conn: conn} do
+      {:ok, _} = Tracker.create_info(%{title: "Welcome", body: "<p>Hello everyone</p>"})
+
+      {:ok, view, _html} = live(conn, ~p"/")
+
+      assert has_element?(view, "#info-mode")
+      assert has_element?(view, "#info-mode", "Welcome")
+      assert has_element?(view, "#info-mode", "Hello everyone")
+    end
+
+    test "adds a menu button to show the slideshow on demand", %{conn: conn} do
+      {:ok, _} = Tracker.create_info(%{title: "Welcome", body: "<p>Hi</p>"})
+
+      {:ok, view, _html} = live(conn, ~p"/")
+
+      assert has_element?(view, "#show-info-mode-btn")
+    end
+
+    test "does not render the overlay or menu button without slides", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/")
+
+      refute has_element?(view, "#info-mode")
+      refute has_element?(view, "#show-info-mode-btn")
+    end
+
+    test "omits hidden slides from the overlay", %{conn: conn} do
+      {:ok, _} = Tracker.create_info(%{title: "Hidden", body: "<p>secret</p>", active: false})
+
+      {:ok, view, _html} = live(conn, ~p"/")
+
+      refute has_element?(view, "#info-mode")
     end
   end
 end

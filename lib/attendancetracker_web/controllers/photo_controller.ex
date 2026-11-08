@@ -1,6 +1,7 @@
 defmodule AttendanceTrackerWeb.PhotoController do
   use AttendanceTrackerWeb, :controller
 
+  alias AttendanceTracker.AdminSession
   alias AttendanceTracker.Tracker
   alias AttendanceTrackerWeb.KioskSession
 
@@ -32,7 +33,7 @@ defmodule AttendanceTrackerWeb.PhotoController do
   # Photos are shown on the kiosk (guarded by the session PIN) and in the
   # admin area (guarded by the admin PIN), so allow either.
   defp accessible?(conn) do
-    get_session(conn, :admin_pin_ok) == true or
+    AdminSession.active?(get_session(conn, :admin_token), Tracker.admin_timeout_seconds()) or
       not Tracker.session_pin_configured?() or
       KioskSession.valid?(conn)
   end

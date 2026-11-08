@@ -9,6 +9,7 @@ defmodule AttendanceTracker.Tracker do
 
   alias AttendanceTracker.Tracker.Participant
   alias AttendanceTracker.Tracker.ParticipantPhoto
+  alias AttendanceTracker.Tracker.Info
 
   @doc """
   Returns the list of participants.
@@ -827,6 +828,221 @@ defmodule AttendanceTracker.Tracker do
     |> Setting.changeset(%{value: Integer.to_string(days)})
     |> Repo.insert_or_update()
   end
+
+  @admin_timeout_minutes_key "admin_timeout_minutes"
+  @default_admin_timeout_minutes 10
+
+  @doc """
+  Returns how many minutes of inactivity may pass before an admin session
+  expires. Defaults to `#{@default_admin_timeout_minutes}`.
+  """
+  def admin_timeout_minutes do
+    case Repo.get_by(Setting, key: @admin_timeout_minutes_key) do
+      %Setting{value: value} ->
+        case Integer.parse(value) do
+          {minutes, ""} when minutes > 0 -> minutes
+          _ -> @default_admin_timeout_minutes
+        end
+
+      nil ->
+        @default_admin_timeout_minutes
+    end
+  end
+
+  @doc """
+  Returns the admin session idle timeout in seconds.
+  """
+  def admin_timeout_seconds, do: admin_timeout_minutes() * 60
+
+  @doc """
+  Returns a changeset for validating an admin session timeout (in minutes)
+  change.
+  """
+  def change_admin_timeout_minutes(params \\ %{}) do
+    types = %{minutes: :integer}
+
+    {%{}, types}
+    |> Ecto.Changeset.cast(params, [:minutes])
+    |> Ecto.Changeset.validate_required([:minutes])
+    |> Ecto.Changeset.validate_number(:minutes,
+      greater_than: 0,
+      less_than_or_equal_to: 1440,
+      message: "must be between 1 and 1440 minutes"
+    )
+  end
+
+  @doc """
+  Persists the admin session timeout in minutes.
+  """
+  def update_admin_timeout_minutes(minutes) when is_integer(minutes) and minutes > 0 do
+    setting =
+      Repo.get_by(Setting, key: @admin_timeout_minutes_key) ||
+        %Setting{key: @admin_timeout_minutes_key}
+
+    setting
+    |> Setting.changeset(%{value: Integer.to_string(minutes)})
+    |> Repo.insert_or_update()
+  end
+
+  @idle_timeout_minutes_key "idle_timeout_minutes"
+  @default_idle_timeout_minutes 10
+
+  @doc """
+  Returns how many minutes the kiosk may be idle before it switches to the
+  full-screen info mode. Defaults to `#{@default_idle_timeout_minutes}`.
+  """
+  def idle_timeout_minutes do
+    case Repo.get_by(Setting, key: @idle_timeout_minutes_key) do
+      %Setting{value: value} ->
+        case Integer.parse(value) do
+          {minutes, ""} when minutes > 0 -> minutes
+          _ -> @default_idle_timeout_minutes
+        end
+
+      nil ->
+        @default_idle_timeout_minutes
+    end
+  end
+
+  @doc """
+  Returns the kiosk idle timeout in milliseconds.
+  """
+  def idle_timeout_ms, do: idle_timeout_minutes() * 60_000
+
+  @doc """
+  Returns a changeset for validating an idle timeout (in minutes) change.
+  """
+  def change_idle_timeout_minutes(params \\ %{}) do
+    types = %{minutes: :integer}
+
+    {%{}, types}
+    |> Ecto.Changeset.cast(params, [:minutes])
+    |> Ecto.Changeset.validate_required([:minutes])
+    |> Ecto.Changeset.validate_number(:minutes,
+      greater_than: 0,
+      less_than_or_equal_to: 1440,
+      message: "must be between 1 and 1440 minutes"
+    )
+  end
+
+  @doc """
+  Persists the kiosk idle timeout in minutes.
+  """
+  def update_idle_timeout_minutes(minutes) when is_integer(minutes) and minutes > 0 do
+    setting =
+      Repo.get_by(Setting, key: @idle_timeout_minutes_key) ||
+        %Setting{key: @idle_timeout_minutes_key}
+
+    setting
+    |> Setting.changeset(%{value: Integer.to_string(minutes)})
+    |> Repo.insert_or_update()
+  end
+
+  @info_rotation_seconds_key "info_rotation_seconds"
+  @default_info_rotation_seconds 15
+
+  @doc """
+  Returns how many seconds each info slide is shown in the kiosk info mode
+  before rotating to the next. Defaults to `#{@default_info_rotation_seconds}`.
+  """
+  def info_rotation_seconds do
+    case Repo.get_by(Setting, key: @info_rotation_seconds_key) do
+      %Setting{value: value} ->
+        case Integer.parse(value) do
+          {seconds, ""} when seconds > 0 -> seconds
+          _ -> @default_info_rotation_seconds
+        end
+
+      nil ->
+        @default_info_rotation_seconds
+    end
+  end
+
+  @doc """
+  Returns the info rotation interval in milliseconds.
+  """
+  def info_rotation_ms, do: info_rotation_seconds() * 1_000
+
+  @doc """
+  Returns a changeset for validating an info rotation (in seconds) change.
+  """
+  def change_info_rotation_seconds(params \\ %{}) do
+    types = %{seconds: :integer}
+
+    {%{}, types}
+    |> Ecto.Changeset.cast(params, [:seconds])
+    |> Ecto.Changeset.validate_required([:seconds])
+    |> Ecto.Changeset.validate_number(:seconds,
+      greater_than: 0,
+      less_than_or_equal_to: 3600,
+      message: "must be between 1 and 3600 seconds"
+    )
+  end
+
+  @doc """
+  Persists the info rotation interval in seconds.
+  """
+  def update_info_rotation_seconds(seconds) when is_integer(seconds) and seconds > 0 do
+    setting =
+      Repo.get_by(Setting, key: @info_rotation_seconds_key) ||
+        %Setting{key: @info_rotation_seconds_key}
+
+    setting
+    |> Setting.changeset(%{value: Integer.to_string(seconds)})
+    |> Repo.insert_or_update()
+  end
+
+  @doc """
+  Returns all info slides ordered by position.
+  """
+  def list_infos do
+    Info
+    |> order_by([i], asc: i.position, asc: i.id)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the active info slides ordered by position.
+  """
+  def list_active_infos do
+    Info
+    |> where([i], i.active)
+    |> order_by([i], asc: i.position, asc: i.id)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single info slide.
+  """
+  def get_info!(id), do: Repo.get!(Info, id)
+
+  @doc """
+  Creates an info slide.
+  """
+  def create_info(attrs \\ %{}) do
+    %Info{}
+    |> Info.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates an info slide.
+  """
+  def update_info(%Info{} = info, attrs) do
+    info
+    |> Info.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes an info slide.
+  """
+  def delete_info(%Info{} = info), do: Repo.delete(info)
+
+  @doc """
+  Returns a changeset for an info slide.
+  """
+  def change_info(%Info{} = info, attrs \\ %{}), do: Info.changeset(info, attrs)
 
   ## Kiosk / attendance tracking
 

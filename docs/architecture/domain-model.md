@@ -129,7 +129,16 @@ it compares `new_pin` with `new_pin_confirmation`.
 
 The PIN itself lives in a generic key-value `settings` table, defaulting to
 `"1234"` when no row exists (`admin_pin/0`), updated via
-`Repo.insert_or_update/1` (upsert by primary key presence).
+`Repo.insert_or_update/1` (upsert by primary key presence). The same table
+holds the other tunables (`session_pin`, `session_expiry_days`,
+`admin_timeout_minutes` — the admin idle timeout in minutes, default 10 —
+`idle_timeout_minutes`/`info_rotation_seconds` for the [info
+screen](/architecture/info-screen.md), and the log retention settings), each
+read with a fallback default.
+
+The `infos` table (`Tracker.Info`) holds the admin-authored slides the kiosk
+shows when idle: `title`, rich-text `body`, `position`, and `active`, ordered
+by position. See [Info screen](/architecture/info-screen.md).
 
 See also [Domain logic](/architecture/domain-logic.md) and the
 [Web layer](/architecture/web-layer.md) forms section.

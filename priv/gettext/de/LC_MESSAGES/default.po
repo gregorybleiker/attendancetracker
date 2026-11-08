@@ -11,12 +11,12 @@ msgstr ""
 "Language: de\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:121
+#: lib/attendancetracker_web/live/check_in_live.ex:169
 #, elixir-autogen, elixir-format
 msgid "%{checked} / %{total} present"
 msgstr "%{checked} / %{total} anwesend"
 
-#: lib/attendancetracker_web/live/admin_live.ex:87
+#: lib/attendancetracker_web/live/admin_live.ex:91
 #, elixir-autogen, elixir-format
 msgid "A session PIN is configured."
 msgstr "Eine Sitzungs-PIN ist eingerichtet."
@@ -39,41 +39,40 @@ msgstr "Aktiv"
 msgid "Ad-hoc training"
 msgstr "Ad-hoc-Training"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:140
+#: lib/attendancetracker_web/live/check_in_live.ex:198
 #: lib/attendancetracker_web/live/event_live/show.ex:70
 #, elixir-autogen, elixir-format
 msgid "Add one"
 msgstr "Jetzt hinzufügen"
 
-#: lib/attendancetracker_web/live/admin_live.ex:488
+#: lib/attendancetracker_web/live/admin_live.ex:642
 #, elixir-autogen, elixir-format
 msgid "Add the user management API key first."
 msgstr "Bitte zuerst den API-Schlüssel der Mitgliederverwaltung hinterlegen."
 
-#: lib/attendancetracker_web/components/layouts.ex:72
-#: lib/attendancetracker_web/components/layouts.ex:125
+#: lib/attendancetracker_web/components/layouts.ex:126
 #: lib/attendancetracker_web/live/admin_duplicates_live.ex:21
-#: lib/attendancetracker_web/live/admin_live.ex:14
-#: lib/attendancetracker_web/live/admin_live.ex:277
+#: lib/attendancetracker_web/live/admin_infos_live.ex:22
+#: lib/attendancetracker_web/live/admin_live.ex:15
+#: lib/attendancetracker_web/live/admin_live.ex:351
 #: lib/attendancetracker_web/live/admin_logs_live.ex:19
 #, elixir-autogen, elixir-format
 msgid "Admin"
 msgstr "Administration"
 
-#: lib/attendancetracker_web/live/admin_live.ex:35
-#: lib/attendancetracker_web/live/check_in_live.ex:175
-#: lib/attendancetracker_web/live/login_live.ex:18
+#: lib/attendancetracker_web/live/admin_live.ex:39
+#: lib/attendancetracker_web/live/check_in_live.ex:233
+#: lib/attendancetracker_web/live/login_live.ex:21
 #, elixir-autogen, elixir-format
 msgid "Admin PIN"
 msgstr "Admin-PIN"
 
-#: lib/attendancetracker_web/live/admin_live.ex:306
+#: lib/attendancetracker_web/live/admin_live.ex:386
 #, elixir-autogen, elixir-format
 msgid "Admin PIN updated"
 msgstr "Admin-PIN aktualisiert"
 
-#: lib/attendancetracker_web/components/layouts.ex:75
-#: lib/attendancetracker_web/components/layouts.ex:130
+#: lib/attendancetracker_web/components/layouts.ex:144
 #, elixir-autogen, elixir-format
 msgid "Admin mode"
 msgstr "Admin-Modus"
@@ -96,15 +95,16 @@ msgstr "Auch in Webling"
 msgid "Are you sure?"
 msgstr "Bist du sicher?"
 
-#: lib/attendancetracker_web/components/layouts.ex:236
-#: lib/attendancetracker_web/components/layouts.ex:251
+#: lib/attendancetracker_web/components/layouts.ex:303
+#: lib/attendancetracker_web/components/layouts.ex:318
 #, elixir-autogen, elixir-format
 msgid "Attempting to reconnect"
 msgstr "Verbindung wird wiederhergestellt"
 
 #: lib/attendancetracker_web/live/admin_duplicates_live.ex:80
-#: lib/attendancetracker_web/live/check_in_live.ex:180
-#: lib/attendancetracker_web/live/check_in_live.ex:230
+#: lib/attendancetracker_web/live/admin_infos_live.ex:107
+#: lib/attendancetracker_web/live/check_in_live.ex:238
+#: lib/attendancetracker_web/live/check_in_live.ex:288
 #: lib/attendancetracker_web/live/event_live/form.ex:33
 #: lib/attendancetracker_web/live/participant_live/form.ex:74
 #: lib/attendancetracker_web/live/training_live/form.ex:38
@@ -112,33 +112,32 @@ msgstr "Verbindung wird wiederhergestellt"
 msgid "Cancel"
 msgstr "Abbrechen"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:221
+#: lib/attendancetracker_web/live/check_in_live.ex:279
 #, elixir-autogen, elixir-format
 msgid "Capture photo"
 msgstr "Foto aufnehmen"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:199
+#: lib/attendancetracker_web/live/check_in_live.ex:257
 #, elixir-autogen, elixir-format
 msgid "Center the face in the preview, then capture. The photo is used on the check-in tile."
 msgstr "Richte das Gesicht in der Vorschau aus und nimm dann auf. Das Foto wird auf der Check-in-Kachel verwendet."
 
-#: lib/attendancetracker_web/live/admin_live.ex:50
+#: lib/attendancetracker_web/live/admin_live.ex:54
 #, elixir-autogen, elixir-format
 msgid "Change admin PIN"
 msgstr "Admin-PIN ändern"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:23
+#: lib/attendancetracker_web/live/check_in_live.ex:27
 #, elixir-autogen, elixir-format
 msgid "Check in"
 msgstr "Check-in"
 
-#: lib/attendancetracker_web/components/layouts.ex:55
-#: lib/attendancetracker_web/components/layouts.ex:96
+#: lib/attendancetracker_web/components/layouts.ex:105
 #, elixir-autogen, elixir-format
 msgid "Check-in"
 msgstr "Check-in"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:181
+#: lib/attendancetracker_web/live/check_in_live.ex:239
 #, elixir-autogen, elixir-format
 msgid "Checking..."
 msgstr "Wird geprüft..."
@@ -153,32 +152,32 @@ msgstr "Wochentag wählen"
 msgid "Configure the weekly training schedule, e.g. every Monday from 19:00 to 21:30. The check-in screen pre-selects the current training based on date and time."
 msgstr "Konfiguriere den wöchentlichen Trainingsplan, z. B. jeden Montag von 19:00 bis 21:30. Der Check-in-Bildschirm wählt das aktuelle Training automatisch anhand von Datum und Uhrzeit aus."
 
-#: lib/attendancetracker_web/live/admin_live.ex:67
+#: lib/attendancetracker_web/live/admin_live.ex:71
 #, elixir-autogen, elixir-format
 msgid "Confirm new PIN"
 msgstr "Neue PIN bestätigen"
 
-#: lib/attendancetracker_web/live/admin_live.ex:105
+#: lib/attendancetracker_web/live/admin_live.ex:109
 #, elixir-autogen, elixir-format
 msgid "Confirm new session PIN"
 msgstr "Neue Sitzungs-PIN bestätigen"
 
-#: lib/attendancetracker_web/live/admin_live.ex:198
+#: lib/attendancetracker_web/live/admin_live.ex:272
 #, elixir-autogen, elixir-format
 msgid "Connector"
 msgstr "Schnittstelle"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:450
+#: lib/attendancetracker_web/live/check_in_live.ex:521
 #, elixir-autogen, elixir-format
 msgid "Could not access the camera: %{message}"
 msgstr "Kamerazugriff fehlgeschlagen: %{message}"
 
-#: lib/attendancetracker_web/live/admin_live.ex:502
+#: lib/attendancetracker_web/live/admin_live.ex:656
 #, elixir-autogen, elixir-format
 msgid "Could not reach the user management: %{reason}"
 msgstr "Mitgliederverwaltung nicht erreichbar: %{reason}"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:471
+#: lib/attendancetracker_web/live/check_in_live.ex:542
 #, elixir-autogen, elixir-format
 msgid "Could not save the photo, please try again."
 msgstr "Das Foto konnte nicht gespeichert werden. Bitte erneut versuchen."
@@ -200,6 +199,7 @@ msgstr "CSV herunterladen"
 msgid "Download the attendance report for a full year as a CSV file."
 msgstr "Lade den Anwesenheitsbericht für ein ganzes Jahr als CSV-Datei herunter."
 
+#: lib/attendancetracker_web/live/admin_infos_live.ex:59
 #: lib/attendancetracker_web/live/event_live/index.ex:38
 #: lib/attendancetracker_web/live/participant_live/index.ex:46
 #: lib/attendancetracker_web/live/training_live/index.ex:42
@@ -229,12 +229,12 @@ msgstr "Training bearbeiten"
 msgid "End"
 msgstr "Ende"
 
-#: lib/attendancetracker_web/live/login_live.ex:10
+#: lib/attendancetracker_web/live/login_live.ex:13
 #, elixir-autogen, elixir-format
 msgid "Enter the admin PIN to continue."
 msgstr "Admin-PIN eingeben, um fortzufahren."
 
-#: lib/attendancetracker_web/live/check_in_live.ex:168
+#: lib/attendancetracker_web/live/check_in_live.ex:226
 #, elixir-autogen, elixir-format
 msgid "Enter the admin PIN to remove this check-in."
 msgstr "Admin-PIN eingeben, um diesen Check-in zu entfernen."
@@ -244,28 +244,27 @@ msgstr "Admin-PIN eingeben, um diesen Check-in zu entfernen."
 msgid "Enter the session PIN to unlock the check-in screen."
 msgstr "Sitzungs-PIN eingeben, um den Check-in-Bildschirm freizugeben."
 
-#: lib/attendancetracker_web/live/admin_live.ex:264
+#: lib/attendancetracker_web/live/admin_live.ex:338
 #, elixir-autogen, elixir-format
 msgid "Everyone is already a participant."
 msgstr "Alle sind bereits als Teilnehmer erfasst."
 
-#: lib/attendancetracker_web/components/layouts.ex:84
-#: lib/attendancetracker_web/components/layouts.ex:135
+#: lib/attendancetracker_web/components/layouts.ex:153
 #, elixir-autogen, elixir-format
 msgid "Exit admin mode"
 msgstr "Admin-Modus beenden"
 
-#: lib/attendancetracker_web/live/admin_live.ex:505
+#: lib/attendancetracker_web/live/admin_live.ex:659
 #, elixir-autogen, elixir-format
 msgid "Fetch failed: %{reason}"
 msgstr "Abruf fehlgeschlagen: %{reason}"
 
-#: lib/attendancetracker_web/live/admin_live.ex:222
+#: lib/attendancetracker_web/live/admin_live.ex:296
 #, elixir-autogen, elixir-format
 msgid "Fetch members"
 msgstr "Mitglieder abrufen"
 
-#: lib/attendancetracker_web/live/admin_live.ex:220
+#: lib/attendancetracker_web/live/admin_live.ex:294
 #, elixir-autogen, elixir-format
 msgid "Fetching..."
 msgstr "Wird abgerufen..."
@@ -275,17 +274,17 @@ msgstr "Wird abgerufen..."
 msgid "For example: every Monday from 19:00 to 21:30."
 msgstr "Zum Beispiel: jeden Montag von 19:00 bis 21:30."
 
-#: lib/attendancetracker_web/live/admin_live.ex:121
+#: lib/attendancetracker_web/live/admin_live.ex:125
 #, elixir-autogen, elixir-format
 msgid "How long a started kiosk session stays unlocked before the session PIN is required again. Defaults to 30 days."
 msgstr "Wie lange eine gestartete Kiosk-Sitzung entsperrt bleibt, bevor die Sitzungs-PIN erneut verlangt wird. Standard: 30 Tage."
 
-#: lib/attendancetracker_web/live/admin_live.ex:232
+#: lib/attendancetracker_web/live/admin_live.ex:306
 #, elixir-autogen, elixir-format
 msgid "Import %{count} participants"
 msgstr "%{count} Teilnehmer importieren"
 
-#: lib/attendancetracker_web/live/admin_live.ex:230
+#: lib/attendancetracker_web/live/admin_live.ex:304
 #, elixir-autogen, elixir-format
 msgid "Importing..."
 msgstr "Wird importiert..."
@@ -295,7 +294,7 @@ msgstr "Wird importiert..."
 msgid "Kids Judo Monday"
 msgstr "Kids Judo Montag"
 
-#: lib/attendancetracker_web/components/layouts.ex:140
+#: lib/attendancetracker_web/components/layouts.ex:159
 #, elixir-autogen, elixir-format
 msgid "Language"
 msgstr "Sprache"
@@ -306,8 +305,8 @@ msgstr "Sprache"
 msgid "Listing Participants"
 msgstr "Teilnehmerliste"
 
-#: lib/attendancetracker_web/live/login_live.ex:23
-#: lib/attendancetracker_web/live/login_live.ex:38
+#: lib/attendancetracker_web/live/login_live.ex:26
+#: lib/attendancetracker_web/live/login_live.ex:41
 #, elixir-autogen, elixir-format
 msgid "Log in"
 msgstr "Anmelden"
@@ -320,7 +319,7 @@ msgstr "Anmelden"
 msgid "Name"
 msgstr "Name"
 
-#: lib/attendancetracker_web/live/admin_live.ex:60
+#: lib/attendancetracker_web/live/admin_live.ex:64
 #, elixir-autogen, elixir-format
 msgid "New PIN"
 msgstr "Neue PIN"
@@ -331,7 +330,7 @@ msgstr "Neue PIN"
 msgid "New Participant"
 msgstr "Neuer Teilnehmer"
 
-#: lib/attendancetracker_web/live/admin_live.ex:98
+#: lib/attendancetracker_web/live/admin_live.ex:102
 #, elixir-autogen, elixir-format
 msgid "New session PIN"
 msgstr "Neue Sitzungs-PIN"
@@ -342,14 +341,14 @@ msgstr "Neue Sitzungs-PIN"
 msgid "New training"
 msgstr "Neues Training"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:139
-#: lib/attendancetracker_web/live/event_check_in_live.ex:91
+#: lib/attendancetracker_web/live/check_in_live.ex:197
+#: lib/attendancetracker_web/live/event_check_in_live.ex:106
 #: lib/attendancetracker_web/live/event_live/show.ex:69
 #, elixir-autogen, elixir-format
 msgid "No active participants yet."
 msgstr "Noch keine aktiven Teilnehmer."
 
-#: lib/attendancetracker_web/live/admin_live.ex:89
+#: lib/attendancetracker_web/live/admin_live.ex:93
 #, elixir-autogen, elixir-format
 msgid "No session PIN configured yet — the kiosk is currently open to everyone."
 msgstr "Noch keine Sitzungs-PIN eingerichtet — der Kiosk ist derzeit für alle offen."
@@ -377,7 +376,7 @@ msgstr "Nur in AttendanceTracker"
 msgid "Only one photo allowed"
 msgstr "Nur ein Foto erlaubt"
 
-#: lib/attendancetracker_web/components/layouts.ex:91
+#: lib/attendancetracker_web/components/layouts.ex:63
 #, elixir-autogen, elixir-format
 msgid "Open menu"
 msgstr "Menü öffnen"
@@ -397,8 +396,7 @@ msgstr "Teilnehmer erfolgreich erstellt"
 msgid "Participant updated successfully"
 msgstr "Teilnehmer erfolgreich aktualisiert"
 
-#: lib/attendancetracker_web/components/layouts.ex:60
-#: lib/attendancetracker_web/components/layouts.ex:105
+#: lib/attendancetracker_web/components/layouts.ex:114
 #: lib/attendancetracker_web/live/event_live/index.ex:35
 #, elixir-autogen, elixir-format
 msgid "Participants"
@@ -426,25 +424,24 @@ msgstr "Foto ist zu gross (max. 5 MB)"
 msgid "Remove photo"
 msgstr "Foto entfernen"
 
-#: lib/attendancetracker_web/components/layouts.ex:69
-#: lib/attendancetracker_web/components/layouts.ex:120
+#: lib/attendancetracker_web/components/layouts.ex:123
 #: lib/attendancetracker_web/live/report_live.ex:11
 #: lib/attendancetracker_web/live/report_live.ex:37
 #, elixir-autogen, elixir-format
 msgid "Reporting"
 msgstr "Berichte"
 
-#: lib/attendancetracker_web/live/admin_live.ex:83
+#: lib/attendancetracker_web/live/admin_live.ex:87
 #, elixir-autogen, elixir-format
 msgid "Required to start a kiosk session on the check-in screen. It is separate from the admin PIN."
 msgstr "Erforderlich, um eine Kiosk-Sitzung auf dem Check-in-Bildschirm zu starten. Sie ist unabhängig von der Admin-PIN."
 
-#: lib/attendancetracker_web/live/admin_live.ex:15
+#: lib/attendancetracker_web/live/admin_live.ex:16
 #, elixir-autogen, elixir-format
 msgid "Restricted area — enter the admin PIN to continue."
 msgstr "Geschützter Bereich — Admin-PIN eingeben, um fortzufahren."
 
-#: lib/attendancetracker_web/live/admin_live.ex:73
+#: lib/attendancetracker_web/live/admin_live.ex:77
 #, elixir-autogen, elixir-format
 msgid "Save PIN"
 msgstr "PIN speichern"
@@ -454,17 +451,17 @@ msgstr "PIN speichern"
 msgid "Save Participant"
 msgstr "Teilnehmer speichern"
 
-#: lib/attendancetracker_web/live/admin_live.ex:210
+#: lib/attendancetracker_web/live/admin_live.ex:284
 #, elixir-autogen, elixir-format
 msgid "Save connection"
 msgstr "Verbindung speichern"
 
-#: lib/attendancetracker_web/live/admin_live.ex:138
+#: lib/attendancetracker_web/live/admin_live.ex:142
 #, elixir-autogen, elixir-format
 msgid "Save expiry"
 msgstr "Ablauf speichern"
 
-#: lib/attendancetracker_web/live/admin_live.ex:111
+#: lib/attendancetracker_web/live/admin_live.ex:115
 #, elixir-autogen, elixir-format
 msgid "Save session PIN"
 msgstr "Sitzungs-PIN speichern"
@@ -474,11 +471,15 @@ msgstr "Sitzungs-PIN speichern"
 msgid "Save training"
 msgstr "Training speichern"
 
-#: lib/attendancetracker_web/live/admin_live.ex:72
-#: lib/attendancetracker_web/live/admin_live.ex:110
-#: lib/attendancetracker_web/live/admin_live.ex:137
-#: lib/attendancetracker_web/live/admin_live.ex:172
-#: lib/attendancetracker_web/live/admin_live.ex:209
+#: lib/attendancetracker_web/live/admin_infos_live.ex:104
+#: lib/attendancetracker_web/live/admin_live.ex:76
+#: lib/attendancetracker_web/live/admin_live.ex:114
+#: lib/attendancetracker_web/live/admin_live.ex:141
+#: lib/attendancetracker_web/live/admin_live.ex:168
+#: lib/attendancetracker_web/live/admin_live.ex:195
+#: lib/attendancetracker_web/live/admin_live.ex:211
+#: lib/attendancetracker_web/live/admin_live.ex:246
+#: lib/attendancetracker_web/live/admin_live.ex:283
 #: lib/attendancetracker_web/live/event_live/form.ex:30
 #: lib/attendancetracker_web/live/participant_live/form.ex:71
 #: lib/attendancetracker_web/live/training_live/form.ex:35
@@ -486,28 +487,28 @@ msgstr "Training speichern"
 msgid "Saving..."
 msgstr "Wird gespeichert..."
 
-#: lib/attendancetracker_web/live/admin_live.ex:81
+#: lib/attendancetracker_web/live/admin_live.ex:85
 #: lib/attendancetracker_web/live/session_unlock_live.ex:20
 #, elixir-autogen, elixir-format
 msgid "Session PIN"
 msgstr "Sitzungs-PIN"
 
-#: lib/attendancetracker_web/live/admin_live.ex:321
+#: lib/attendancetracker_web/live/admin_live.ex:401
 #, elixir-autogen, elixir-format
 msgid "Session PIN updated"
 msgstr "Sitzungs-PIN aktualisiert"
 
-#: lib/attendancetracker_web/live/admin_live.ex:131
+#: lib/attendancetracker_web/live/admin_live.ex:135
 #, elixir-autogen, elixir-format
 msgid "Session duration (days)"
 msgstr "Sitzungsdauer (Tage)"
 
-#: lib/attendancetracker_web/live/admin_live.ex:119
+#: lib/attendancetracker_web/live/admin_live.ex:123
 #, elixir-autogen, elixir-format
 msgid "Session expiry"
 msgstr "Sitzungsablauf"
 
-#: lib/attendancetracker_web/live/admin_live.ex:339
+#: lib/attendancetracker_web/live/admin_live.ex:419
 #, elixir-autogen, elixir-format
 msgid "Session expiry updated"
 msgstr "Sitzungsablauf aktualisiert"
@@ -523,7 +524,7 @@ msgstr "Anzeigen"
 msgid "Show Participant"
 msgstr "Teilnehmer anzeigen"
 
-#: lib/attendancetracker_web/components/layouts.ex:243
+#: lib/attendancetracker_web/components/layouts.ex:310
 #, elixir-autogen, elixir-format
 msgid "Something went wrong!"
 msgstr "Etwas ist schiefgelaufen!"
@@ -541,42 +542,37 @@ msgstr "Start"
 msgid "Start session"
 msgstr "Sitzung starten"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:342
+#: lib/attendancetracker_web/live/check_in_live.ex:410
 #, elixir-autogen, elixir-format
 msgid "Take a photo"
 msgstr "Foto aufnehmen"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:196
+#: lib/attendancetracker_web/live/check_in_live.ex:254
 #, elixir-autogen, elixir-format
 msgid "Take a photo of %{name}"
 msgstr "Foto von %{name} aufnehmen"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:288
+#: lib/attendancetracker_web/live/check_in_live.ex:351
 #, elixir-autogen, elixir-format
 msgid "Tap to undo the check-in"
 msgstr "Tippen, um den Check-in rückgängig zu machen"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:97
-#, elixir-autogen, elixir-format
-msgid "Tap your photo to check in"
-msgstr "Tippe auf dein Foto, um einzuchecken"
-
-#: lib/attendancetracker_web/live/admin_live.ex:52
+#: lib/attendancetracker_web/live/admin_live.ex:56
 #, elixir-autogen, elixir-format
 msgid "The PIN is required to undo check-ins and to enter this area."
 msgstr "Die PIN ist erforderlich, um Check-ins rückgängig zu machen und diesen Bereich zu öffnen."
 
-#: lib/attendancetracker_web/live/admin_live.ex:491
+#: lib/attendancetracker_web/live/admin_live.ex:645
 #, elixir-autogen, elixir-format
 msgid "The user management rejected the API key (401)."
 msgstr "Die Mitgliederverwaltung hat den API-Schlüssel abgelehnt (401)."
 
-#: lib/attendancetracker_web/live/admin_live.ex:495
+#: lib/attendancetracker_web/live/admin_live.ex:649
 #, elixir-autogen, elixir-format
 msgid "The user management returned an error (%{status}): %{message}"
 msgstr "Die Mitgliederverwaltung meldete einen Fehler (%{status}): %{message}"
 
-#: lib/attendancetracker_web/components/layouts.ex:146
+#: lib/attendancetracker_web/components/layouts.ex:163
 #, elixir-autogen, elixir-format
 msgid "Theme"
 msgstr "Design"
@@ -595,10 +591,9 @@ msgstr "Dies ist ein Teilnehmerdatensatz aus deiner Datenbank."
 msgid "Time"
 msgstr "Zeit"
 
-#: lib/attendancetracker_web/components/layouts.ex:63
-#: lib/attendancetracker_web/components/layouts.ex:110
+#: lib/attendancetracker_web/components/layouts.ex:117
 #: lib/attendancetracker_web/components/participant_components.ex:99
-#: lib/attendancetracker_web/live/check_in_live.ex:90
+#: lib/attendancetracker_web/live/check_in_live.ex:142
 #: lib/attendancetracker_web/live/training_live/index.ex:12
 #: lib/attendancetracker_web/live/training_live/index.ex:61
 #: lib/attendancetracker_web/live/training_live/show.ex:59
@@ -616,22 +611,22 @@ msgstr "Training erfolgreich erstellt"
 msgid "Training updated successfully"
 msgstr "Training erfolgreich aktualisiert"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:182
+#: lib/attendancetracker_web/live/check_in_live.ex:240
 #, elixir-autogen, elixir-format
 msgid "Undo check-in"
 msgstr "Check-in rückgängig machen"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:165
+#: lib/attendancetracker_web/live/check_in_live.ex:223
 #, elixir-autogen, elixir-format
 msgid "Undo check-in for %{name}?"
 msgstr "Check-in für %{name} rückgängig machen?"
 
-#: lib/attendancetracker_web/live/admin_live.ex:41
+#: lib/attendancetracker_web/live/admin_live.ex:45
 #, elixir-autogen, elixir-format
 msgid "Unlock"
 msgstr "Entsperren"
 
-#: lib/attendancetracker_web/live/admin_live.ex:40
+#: lib/attendancetracker_web/live/admin_live.ex:44
 #, elixir-autogen, elixir-format
 msgid "Unlocking..."
 msgstr "Wird entsperrt..."
@@ -641,17 +636,17 @@ msgstr "Wird entsperrt..."
 msgid "Upload error: %{error}"
 msgstr "Upload-Fehler: %{error}"
 
-#: lib/attendancetracker_web/live/admin_live.ex:385
+#: lib/attendancetracker_web/live/admin_live.ex:524
 #, elixir-autogen, elixir-format
 msgid "User management connection saved"
 msgstr "Mitgliederverwaltungs-Verbindung gespeichert"
 
-#: lib/attendancetracker_web/live/admin_live.ex:181
+#: lib/attendancetracker_web/live/admin_live.ex:255
 #, elixir-autogen, elixir-format
 msgid "User management import"
 msgstr "Import aus Mitgliederverwaltung"
 
-#: lib/attendancetracker_web/components/layouts.ex:228
+#: lib/attendancetracker_web/components/layouts.ex:295
 #, elixir-autogen, elixir-format
 msgid "We can't find the internet"
 msgstr "Keine Internetverbindung"
@@ -663,8 +658,8 @@ msgstr "Keine Internetverbindung"
 msgid "Weekday"
 msgstr "Wochentag"
 
-#: lib/attendancetracker_web/live/admin_live.ex:486
-#: lib/attendancetracker_web/live/check_in_live.ex:491
+#: lib/attendancetracker_web/live/admin_live.ex:640
+#: lib/attendancetracker_web/live/check_in_live.ex:562
 #, elixir-autogen, elixir-format
 msgid "Wrong PIN"
 msgstr "Falsche PIN"
@@ -679,22 +674,22 @@ msgstr "Jahr"
 msgid "close"
 msgstr "schliessen"
 
-#: lib/attendancetracker_web/live/admin_live.ex:260
+#: lib/attendancetracker_web/live/admin_live.ex:334
 #, elixir-autogen, elixir-format
 msgid "no number"
 msgstr "keine Nummer"
 
-#: lib/attendancetracker_web/live/admin_live.ex:478
+#: lib/attendancetracker_web/live/admin_live.ex:632
 #, elixir-autogen, elixir-format
 msgid "API key"
 msgstr "API-Schlüssel"
 
-#: lib/attendancetracker_web/live/admin_live.ex:477
+#: lib/attendancetracker_web/live/admin_live.ex:631
 #, elixir-autogen, elixir-format
 msgid "Base URL"
 msgstr "Basis-URL"
 
-#: lib/attendancetracker_web/live/admin_live.ex:481
+#: lib/attendancetracker_web/live/admin_live.ex:635
 #, elixir-autogen, elixir-format
 msgid "First-name field"
 msgstr "Feld Vorname"
@@ -704,7 +699,7 @@ msgstr "Feld Vorname"
 msgid "Friday"
 msgstr "Freitag"
 
-#: lib/attendancetracker_web/live/admin_live.ex:482
+#: lib/attendancetracker_web/live/admin_live.ex:636
 #, elixir-autogen, elixir-format
 msgid "Last-name field"
 msgstr "Feld Nachname"
@@ -714,7 +709,7 @@ msgstr "Feld Nachname"
 msgid "Monday"
 msgstr "Montag"
 
-#: lib/attendancetracker_web/live/admin_live.ex:483
+#: lib/attendancetracker_web/live/admin_live.ex:637
 #, elixir-autogen, elixir-format
 msgid "Phone field"
 msgstr "Feld Telefon"
@@ -870,39 +865,39 @@ msgstr "Sept."
 msgid "September"
 msgstr "September"
 
-#: lib/attendancetracker_web/live/admin_live.ex:357
+#: lib/attendancetracker_web/live/admin_live.ex:496
 #, elixir-autogen, elixir-format
 msgid "Log settings updated"
 msgstr "Protokoll-Einstellungen aktualisiert"
 
-#: lib/attendancetracker_web/live/admin_live.ex:146
+#: lib/attendancetracker_web/live/admin_live.ex:220
 #: lib/attendancetracker_web/live/admin_logs_live.ex:13
 #: lib/attendancetracker_web/live/admin_logs_live.ex:115
 #, elixir-autogen, elixir-format
 msgid "Logs"
 msgstr "Protokolle"
 
-#: lib/attendancetracker_web/live/admin_live.ex:158
+#: lib/attendancetracker_web/live/admin_live.ex:232
 #, elixir-autogen, elixir-format
 msgid "Maximum entries per log"
 msgstr "Maximale Einträge pro Protokoll"
 
-#: lib/attendancetracker_web/live/admin_live.ex:166
+#: lib/attendancetracker_web/live/admin_live.ex:240
 #, elixir-autogen, elixir-format
 msgid "Prune interval (minutes)"
 msgstr "Aufräum-Intervall (Minuten)"
 
-#: lib/attendancetracker_web/live/admin_live.ex:173
+#: lib/attendancetracker_web/live/admin_live.ex:247
 #, elixir-autogen, elixir-format
 msgid "Save log settings"
 msgstr "Protokoll-Einstellungen speichern"
 
-#: lib/attendancetracker_web/live/admin_live.ex:148
+#: lib/attendancetracker_web/live/admin_live.ex:222
 #, elixir-autogen, elixir-format
 msgid "The audit log records check-ins and reverts; the program log records sync calls and their results. Both are capped and the oldest entries are pruned periodically."
 msgstr "Das Audit-Protokoll erfasst Check-ins und Rücknahmen; das Programm-Protokoll erfasst Sync-Aufrufe und deren Ergebnisse. Beide sind begrenzt und die ältesten Einträge werden regelmässig entfernt."
 
-#: lib/attendancetracker_web/live/admin_live.ex:479
+#: lib/attendancetracker_web/live/admin_live.ex:633
 #, elixir-autogen, elixir-format
 msgid "Training field"
 msgstr "Trainingsfeld"
@@ -967,7 +962,7 @@ msgstr "Sitzung"
 msgid "Status"
 msgstr "Status"
 
-#: lib/attendancetracker_web/live/admin_live.ex:18
+#: lib/attendancetracker_web/live/admin_live.ex:19
 #, elixir-autogen, elixir-format
 msgid "View logs"
 msgstr "Protokolle anzeigen"
@@ -1003,7 +998,7 @@ msgstr "Zusammenführen"
 
 #: lib/attendancetracker_web/live/admin_duplicates_live.ex:13
 #: lib/attendancetracker_web/live/admin_duplicates_live.ex:101
-#: lib/attendancetracker_web/live/admin_live.ex:21
+#: lib/attendancetracker_web/live/admin_live.ex:22
 #, elixir-autogen, elixir-format
 msgid "Merge duplicates"
 msgstr "Duplikate zusammenführen"
@@ -1043,8 +1038,8 @@ msgstr "Teilnehmer zusammengeführt"
 msgid "Participants that only have a first or last name and likely match a participant with a full name."
 msgstr "Teilnehmer, die nur einen Vor- oder Nachnamen haben und wahrscheinlich zu einem Teilnehmer mit vollem Namen passen."
 
-#: lib/attendancetracker_web/live/check_in_live.ex:115
-#: lib/attendancetracker_web/live/check_in_live.ex:148
+#: lib/attendancetracker_web/live/check_in_live.ex:162
+#: lib/attendancetracker_web/live/check_in_live.ex:206
 #: lib/attendancetracker_web/live/event_live/show.ex:48
 #: lib/attendancetracker_web/live/event_live/show.ex:78
 #, elixir-autogen, elixir-format
@@ -1062,32 +1057,32 @@ msgstr "Trainings"
 msgid "No trainings attended yet."
 msgstr "Noch keine Trainings besucht."
 
-#: lib/attendancetracker_web/live/admin_live.ex:27
+#: lib/attendancetracker_web/live/admin_live.ex:31
 #, elixir-autogen, elixir-format
 msgid "Version %{version}"
 msgstr "Version %{version}"
 
-#: lib/attendancetracker_web/live/admin_live.ex:242
+#: lib/attendancetracker_web/live/admin_live.ex:316
 #, elixir-autogen, elixir-format
 msgid "%{new} new, %{existing} matched to existing participants (%{total} members fetched)."
 msgstr "%{new} neu, %{existing} bereits als Teilnehmer vorhanden (%{total} Mitglieder abgerufen)."
 
-#: lib/attendancetracker_web/live/admin_live.ex:480
+#: lib/attendancetracker_web/live/admin_live.ex:634
 #, elixir-autogen, elixir-format
 msgid "Exit field"
 msgstr "Austrittsfeld"
 
-#: lib/attendancetracker_web/live/admin_live.ex:183
+#: lib/attendancetracker_web/live/admin_live.ex:257
 #, elixir-autogen, elixir-format
 msgid "Fetch members from an external user management system and create a participant for each, excluding members with an exit date. Missing trainings are created automatically."
 msgstr "Rufe Mitglieder aus einer externen Mitgliederverwaltung ab und erstelle für jedes ein Teilnehmerprofil. Mitglieder mit einem Austrittsdatum werden übersprungen; fehlende Trainings werden automatisch erstellt."
 
-#: lib/attendancetracker_web/live/admin_live.ex:416
+#: lib/attendancetracker_web/live/admin_live.ex:555
 #, elixir-autogen, elixir-format
 msgid "Imported %{created} participants (%{linked} linked to Webling, %{trainings} trainings created)"
 msgstr "%{created} Teilnehmer importiert (%{linked} mit Webling verknüpft, %{trainings} Trainings erstellt)"
 
-#: lib/attendancetracker_web/live/admin_live.ex:250
+#: lib/attendancetracker_web/live/admin_live.ex:324
 #, elixir-autogen, elixir-format
 msgid "New trainings will be created: %{names}"
 msgstr "Neue Trainings werden erstellt: %{names}"
@@ -1112,17 +1107,17 @@ msgstr "Noch keine Mitglieder."
 msgid "Source"
 msgstr "Quelle"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:142
+#: lib/attendancetracker_web/live/check_in_live.ex:200
 #, elixir-autogen, elixir-format
 msgid "No members in this training yet."
 msgstr "Noch keine Mitglieder in diesem Training."
 
-#: lib/attendancetracker_web/live/check_in_live.ex:115
+#: lib/attendancetracker_web/live/check_in_live.ex:162
 #, elixir-autogen, elixir-format
 msgid "Show only members"
 msgstr "Nur Mitglieder anzeigen"
 
-#: lib/attendancetracker_web/live/event_check_in_live.ex:78
+#: lib/attendancetracker_web/live/event_check_in_live.ex:93
 #: lib/attendancetracker_web/live/event_live/show.ex:54
 #, elixir-autogen, elixir-format
 msgid "%{count} selected"
@@ -1133,6 +1128,7 @@ msgstr "%{count} ausgewählt"
 msgid "Club championships"
 msgstr "Vereinsmeisterschaft"
 
+#: lib/attendancetracker_web/live/check_in_live.ex:134
 #: lib/attendancetracker_web/live/event_live/form.ex:25
 #: lib/attendancetracker_web/live/event_live/index.ex:28
 #, elixir-autogen, elixir-format
@@ -1160,8 +1156,7 @@ msgstr "Event erfolgreich gelöscht"
 msgid "Event updated successfully"
 msgstr "Event erfolgreich aktualisiert"
 
-#: lib/attendancetracker_web/components/layouts.ex:66
-#: lib/attendancetracker_web/components/layouts.ex:115
+#: lib/attendancetracker_web/components/layouts.ex:120
 #: lib/attendancetracker_web/live/event_live/index.ex:13
 #: lib/attendancetracker_web/live/event_live/index.ex:57
 #, elixir-autogen, elixir-format
@@ -1194,19 +1189,18 @@ msgstr "Event speichern"
 msgid "Select participants"
 msgstr "Teilnehmer auswählen"
 
-#: lib/attendancetracker_web/live/event_check_in_live.ex:59
+#: lib/attendancetracker_web/live/event_check_in_live.ex:74
 #, elixir-autogen, elixir-format
 msgid "Event"
 msgstr "Event"
 
-#: lib/attendancetracker_web/components/layouts.ex:57
-#: lib/attendancetracker_web/components/layouts.ex:100
-#: lib/attendancetracker_web/live/event_check_in_live.ex:16
+#: lib/attendancetracker_web/components/layouts.ex:107
+#: lib/attendancetracker_web/live/event_check_in_live.ex:17
 #, elixir-autogen, elixir-format
 msgid "Event check-in"
 msgstr "Event-Check-in"
 
-#: lib/attendancetracker_web/live/event_check_in_live.ex:51
+#: lib/attendancetracker_web/live/event_check_in_live.ex:66
 #, elixir-autogen, elixir-format
 msgid "No events yet."
 msgstr "Noch keine Events."
@@ -1220,3 +1214,213 @@ msgstr "Noch keine Teilnehmer ausgewählt."
 #, elixir-autogen, elixir-format
 msgid "Show selected"
 msgstr "Ausgewählte anzeigen"
+
+#: lib/attendancetracker_web/live/admin_live.ex:150
+#, elixir-autogen, elixir-format
+msgid "Admin session timeout"
+msgstr "Admin-Sitzungs-Timeout"
+
+#: lib/attendancetracker_web/live/admin_live.ex:436
+#, elixir-autogen, elixir-format
+msgid "Admin session timeout updated"
+msgstr "Admin-Sitzungs-Timeout aktualisiert"
+
+#: lib/attendancetracker_web/components/info_components.ex:25
+#, elixir-autogen, elixir-format
+msgid "Bold"
+msgstr "Fett"
+
+#: lib/attendancetracker_web/components/info_components.ex:37
+#, elixir-autogen, elixir-format
+msgid "Bullet list"
+msgstr "Aufzählung"
+
+#: lib/attendancetracker_web/components/info_components.ex:46
+#, elixir-autogen, elixir-format
+msgid "Clear formatting"
+msgstr "Formatierung löschen"
+
+#: lib/attendancetracker_web/components/layouts.ex:98
+#, elixir-autogen, elixir-format
+msgid "Close menu"
+msgstr "Menü schließen"
+
+#: lib/attendancetracker_web/live/admin_infos_live.ex:92
+#, elixir-autogen, elixir-format
+msgid "Content"
+msgstr "Inhalt"
+
+#: lib/attendancetracker_web/live/admin_infos_live.ex:66
+#, elixir-autogen, elixir-format
+msgid "Delete this slide?"
+msgstr "Diese Folie löschen?"
+
+#: lib/attendancetracker_web/live/admin_infos_live.ex:77
+#, elixir-autogen, elixir-format
+msgid "Edit slide"
+msgstr "Folie bearbeiten"
+
+#: lib/attendancetracker_web/components/info_components.ex:29
+#, elixir-autogen, elixir-format
+msgid "Heading 1"
+msgstr "Überschrift 1"
+
+#: lib/attendancetracker_web/components/info_components.ex:30
+#, elixir-autogen, elixir-format
+msgid "Heading 2"
+msgstr "Überschrift 2"
+
+#: lib/attendancetracker_web/components/info_components.ex:31
+#, elixir-autogen, elixir-format
+msgid "Heading 3"
+msgstr "Überschrift 3"
+
+#: lib/attendancetracker_web/live/admin_infos_live.ex:47
+#, elixir-autogen, elixir-format
+msgid "Hidden"
+msgstr "Ausgeblendet"
+
+#: lib/attendancetracker_web/live/admin_live.ex:152
+#, elixir-autogen, elixir-format
+msgid "How long admin mode stays active without activity before the admin PIN is required again. Defaults to 10 minutes."
+msgstr "Wie lange der Admin-Modus ohne Aktivität aktiv bleibt, bevor die Admin-PIN erneut erforderlich ist. Standard: 10 Minuten."
+
+#: lib/attendancetracker_web/live/admin_live.ex:189
+#, elixir-autogen, elixir-format
+msgid "Idle timeout (minutes)"
+msgstr "Leerlauf-Timeout (Minuten)"
+
+#: lib/attendancetracker_web/live/admin_live.ex:453
+#, elixir-autogen, elixir-format
+msgid "Idle timeout updated"
+msgstr "Leerlauf-Timeout aktualisiert"
+
+#: lib/attendancetracker_web/live/admin_live.ex:474
+#, elixir-autogen, elixir-format
+msgid "Info rotation updated"
+msgstr "Info-Rotation aktualisiert"
+
+#: lib/attendancetracker_web/components/layouts.ex:133
+#: lib/attendancetracker_web/live/admin_infos_live.ex:14
+#: lib/attendancetracker_web/live/admin_live.ex:25
+#: lib/attendancetracker_web/live/admin_live.ex:177
+#, elixir-autogen, elixir-format
+msgid "Info screen"
+msgstr "Infobildschirm"
+
+#: lib/attendancetracker_web/components/info_components.ex:44
+#, elixir-autogen, elixir-format
+msgid "Insert link"
+msgstr "Link einfügen"
+
+#: lib/attendancetracker_web/components/info_components.ex:26
+#, elixir-autogen, elixir-format
+msgid "Italic"
+msgstr "Kursiv"
+
+#: lib/attendancetracker_web/live/admin_infos_live.ex:25
+#: lib/attendancetracker_web/live/admin_infos_live.ex:77
+#, elixir-autogen, elixir-format
+msgid "New slide"
+msgstr "Neue Folie"
+
+#: lib/attendancetracker_web/live/admin_infos_live.ex:35
+#, elixir-autogen, elixir-format
+msgid "No info slides yet. Add one to show it on the idle kiosk."
+msgstr "Noch keine Infofolien. Fügen Sie eine hinzu, um sie im Leerlauf-Kiosk anzuzeigen."
+
+#: lib/attendancetracker_web/components/info_components.ex:42
+#, elixir-autogen, elixir-format
+msgid "Numbered list"
+msgstr "Nummerierte Liste"
+
+#: lib/attendancetracker_web/components/info_components.ex:32
+#, elixir-autogen, elixir-format
+msgid "Paragraph"
+msgstr "Absatz"
+
+#: lib/attendancetracker_web/live/admin_infos_live.ex:85
+#, elixir-autogen, elixir-format
+msgid "Position"
+msgstr "Position"
+
+#: lib/attendancetracker_web/live/admin_live.ex:205
+#, elixir-autogen, elixir-format
+msgid "Rotation interval (seconds)"
+msgstr "Rotationsintervall (Sekunden)"
+
+#: lib/attendancetracker_web/live/admin_live.ex:196
+#, elixir-autogen, elixir-format
+msgid "Save idle timeout"
+msgstr "Leerlauf-Timeout speichern"
+
+#: lib/attendancetracker_web/live/admin_live.ex:212
+#, elixir-autogen, elixir-format, fuzzy
+msgid "Save rotation"
+msgstr "Training speichern"
+
+#: lib/attendancetracker_web/live/admin_infos_live.ex:105
+#, elixir-autogen, elixir-format
+msgid "Save slide"
+msgstr "Folie speichern"
+
+#: lib/attendancetracker_web/live/admin_live.ex:169
+#, elixir-autogen, elixir-format
+msgid "Save timeout"
+msgstr "Timeout speichern"
+
+#: lib/attendancetracker_web/live/admin_infos_live.ex:89
+#, elixir-autogen, elixir-format
+msgid "Show in rotation"
+msgstr "In Rotation anzeigen"
+
+#: lib/attendancetracker_web/live/admin_infos_live.ex:156
+#, elixir-autogen, elixir-format
+msgid "Slide deleted"
+msgstr "Folie gelöscht"
+
+#: lib/attendancetracker_web/live/admin_infos_live.ex:142
+#, elixir-autogen, elixir-format
+msgid "Slide saved"
+msgstr "Folie gespeichert"
+
+#: lib/attendancetracker_web/live/admin_infos_live.ex:16
+#, elixir-autogen, elixir-format
+msgid "Slides shown full-screen on the kiosk after it has been idle. They rotate automatically; tapping the screen returns to check-in."
+msgstr "Folien, die im Vollbild auf dem Kiosk angezeigt werden, wenn er inaktiv war. Sie rotieren automatisch; durch Tippen auf den Bildschirm geht es zurück zum Check-in."
+
+#: lib/attendancetracker_web/components/info_components.ex:160
+#, elixir-autogen, elixir-format
+msgid "Tap the screen to continue"
+msgstr "Tippen Sie auf den Bildschirm, um fortzufahren"
+
+#: lib/attendancetracker_web/live/admin_live.ex:162
+#, elixir-autogen, elixir-format
+msgid "Timeout (minutes)"
+msgstr "Timeout (Minuten)"
+
+#: lib/attendancetracker_web/live/admin_infos_live.ex:81
+#, elixir-autogen, elixir-format
+msgid "Title (optional)"
+msgstr "Titel (optional)"
+
+#: lib/attendancetracker_web/components/info_components.ex:27
+#, elixir-autogen, elixir-format
+msgid "Underline"
+msgstr "Unterstrichen"
+
+#: lib/attendancetracker_web/live/admin_infos_live.ex:46
+#, elixir-autogen, elixir-format
+msgid "Untitled"
+msgstr "Ohne Titel"
+
+#: lib/attendancetracker_web/live/admin_live.ex:179
+#, elixir-autogen, elixir-format
+msgid "When the kiosk has been idle it switches to a full-screen slideshow of the info slides. Tap the screen to return to check-in."
+msgstr "Wenn der Kiosk inaktiv war, wechselt er zu einer Vollbild-Diashow der Infofolien. Tippen Sie auf den Bildschirm, um zum Check-in zurückzukehren."
+
+#: lib/attendancetracker_web/live/check_in_live.ex:183
+#: lib/attendancetracker_web/live/event_check_in_live.ex:58
+#, elixir-autogen, elixir-format
+msgid "Show info"
+msgstr "Info anzeigen"

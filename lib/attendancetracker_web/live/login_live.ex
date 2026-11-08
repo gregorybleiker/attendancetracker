@@ -1,6 +1,9 @@
 defmodule AttendanceTrackerWeb.LoginLive do
   use AttendanceTrackerWeb, :live_view
 
+  alias AttendanceTracker.AdminSession
+  alias AttendanceTracker.Tracker
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -30,7 +33,7 @@ defmodule AttendanceTrackerWeb.LoginLive do
 
   @impl true
   def mount(_params, session, socket) do
-    if session["admin_pin_ok"] do
+    if AdminSession.active?(session["admin_token"], Tracker.admin_timeout_seconds()) do
       {:ok, redirect(socket, to: ~p"/")}
     else
       {:ok,

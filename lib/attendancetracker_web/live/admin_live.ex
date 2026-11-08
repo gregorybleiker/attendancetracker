@@ -1,6 +1,7 @@
 defmodule AttendanceTrackerWeb.AdminLive do
   use AttendanceTrackerWeb, :live_view
 
+  alias AttendanceTracker.AdminSession
   alias AttendanceTracker.Directory
   alias AttendanceTracker.Logs
   alias AttendanceTracker.Tracker
@@ -19,6 +20,9 @@ defmodule AttendanceTrackerWeb.AdminLive do
           </.button>
           <.button navigate={~p"/admin/duplicates"}>
             <.icon name="hero-user-group" /> {gettext("Merge duplicates")}
+          </.button>
+          <.button navigate={~p"/admin/infos"}>
+            <.icon name="hero-presentation-chart-bar" /> {gettext("Info screen")}
           </.button>
         </:actions>
       </.header>
@@ -136,6 +140,76 @@ defmodule AttendanceTrackerWeb.AdminLive do
             <footer>
               <.button variant="primary" phx-disable-with={gettext("Saving...")}>
                 {gettext("Save expiry")}
+              </.button>
+            </footer>
+          </.form>
+        </div>
+
+        <div class="space-y-6 border-t border-base-300 pt-8">
+          <div>
+            <h2 class="text-lg font-semibold">{gettext("Admin session timeout")}</h2>
+            <p class="mt-1 text-sm opacity-70">
+              {gettext(
+                "How long admin mode stays active without activity before the admin PIN is required again. Defaults to 10 minutes."
+              )}
+            </p>
+          </div>
+
+          <.form for={@timeout_form} id="admin-timeout-form" phx-submit="change_admin_timeout">
+            <.input
+              field={@timeout_form[:minutes]}
+              type="number"
+              label={gettext("Timeout (minutes)")}
+              min="1"
+              max="1440"
+              inputmode="numeric"
+            />
+            <footer>
+              <.button variant="primary" phx-disable-with={gettext("Saving...")}>
+                {gettext("Save timeout")}
+              </.button>
+            </footer>
+          </.form>
+        </div>
+
+        <div class="space-y-6 border-t border-base-300 pt-8">
+          <div>
+            <h2 class="text-lg font-semibold">{gettext("Info screen")}</h2>
+            <p class="mt-1 text-sm opacity-70">
+              {gettext(
+                "When the kiosk has been idle it switches to a full-screen slideshow of the info slides. Tap the screen to return to check-in."
+              )}
+            </p>
+          </div>
+
+          <.form for={@idle_timeout_form} id="idle-timeout-form" phx-submit="change_idle_timeout">
+            <.input
+              field={@idle_timeout_form[:minutes]}
+              type="number"
+              label={gettext("Idle timeout (minutes)")}
+              min="1"
+              max="1440"
+              inputmode="numeric"
+            />
+            <footer>
+              <.button variant="primary" phx-disable-with={gettext("Saving...")}>
+                {gettext("Save idle timeout")}
+              </.button>
+            </footer>
+          </.form>
+
+          <.form for={@info_rotation_form} id="info-rotation-form" phx-submit="change_info_rotation">
+            <.input
+              field={@info_rotation_form[:seconds]}
+              type="number"
+              label={gettext("Rotation interval (seconds)")}
+              min="1"
+              max="3600"
+              inputmode="numeric"
+            />
+            <footer>
+              <.button variant="primary" phx-disable-with={gettext("Saving...")}>
+                {gettext("Save rotation")}
               </.button>
             </footer>
           </.form>
@@ -276,12 +350,18 @@ defmodule AttendanceTrackerWeb.AdminLive do
      socket
      |> assign(:page_title, gettext("Admin"))
      |> assign(:version, Version.full())
-     |> assign(:unlocked, session["admin_pin_ok"] == true)
+     |> assign(
+       :unlocked,
+       AdminSession.active?(session["admin_token"], Tracker.admin_timeout_seconds())
+     )
      |> assign(:pin_form, to_form(%{"pin" => ""}))
      |> assign(:form, pin_changeset_form())
      |> assign(:session_pin_configured, Tracker.session_pin_configured?())
      |> assign(:session_pin_form, session_pin_changeset_form())
      |> assign(:expiry_form, expiry_changeset_form())
+     |> assign(:timeout_form, timeout_changeset_form())
+     |> assign(:idle_timeout_form, idle_timeout_changeset_form())
+     |> assign(:info_rotation_form, info_rotation_changeset_form())
      |> assign(:log_form, log_changeset_form())
      |> assign_directory(Directory.source())}
   end
@@ -341,6 +421,65 @@ defmodule AttendanceTrackerWeb.AdminLive do
     else
       {:noreply,
        assign(socket, :expiry_form, to_form(changeset, as: :session_expiry, action: :validate))}
+    end
+  end
+
+  def handle_event("change_admin_timeout", %{"admin_timeout" => params}, socket) do
+    changeset = Tracker.change_admin_timeout_minutes(params)
+
+    if changeset.valid? do
+      minutes = Ecto.Changeset.get_field(changeset, :minutes)
+      {:ok, _} = Tracker.update_admin_timeout_minutes(minutes)
+
+      {:noreply,
+       socket
+       |> put_flash(:info, gettext("Admin session timeout updated"))
+       |> assign(:timeout_form, timeout_changeset_form())}
+    else
+      {:noreply,
+       assign(socket, :timeout_form, to_form(changeset, as: :admin_timeout, action: :validate))}
+    end
+  end
+
+  def handle_event("change_idle_timeout", %{"idle_timeout" => params}, socket) do
+    changeset = Tracker.change_idle_timeout_minutes(params)
+
+    if changeset.valid? do
+      minutes = Ecto.Changeset.get_field(changeset, :minutes)
+      {:ok, _} = Tracker.update_idle_timeout_minutes(minutes)
+
+      {:noreply,
+       socket
+       |> put_flash(:info, gettext("Idle timeout updated"))
+       |> assign(:idle_timeout_form, idle_timeout_changeset_form())}
+    else
+      {:noreply,
+       assign(
+         socket,
+         :idle_timeout_form,
+         to_form(changeset, as: :idle_timeout, action: :validate)
+       )}
+    end
+  end
+
+  def handle_event("change_info_rotation", %{"info_rotation" => params}, socket) do
+    changeset = Tracker.change_info_rotation_seconds(params)
+
+    if changeset.valid? do
+      seconds = Ecto.Changeset.get_field(changeset, :seconds)
+      {:ok, _} = Tracker.update_info_rotation_seconds(seconds)
+
+      {:noreply,
+       socket
+       |> put_flash(:info, gettext("Info rotation updated"))
+       |> assign(:info_rotation_form, info_rotation_changeset_form())}
+    else
+      {:noreply,
+       assign(
+         socket,
+         :info_rotation_form,
+         to_form(changeset, as: :info_rotation, action: :validate)
+       )}
     end
   end
 
@@ -438,6 +577,21 @@ defmodule AttendanceTrackerWeb.AdminLive do
   defp expiry_changeset_form do
     params = %{days: Tracker.session_expiry_days()}
     to_form(Tracker.change_session_expiry_days(params), as: :session_expiry)
+  end
+
+  defp timeout_changeset_form do
+    params = %{minutes: Tracker.admin_timeout_minutes()}
+    to_form(Tracker.change_admin_timeout_minutes(params), as: :admin_timeout)
+  end
+
+  defp idle_timeout_changeset_form do
+    params = %{minutes: Tracker.idle_timeout_minutes()}
+    to_form(Tracker.change_idle_timeout_minutes(params), as: :idle_timeout)
+  end
+
+  defp info_rotation_changeset_form do
+    params = %{seconds: Tracker.info_rotation_seconds()}
+    to_form(Tracker.change_info_rotation_seconds(params), as: :info_rotation)
   end
 
   defp log_changeset_form do

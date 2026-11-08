@@ -25,6 +25,7 @@ LiveView, Ecto + SQLite). It supersedes the former repository-root
 * [PWA](/architecture/pwa.md) - Web app manifest and service worker.
 * [Localisation](/architecture/localization.md) - Gettext English/German and locale detection.
 * [Logs](/architecture/logs.md) - Audit and program logs with periodic retention.
+* [Info screen](/architecture/info-screen.md) - Idle full-screen kiosk slideshow with a WYSIWYG editor.
 * [Merging duplicates](/architecture/duplicates.md) - Detect and merge likely duplicate participants.
 * [Elixir/Phoenix idioms](/architecture/idioms.md) - Feature-to-location cheat sheet.
 * [End-to-end flows](/architecture/flows.md) - Login, check-in, training selection, undo, camera capture.

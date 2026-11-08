@@ -50,27 +50,31 @@ defmodule AttendanceTrackerWeb.Router do
   scope "/", AttendanceTrackerWeb do
     pipe_through [:browser, :authenticated]
 
-    live "/participants", ParticipantLive.Index, :index
-    live "/participants/new", ParticipantLive.Form, :new
-    live "/participants/:id", ParticipantLive.Show, :show
-    live "/participants/:id/edit", ParticipantLive.Form, :edit
+    live_session :authenticated, on_mount: [AttendanceTrackerWeb.AdminSessionHook] do
+      live "/participants", ParticipantLive.Index, :index
+      live "/participants/new", ParticipantLive.Form, :new
+      live "/participants/:id", ParticipantLive.Show, :show
+      live "/participants/:id/edit", ParticipantLive.Form, :edit
 
-    live "/training", TrainingLive.Index, :index
-    live "/training/new", TrainingLive.Form, :new
-    live "/training/:id", TrainingLive.Show, :show
-    live "/training/:id/edit", TrainingLive.Form, :edit
+      live "/training", TrainingLive.Index, :index
+      live "/training/new", TrainingLive.Form, :new
+      live "/training/:id", TrainingLive.Show, :show
+      live "/training/:id/edit", TrainingLive.Form, :edit
 
-    live "/events", EventLive.Index, :index
-    live "/events/new", EventLive.Form, :new
-    live "/events/:id", EventLive.Show, :show
-    live "/events/:id/edit", EventLive.Form, :edit
+      live "/events", EventLive.Index, :index
+      live "/events/new", EventLive.Form, :new
+      live "/events/:id", EventLive.Show, :show
+      live "/events/:id/edit", EventLive.Form, :edit
 
-    live "/reporting", ReportLive, :index
+      live "/reporting", ReportLive, :index
+
+      live "/admin", AdminLive, :index
+      live "/admin/logs", AdminLogsLive, :index
+      live "/admin/duplicates", AdminDuplicatesLive, :index
+      live "/admin/infos", AdminInfosLive, :index
+    end
+
     get "/reporting/download", ReportController, :download
-
-    live "/admin", AdminLive, :index
-    live "/admin/logs", AdminLogsLive, :index
-    live "/admin/duplicates", AdminDuplicatesLive, :index
   end
 
   # Other scopes may use custom stacks.
