@@ -4,6 +4,13 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
   import Phoenix.LiveViewTest
   import AttendanceTracker.TrackerFixtures
 
+  alias AttendanceTracker.RateLimit
+
+  setup do
+    RateLimit.clear_all()
+    :ok
+  end
+
   test "shows active participants and the attendance count", %{conn: conn} do
     participant_fixture(%{name: "Grid Person", active: true})
 
@@ -99,6 +106,26 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
       refute has_element?(view, "#check-out-modal")
       refute has_element?(view, "#checked-in-badge-#{participant.id}")
       assert render(view) =~ "0 / 1 present"
+    end
+
+    test "throttles repeated wrong PINs and then refuses the correct one", %{conn: conn} do
+      participant = participant_fixture(%{active: true})
+
+      {:ok, view, _html} = live(conn, ~p"/")
+      view |> element("#check-in-btn-#{participant.id}") |> render_click()
+      view |> element("#check-in-btn-#{participant.id}") |> render_click()
+
+      for _ <- 1..5 do
+        view |> form("#pin-form", %{pin: "0000"}) |> render_submit()
+      end
+
+      html = view |> form("#pin-form", %{pin: "0000"}) |> render_submit()
+      assert html =~ "Too many attempts"
+
+      # the correct PIN is refused too, so the check-in stays
+      html = view |> form("#pin-form", %{pin: "1234"}) |> render_submit()
+      assert html =~ "Too many attempts"
+      assert has_element?(view, "#checked-in-badge-#{participant.id}")
     end
 
     test "cancel keeps the check-in and closes the modal", %{conn: conn} do

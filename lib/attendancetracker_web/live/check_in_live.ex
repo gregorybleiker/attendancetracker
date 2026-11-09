@@ -5,9 +5,11 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   import AttendanceTrackerWeb.ParticipantComponents
 
   alias AttendanceTracker.AdminSession
+  alias AttendanceTracker.PinThrottle
   alias AttendanceTracker.Tracker
   alias AttendanceTracker.Tracker.Participant
   alias AttendanceTracker.Tracker.Training
+  alias AttendanceTrackerWeb.ClientIP
   alias AttendanceTrackerWeb.TrainingLabels
 
   @impl true
@@ -24,6 +26,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
 
     {:ok,
      socket
+     |> assign(:client_ip, ClientIP.from_socket(socket))
      |> assign(:page_title, gettext("Check in"))
      |> assign(:session, session)
      |> assign(:trainings, trainings)
@@ -476,24 +479,20 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   end
 
   def handle_event("submit_pin", %{"pin" => pin}, socket) do
-    if Tracker.admin_pin_valid?(pin) do
-      participant_id = socket.assigns.toggle_participant.id
+    ip = socket.assigns.client_ip
 
-      # Unlocking reveals the admin-only UI inside the streamed cards
-      # (camera buttons, phone numbers), so the stream must be reset for
-      # the toggled assign to take effect on already rendered items.
-      participants =
-        Tracker.list_participants_with_check_ins(socket.assigns.session,
-          show_all: socket.assigns.show_all
-        )
+    case PinThrottle.check_admin(ip) do
+      :ok ->
+        if Tracker.admin_pin_valid?(pin) do
+          PinThrottle.clear_admin(ip)
+          unlock_and_check_out(socket)
+        else
+          PinThrottle.record_admin_failure(ip)
+          {:noreply, assign(socket, :pin_form, pin_form_with_error())}
+        end
 
-      socket
-      |> assign(:admin_unlocked, true)
-      |> assign(:toggle_participant, nil)
-      |> stream(:participants, participants, reset: true)
-      |> check_out_participant(participant_id)
-    else
-      {:noreply, assign(socket, :pin_form, pin_form_with_error())}
+      {:error, retry_after} ->
+        {:noreply, assign(socket, :pin_form, pin_form_with_throttle_error(retry_after))}
     end
   end
 
@@ -561,8 +560,36 @@ defmodule AttendanceTrackerWeb.CheckInLive do
     {:noreply, socket}
   end
 
+  defp unlock_and_check_out(socket) do
+    participant_id = socket.assigns.toggle_participant.id
+
+    # Unlocking reveals the admin-only UI inside the streamed cards
+    # (camera buttons, phone numbers), so the stream must be reset for
+    # the toggled assign to take effect on already rendered items.
+    participants =
+      Tracker.list_participants_with_check_ins(socket.assigns.session,
+        show_all: socket.assigns.show_all
+      )
+
+    socket
+    |> assign(:admin_unlocked, true)
+    |> assign(:toggle_participant, nil)
+    |> stream(:participants, participants, reset: true)
+    |> check_out_participant(participant_id)
+  end
+
   defp pin_form_with_error do
     to_form(%{"pin" => ""}, errors: [pin: {gettext("Wrong PIN"), []}])
+  end
+
+  defp pin_form_with_throttle_error(retry_after) do
+    to_form(%{"pin" => ""},
+      errors: [
+        pin:
+          {gettext("Too many attempts. Try again in %{seconds} seconds.", seconds: retry_after),
+           []}
+      ]
+    )
   end
 
   defp parse_date(value) when is_binary(value) do

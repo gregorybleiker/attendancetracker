@@ -7,6 +7,7 @@ defmodule AttendanceTrackerWeb.AdminLiveTest do
   alias AttendanceTracker.Version
 
   setup %{conn: conn} do
+    AttendanceTracker.RateLimit.clear_all()
     %{conn: log_in(conn)}
   end
 

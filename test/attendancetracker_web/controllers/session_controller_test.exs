@@ -4,6 +4,11 @@ defmodule AttendanceTrackerWeb.SessionControllerTest do
   import Phoenix.LiveViewTest
   import AttendanceTracker.TrackerFixtures
 
+  setup do
+    AttendanceTracker.RateLimit.clear_all()
+    :ok
+  end
+
   test "DELETE /logout clears admin mode and redirects to the kiosk", %{conn: conn} do
     participant = participant_fixture(%{active: true})
     conn = log_in(conn)
@@ -153,6 +158,40 @@ defmodule AttendanceTrackerWeb.SessionControllerTest do
 
     test "redirects to the kiosk when no session PIN is configured", %{conn: conn} do
       assert {:error, {:redirect, %{to: "/"}}} = live(conn, ~p"/start")
+    end
+  end
+
+  describe "brute-force throttling" do
+    alias AttendanceTracker.Tracker
+
+    test "blocks an IP after repeated wrong admin PINs", %{conn: conn} do
+      for _ <- 1..5 do
+        conn = post(conn, ~p"/login", %{"pin" => "0000"})
+        assert redirected_to(conn) == ~p"/login"
+      end
+
+      conn = post(conn, ~p"/login", %{"pin" => "0000"})
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Too many attempts"
+
+      # even the correct PIN is refused while the IP is throttled
+      conn = post(conn, ~p"/login", %{"pin" => "1234"})
+      assert redirected_to(conn) == ~p"/login"
+      refute get_session(conn, :admin_token)
+    end
+
+    test "blocks an IP after repeated wrong session PINs", %{conn: conn} do
+      {:ok, _} = Tracker.update_session_pin("2468")
+
+      for _ <- 1..10 do
+        conn = post(conn, ~p"/start", %{"pin" => "0000"})
+        assert redirected_to(conn) == ~p"/start"
+      end
+
+      conn = post(conn, ~p"/start", %{"pin" => "0000"})
+      assert Phoenix.Flash.get(conn.assigns.flash, :error) =~ "Too many attempts"
+
+      conn = post(conn, ~p"/start", %{"pin" => "2468"})
+      assert redirected_to(conn) == ~p"/start"
     end
   end
 end

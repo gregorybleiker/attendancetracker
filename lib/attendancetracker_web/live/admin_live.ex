@@ -4,8 +4,10 @@ defmodule AttendanceTrackerWeb.AdminLive do
   alias AttendanceTracker.AdminSession
   alias AttendanceTracker.Directory
   alias AttendanceTracker.Logs
+  alias AttendanceTracker.PinThrottle
   alias AttendanceTracker.Tracker
   alias AttendanceTracker.Version
+  alias AttendanceTrackerWeb.ClientIP
 
   @impl true
   def render(assigns) do
@@ -349,6 +351,7 @@ defmodule AttendanceTrackerWeb.AdminLive do
     {:ok,
      socket
      |> assign(:page_title, gettext("Admin"))
+     |> assign(:client_ip, ClientIP.from_socket(socket))
      |> assign(:version, Version.full())
      |> assign(
        :unlocked,
@@ -368,10 +371,23 @@ defmodule AttendanceTrackerWeb.AdminLive do
 
   @impl true
   def handle_event("unlock", %{"pin" => pin}, socket) do
-    if Tracker.admin_pin_valid?(pin) do
-      {:noreply, assign(socket, :unlocked, true)}
-    else
-      {:noreply, assign(socket, :pin_form, to_form(%{"pin" => ""}, errors: wrong_pin_error()))}
+    ip = socket.assigns.client_ip
+
+    case PinThrottle.check_admin(ip) do
+      :ok ->
+        if Tracker.admin_pin_valid?(pin) do
+          PinThrottle.clear_admin(ip)
+          {:noreply, assign(socket, :unlocked, true)}
+        else
+          PinThrottle.record_admin_failure(ip)
+
+          {:noreply,
+           assign(socket, :pin_form, to_form(%{"pin" => ""}, errors: wrong_pin_error()))}
+        end
+
+      {:error, retry_after} ->
+        {:noreply,
+         assign(socket, :pin_form, to_form(%{"pin" => ""}, errors: throttled_error(retry_after)))}
     end
   end
 
@@ -638,6 +654,13 @@ defmodule AttendanceTrackerWeb.AdminLive do
   defp directory_field_label(%{label: label}), do: label
 
   defp wrong_pin_error, do: [pin: {gettext("Wrong PIN"), []}]
+
+  defp throttled_error(retry_after) do
+    [
+      pin:
+        {gettext("Too many attempts. Try again in %{seconds} seconds.", seconds: retry_after), []}
+    ]
+  end
 
   defp directory_error(:missing_apikey), do: gettext("Add the user management API key first.")
 

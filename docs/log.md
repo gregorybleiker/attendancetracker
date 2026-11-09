@@ -1,5 +1,8 @@
 # Bundle Update Log
 
+## 2026-11-09
+* **Feature** (0.7.0): Brute-force throttling for the PIN gates. A new `AttendanceTracker.RateLimit` GenServer keeps a per-key sliding window of failed attempts, and `AttendanceTracker.PinThrottle` applies the policy (5/10 failures per client IP in five minutes for the admin/session PINs, plus a higher aggregate cap against distributed attacks). All four verification points — `SessionController` create/start (HTTP) and the `AdminLive` unlock and `CheckInLive` check-out prompts (LiveView events) — now check the throttle first, count failures, clear the per-IP counter on success, and show a "too many attempts" error when over the limit. The client IP comes from `AttendanceTrackerWeb.ClientIP` (rightmost `x-forwarded-for`, captured in `mount/3` for LiveViews). The shared nginx stack got a coarse per-IP `limit_req` on `/login` and `/start` as an edge backstop. Documented in [Web layer](/architecture/web-layer.md).
+
 ## 2026-11-08
 * **Update** (0.6.0): Densified the participant grid — 6 columns at `lg`, `gap-2`, smaller tiles (`size-12 sm:size-16` avatars, `p-2`/`gap-1`, `text-xs` names) and reduced page padding — so many more rows fit the kiosk. Documented in [Web layer](/architecture/web-layer.md).
 * **Update**: Made the app header more compact (`min-h-0`, reduced padding, smaller logo/hamburger) and dropped the visible date/training labels in the kiosk toolbar, freeing vertical space for the participant grid. Documented in [Web layer](/architecture/web-layer.md).

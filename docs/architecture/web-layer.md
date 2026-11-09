@@ -43,6 +43,18 @@ sources:
     resource: ../../lib/attendancetracker_web/plugs/require_admin_pin.ex
     title: RequireAdminPin plug
     author: human:gregorybleiker
+  - id: pin-throttle
+    resource: ../../lib/attendancetracker/pin_throttle.ex
+    title: PIN brute-force policy
+    author: human:gregorybleiker
+  - id: rate-limit
+    resource: ../../lib/attendancetracker/rate_limit.ex
+    title: Sliding-window rate limiter
+    author: human:gregorybleiker
+  - id: client-ip
+    resource: ../../lib/attendancetracker_web/client_ip.ex
+    title: Client IP extraction
+    author: human:gregorybleiker
 ---
 
 # Router with verified routes
@@ -422,6 +434,28 @@ because LiveView live navigation reuses the WebSocket and does not run plugs:
   `/start`) cannot slip past the plug. Grouping the route in its own
   `live_session` also makes cross-scope navigation a full page load, which runs
   the plug again.
+
+**Brute-force throttling.** Every PIN check (the `/login` and `/start` POSTs
+and the live unlock/check-out prompts) first goes through
+`AttendanceTracker.PinThrottle`, which counts *failures* per client IP and in
+aggregate over a five-minute sliding window (`AttendanceTracker.RateLimit`, an
+in-memory counter). The per-IP cap (5 admin, 10 session) slows a single source
+down; the higher aggregate cap (30 admin, 60 session) stops a distributed
+attack from searching the small PIN space. A successful verification clears
+only the per-IP counter, so guesses cannot reset the aggregate; once a key is
+over its limit every attempt — even the correct PIN — is refused with a
+"too many attempts" message until the oldest failure ages out. Because the
+LiveView prompts are events on an already-open websocket (which a reverse
+proxy cannot see per attempt), the throttle lives in the app; the shared nginx
+stack adds a coarse per-IP `limit_req` on `/login` and `/start` as an edge
+flood backstop.
+
+The throttle key is the real client IP, resolved by
+`AttendanceTrackerWeb.ClientIP`. Behind the proxy that is the *rightmost*
+`x-forwarded-for` entry (proxies append the peer, so the leftmost entries are
+spoofable); the peer address is used when no header is present. `get_connect_info/2`
+only reads during mount, so the LiveViews capture the IP in `mount/3` and keep
+it in `@client_ip` for their events.
 
 See also [Real-time](/architecture/real-time.md),
 [Imports](/architecture/imports.md), and [End-to-end flows](/architecture/flows.md).

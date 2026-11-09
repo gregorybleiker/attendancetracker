@@ -16,6 +16,7 @@ defmodule AttendanceTracker.Application do
       {Phoenix.PubSub, name: AttendanceTracker.PubSub},
       AttendanceTracker.Logs.Pruner,
       AttendanceTracker.AdminSession,
+      AttendanceTracker.RateLimit,
       # Start a worker by calling: AttendanceTracker.Worker.start_link(arg)
       # {AttendanceTracker.Worker, arg},
       # Start to serve requests, typically the last entry

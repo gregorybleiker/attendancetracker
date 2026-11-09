@@ -3,6 +3,11 @@ defmodule AttendanceTrackerWeb.LoginLiveTest do
 
   import Phoenix.LiveViewTest
 
+  setup do
+    AttendanceTracker.RateLimit.clear_all()
+    :ok
+  end
+
   test "shows the login form", %{conn: conn} do
     {:ok, view, _html} = live(conn, ~p"/login")
 
