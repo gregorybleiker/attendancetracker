@@ -385,6 +385,14 @@ shown; checking a participant in un-hides them (the membership is set to
 `hidden: false`), bringing them back into the default list. Hiding is per
 training, never global.
 
+**Info popup.** A participant's emergency number and check-in time are not on
+the tile — each card has an info button (top-right, `#info-btn-<id>`) that opens
+`#info-modal`. In admin mode it opens directly; otherwise it first shows the
+`#info-pin-form` admin-PIN prompt, and the entered code is good for **one open**
+only (`@info_authorized` is reset on close). Present participants are marked by
+the tile's green colour alone (no check badge). The remaining tile buttons are
+the camera (top-left, admin) and the hide toggle (below info, admin).
+
 **Left flyout navigation.** All menu items live in an off-canvas drawer that
 slides in from the left, opened by the hamburger button (`#menu-toggle`) in the
 header. `<Layouts.app>` keeps the drawer in the DOM (`#nav-overlay` wrapping
