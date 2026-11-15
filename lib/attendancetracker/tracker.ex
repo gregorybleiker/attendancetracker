@@ -38,6 +38,21 @@ defmodule AttendanceTracker.Tracker do
   end
 
   @doc """
+  Lists participants that are *not* in Webling (`source != "webling"`) but have
+  attended at least one training, ordered by name and with their
+  `attended_trainings` populated. Backs the "not in Webling" reporting section.
+  """
+  def list_local_participants_with_attendance do
+    Participant
+    |> where([p], p.source != "webling")
+    |> order_by([p], asc: p.first_name, asc: p.last_name)
+    |> with_photo()
+    |> Repo.all()
+    |> with_attended_trainings()
+    |> Enum.filter(&(&1.attended_trainings != []))
+  end
+
+  @doc """
   Gets a single participant.
 
   Raises `Ecto.NoResultsError` if the Participant does not exist.

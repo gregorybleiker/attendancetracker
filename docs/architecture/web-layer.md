@@ -337,6 +337,12 @@ downloads. `ReportController.download/2` fetches
 `training,date,participants` (names joined with `"; "`), RFC-4180 quoting
 plus a UTF-8 BOM so spreadsheet tools pick the right encoding.
 
+The page also has a **"Not in Webling"** section listing participants that are
+not Webling-managed but have attended at least one training
+(`Tracker.list_local_participants_with_attendance/0`, filtered to
+`source != "webling"` and a non-empty `attended_trainings`), so locally created
+people who joined a training can be found and reconciled with user management.
+
 # PIN-gated actions
 
 The check-out flow shows how LiveView state machines read:
