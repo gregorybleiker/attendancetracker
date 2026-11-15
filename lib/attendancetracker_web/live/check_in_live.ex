@@ -432,7 +432,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
             else: gettext("Hide from this training")
         }
         class={[
-          "absolute bottom-2 left-2 cursor-pointer rounded-full p-1.5 shadow-sm transition-opacity",
+          "absolute top-2 left-2 cursor-pointer rounded-full p-1.5 shadow-sm transition-opacity",
           if(hidden,
             do: "bg-amber-500 text-white opacity-90 hover:opacity-100",
             else: "bg-base-100/80 opacity-40 hover:opacity-100"
