@@ -317,6 +317,38 @@ defmodule AttendanceTracker.Tracker do
     end
   end
 
+  @doc """
+  Hides or un-hides a member from a training. Creates the membership when the
+  participant is not a member yet (using the given `hidden` value).
+  """
+  def set_training_member_hidden(%Training{} = training, %Participant{} = participant, hidden)
+      when is_boolean(hidden) do
+    case Repo.get_by(TrainingMember, training_id: training.id, participant_id: participant.id) do
+      %TrainingMember{} = member ->
+        member |> TrainingMember.changeset(%{hidden: hidden}) |> Repo.update()
+
+      nil ->
+        %TrainingMember{}
+        |> TrainingMember.changeset(%{
+          training_id: training.id,
+          participant_id: participant.id,
+          hidden: hidden
+        })
+        |> Repo.insert()
+    end
+  end
+
+  @doc """
+  Returns true when the participant is a member of the training and hidden from
+  it. Returns false for non-members.
+  """
+  def training_member_hidden?(%Training{} = training, %Participant{} = participant) do
+    case Repo.get_by(TrainingMember, training_id: training.id, participant_id: participant.id) do
+      %TrainingMember{hidden: hidden} -> hidden
+      nil -> false
+    end
+  end
+
   alias AttendanceTracker.Tracker.Event
   alias AttendanceTracker.Tracker.EventParticipant
 
@@ -1156,12 +1188,16 @@ defmodule AttendanceTracker.Tracker do
   """
   def list_participants_with_check_ins(%TrainingSession{} = session, opts \\ []) do
     check_in_query = from c in CheckIn, where: c.training_session_id == ^session.id
+    membership_query = membership_query(session)
 
     from(p in Participant, as: :participant)
     |> where([p], p.active)
     |> filter_training_members(session, opts)
     |> order_by([p], asc: p.first_name, asc: p.last_name)
-    |> preload([p], check_ins: ^check_in_query)
+    |> preload([p],
+      check_ins: ^check_in_query,
+      training_members: ^membership_query
+    )
     |> with_photo()
     |> Repo.all()
   end
@@ -1171,18 +1207,31 @@ defmodule AttendanceTracker.Tracker do
   """
   def get_participant_with_check_ins(%TrainingSession{} = session, participant_id) do
     check_in_query = from c in CheckIn, where: c.training_session_id == ^session.id
+    membership_query = membership_query(session)
 
     from(p in Participant,
       where: p.id == ^participant_id,
-      preload: [check_ins: ^check_in_query]
+      preload: [
+        check_ins: ^check_in_query,
+        training_members: ^membership_query
+      ]
     )
     |> with_photo()
     |> Repo.one!()
   end
 
+  # Preloads (at most) the participant's membership in the session's training,
+  # so the kiosk card can tell whether the participant is a member and whether
+  # they are hidden. For ad-hoc sessions (no training) this matches nothing.
+  defp membership_query(%TrainingSession{training_id: nil}),
+    do: from(tm in TrainingMember, where: false)
+
+  defp membership_query(%TrainingSession{training_id: training_id}),
+    do: from(tm in TrainingMember, where: tm.training_id == ^training_id)
+
   # When the session belongs to a training and `show_all` is not set, keep
-  # only participants who are members of that training. `show_all: true`
-  # bypasses the filter and lists every active participant.
+  # only participants who are members of that training and not hidden from it.
+  # `show_all: true` bypasses the filter and lists every active participant.
   defp filter_training_members(query, %TrainingSession{training_id: nil}, _opts), do: query
 
   defp filter_training_members(query, %TrainingSession{training_id: training_id}, opts) do
@@ -1194,7 +1243,8 @@ defmodule AttendanceTracker.Tracker do
           exists(
             from tm in TrainingMember,
               where: tm.participant_id == parent_as(:participant).id,
-              where: tm.training_id == ^training_id
+              where: tm.training_id == ^training_id,
+              where: tm.hidden == false
           )
     end
   end
@@ -1264,7 +1314,9 @@ defmodule AttendanceTracker.Tracker do
 
   defp ensure_training_membership(%Participant{} = participant, %TrainingSession{training_id: id}) do
     case Repo.get(Training, id) do
-      %Training{} = training -> add_training_member(training, participant)
+      # Checking in makes the participant a member and un-hides them from the
+      # training (hiding is per training, and selecting them brings them back).
+      %Training{} = training -> set_training_member_hidden(training, participant, false)
       nil -> :ok
     end
   end

@@ -210,7 +210,11 @@ defmodule AttendanceTrackerWeb.CheckInLive do
         </div>
 
         <div :for={{id, participant} <- @streams.participants} id={id}>
-          <.participant_card participant={participant} admin_mode={@admin_unlocked} />
+          <.participant_card
+            participant={participant}
+            admin_mode={@admin_unlocked}
+            training_id={@session.training_id}
+          />
         </div>
       </div>
 
@@ -340,10 +344,13 @@ defmodule AttendanceTrackerWeb.CheckInLive do
 
   attr :participant, :map, required: true
   attr :admin_mode, :boolean, required: true
+  attr :training_id, :integer, default: nil
 
   defp participant_card(assigns) do
     ~H"""
     <% checked_in = List.first(@participant.check_ins) %>
+    <% membership = List.first(@participant.training_members) %>
+    <% hidden = not is_nil(membership) and membership.hidden %>
     <div class="relative">
       <button
         id={"check-in-btn-#{@participant.id}"}
@@ -413,6 +420,27 @@ defmodule AttendanceTrackerWeb.CheckInLive do
       >
         <.icon name="hero-camera" class="size-4" />
       </button>
+
+      <button
+        :if={@admin_mode && @training_id && membership}
+        id={"hide-btn-#{@participant.id}"}
+        phx-click="toggle_hidden"
+        phx-value-id={@participant.id}
+        title={
+          if hidden,
+            do: gettext("Show in this training"),
+            else: gettext("Hide from this training")
+        }
+        class={[
+          "absolute bottom-2 left-2 cursor-pointer rounded-full p-1.5 shadow-sm transition-opacity",
+          if(hidden,
+            do: "bg-amber-500 text-white opacity-90 hover:opacity-100",
+            else: "bg-base-100/80 opacity-40 hover:opacity-100"
+          )
+        ]}
+      >
+        <.icon name={if hidden, do: "hero-eye", else: "hero-eye-slash"} class="size-4" />
+      </button>
     </div>
     """
   end
@@ -450,15 +478,22 @@ defmodule AttendanceTrackerWeb.CheckInLive do
 
   def handle_event("toggle_show_all", _params, socket) do
     show_all = not socket.assigns.show_all
+    reload_participants(assign(socket, :show_all, show_all))
+  end
 
-    participants =
-      Tracker.list_participants_with_check_ins(socket.assigns.session, show_all: show_all)
+  def handle_event("toggle_hidden", %{"id" => id}, socket) do
+    session = socket.assigns.session
 
-    {:noreply,
-     socket
-     |> assign(:show_all, show_all)
-     |> assign(:participant_count, length(participants))
-     |> stream(:participants, participants, reset: true)}
+    if socket.assigns.admin_unlocked and session.training_id do
+      training = Tracker.get_training!(session.training_id)
+      participant = Tracker.get_participant!(id)
+      hidden = not Tracker.training_member_hidden?(training, participant)
+      {:ok, _} = Tracker.set_training_member_hidden(training, participant, hidden)
+
+      reload_participants(socket)
+    else
+      {:noreply, socket}
+    end
   end
 
   def handle_event("check_in", %{"id" => id}, socket) do
@@ -576,6 +611,20 @@ defmodule AttendanceTrackerWeb.CheckInLive do
     |> assign(:toggle_participant, nil)
     |> stream(:participants, participants, reset: true)
     |> check_out_participant(participant_id)
+  end
+
+  # Re-fetches the participant list for the current session/`show_all` and
+  # re-streams it, e.g. after hiding a member or toggling "show all".
+  defp reload_participants(socket) do
+    participants =
+      Tracker.list_participants_with_check_ins(socket.assigns.session,
+        show_all: socket.assigns.show_all
+      )
+
+    {:noreply,
+     socket
+     |> assign(:participant_count, length(participants))
+     |> stream(:participants, participants, reset: true)}
   end
 
   defp pin_form_with_error do

@@ -101,7 +101,10 @@ Key points:
 - **`TrainingMember`** is a join schema (`training_members`, unique on
   `[:training_id, :participant_id]`) linking a participant to a training they
   are a *member* of — imported from user management, distinct from a `CheckIn`,
-  which records attendance at a single dated `TrainingSession`.
+  which records attendance at a single dated `TrainingSession`. A boolean
+  `hidden` flag hides a member from that training's default kiosk list (they
+  still appear under "show all"); checking the participant in resets it to
+  `false`. See [Web layer](/architecture/web-layer.md).
 
 - **`Event`** (`events`) is a one-off, single-day counterpart of `Training`:
   `name`, `date`, and optional `starts_at`/`ends_at`. `EventParticipant`
@@ -141,4 +144,5 @@ shows when idle: `title`, rich-text `body`, `position`, and `active`, ordered
 by position. See [Info screen](/architecture/info-screen.md).
 
 See also [Domain logic](/architecture/domain-logic.md) and the
-[Web layer](/architecture/web-layer.md) forms section.
+[Web layer](/architecture/web-layer.md) forms section. For a single picture of
+how all the tables connect, see the [Data model graph](/architecture/data-model-graph.md).

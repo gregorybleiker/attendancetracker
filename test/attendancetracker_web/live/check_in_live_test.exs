@@ -359,6 +359,102 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
       assert has_element?(view, "#check-in-btn-#{participant.id}")
       assert render(view) =~ "0 / 1 present"
     end
+
+    test "the hide toggle is only available in admin mode", %{conn: conn} do
+      today_weekday = Date.day_of_week(Tracker.local_today())
+
+      training =
+        training_fixture(%{
+          weekday: today_weekday,
+          starts_at: ~T[00:00:00],
+          ends_at: ~T[23:59:59]
+        })
+
+      member = participant_fixture(%{active: true})
+      {:ok, :created} = Tracker.add_training_member(training, member)
+
+      {:ok, view, _html} = live(conn, ~p"/")
+
+      refute has_element?(view, "#hide-btn-#{member.id}")
+    end
+
+    test "an admin can hide a member from the selected training", %{conn: conn} do
+      today_weekday = Date.day_of_week(Tracker.local_today())
+
+      training =
+        training_fixture(%{
+          weekday: today_weekday,
+          starts_at: ~T[00:00:00],
+          ends_at: ~T[23:59:59]
+        })
+
+      member = participant_fixture(%{name: "Member Person", active: true})
+      {:ok, :created} = Tracker.add_training_member(training, member)
+
+      {:ok, view, _html} = live(log_in(conn), ~p"/")
+
+      assert has_element?(view, "#hide-btn-#{member.id}[title='Hide from this training']")
+
+      view |> element("#hide-btn-#{member.id}") |> render_click()
+
+      # hidden: gone from the member list, but still there under show all
+      refute has_element?(view, "#check-in-btn-#{member.id}")
+      assert Tracker.training_member_hidden?(training, member)
+
+      view |> element("#show-all-toggle") |> render_click()
+
+      assert has_element?(view, "#check-in-btn-#{member.id}")
+      assert has_element?(view, "#hide-btn-#{member.id}[title='Show in this training']")
+    end
+
+    test "a hidden member is hidden by default and shown under show all", %{conn: conn} do
+      today_weekday = Date.day_of_week(Tracker.local_today())
+
+      training =
+        training_fixture(%{
+          weekday: today_weekday,
+          starts_at: ~T[00:00:00],
+          ends_at: ~T[23:59:59]
+        })
+
+      member = participant_fixture(%{name: "Hidden Person", active: true})
+      {:ok, :created} = Tracker.add_training_member(training, member)
+      {:ok, _} = Tracker.set_training_member_hidden(training, member, true)
+
+      {:ok, view, _html} = live(conn, ~p"/")
+
+      refute has_element?(view, "#check-in-btn-#{member.id}")
+
+      view |> element("#show-all-toggle") |> render_click()
+
+      assert has_element?(view, "#check-in-btn-#{member.id}")
+    end
+
+    test "checking a hidden member in un-hides them", %{conn: conn} do
+      today_weekday = Date.day_of_week(Tracker.local_today())
+
+      training =
+        training_fixture(%{
+          weekday: today_weekday,
+          starts_at: ~T[00:00:00],
+          ends_at: ~T[23:59:59]
+        })
+
+      member = participant_fixture(%{name: "Hidden Person", active: true})
+      {:ok, :created} = Tracker.add_training_member(training, member)
+      {:ok, _} = Tracker.set_training_member_hidden(training, member, true)
+
+      {:ok, view, _html} = live(conn, ~p"/")
+
+      view |> element("#show-all-toggle") |> render_click()
+      view |> element("#check-in-btn-#{member.id}") |> render_click()
+
+      refute Tracker.training_member_hidden?(training, member)
+
+      # now back in the default member list
+      view |> element("#show-all-toggle") |> render_click()
+      assert has_element?(view, "#check-in-btn-#{member.id}")
+    end
   end
 
   describe "taking a photo" do

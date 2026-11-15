@@ -210,6 +210,73 @@ defmodule AttendanceTracker.TrackerTest do
 
       assert Enum.map(Tracker.list_training_members(training), & &1.id) == [ada.id, grace.id]
     end
+
+    test "set_training_member_hidden/3 hides and un-hides an existing member" do
+      training = training_fixture()
+      participant = participant_fixture()
+      {:ok, :created} = Tracker.add_training_member(training, participant)
+
+      refute Tracker.training_member_hidden?(training, participant)
+
+      assert {:ok, %{hidden: true}} =
+               Tracker.set_training_member_hidden(training, participant, true)
+
+      assert Tracker.training_member_hidden?(training, participant)
+
+      assert {:ok, %{hidden: false}} =
+               Tracker.set_training_member_hidden(training, participant, false)
+
+      refute Tracker.training_member_hidden?(training, participant)
+    end
+
+    test "set_training_member_hidden/3 creates the membership when missing" do
+      training = training_fixture()
+      participant = participant_fixture()
+
+      assert {:ok, %{hidden: true}} =
+               Tracker.set_training_member_hidden(training, participant, true)
+
+      assert Enum.map(Tracker.list_training_members(training), & &1.id) == [participant.id]
+    end
+
+    test "hidden members are left out of the member list but kept under show_all" do
+      alias AttendanceTracker.Tracker.TrainingMember
+
+      training = training_fixture()
+      session = training_session_fixture(%{training_id: training.id})
+      visible = participant_fixture(%{name: "Visible Person"})
+      hidden = participant_fixture(%{name: "Hidden Person"})
+
+      {:ok, :created} = Tracker.add_training_member(training, visible)
+      {:ok, :created} = Tracker.add_training_member(training, hidden)
+      {:ok, _} = Tracker.set_training_member_hidden(training, hidden, true)
+
+      member_ids = Enum.map(Tracker.list_participants_with_check_ins(session), & &1.id)
+      assert visible.id in member_ids
+      refute hidden.id in member_ids
+
+      all = Tracker.list_participants_with_check_ins(session, show_all: true)
+      assert hidden.id in Enum.map(all, & &1.id)
+
+      # the membership is preloaded so the card can render the hidden toggle
+      assert %TrainingMember{hidden: true} =
+               all |> Enum.find(&(&1.id == hidden.id)) |> Map.fetch!(:training_members) |> hd()
+    end
+
+    test "checking a hidden member in un-hides them from the training" do
+      training = training_fixture()
+      session = training_session_fixture(%{training_id: training.id})
+      participant = participant_fixture()
+
+      {:ok, _} = Tracker.set_training_member_hidden(training, participant, true)
+      assert Tracker.training_member_hidden?(training, participant)
+
+      assert {:ok, _check_in} = Tracker.check_in(participant, session)
+      refute Tracker.training_member_hidden?(training, participant)
+
+      member_ids = Enum.map(Tracker.list_participants_with_check_ins(session), & &1.id)
+      assert participant.id in member_ids
+    end
   end
 
   describe "events" do

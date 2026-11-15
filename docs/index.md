@@ -17,6 +17,7 @@ LiveView, Ecto + SQLite). It supersedes the former repository-root
 # Architecture
 
 * [Domain model](/architecture/domain-model.md) - Ecto schemas, changesets, and database constraints.
+* [Data model graph](/architecture/data-model-graph.md) - Entity-relationship diagram of the whole database.
 * [Domain logic](/architecture/domain-logic.md) - Pure schedule math, pattern matching as control flow, race-safe upserts, shaped preloads, Erlang interop.
 * [Real-time](/architecture/real-time.md) - Phoenix.PubSub fan-out between connected kiosks.
 * [Web layer](/architecture/web-layer.md) - Router, LiveView lifecycle, streams, forms, components, JS commands, colocated hooks, photo storage, CSV report, PIN gating.

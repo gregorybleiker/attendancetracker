@@ -372,6 +372,19 @@ inside the stream, flipping the assign in `submit_pin` re-streams the
 participants (`stream(..., reset: true)`) so the already rendered cards pick up
 the new UI.
 
+**Hiding members from a training.** In admin mode, a member card also gets a
+hide toggle (`#hide-btn-<id>`, an eye/eye-slash button) when a training is
+selected. It flips the `hidden` flag on that participant's `TrainingMember` row
+(`Tracker.set_training_member_hidden/3`) and re-streams. Hidden members are
+dropped from the default (member) list by
+`Tracker.list_participants_with_check_ins/2` — its `filter_training_members/3`
+requires `tm.hidden == false` — but `show_all: true` bypasses that filter, so
+they always reappear there. The per-training membership is preloaded
+(`training_members`) so each card can tell member vs non-member and hidden vs
+shown; checking a participant in un-hides them (the membership is set to
+`hidden: false`), bringing them back into the default list. Hiding is per
+training, never global.
+
 **Left flyout navigation.** All menu items live in an off-canvas drawer that
 slides in from the left, opened by the hamburger button (`#menu-toggle`) in the
 header. `<Layouts.app>` keeps the drawer in the DOM (`#nav-overlay` wrapping
