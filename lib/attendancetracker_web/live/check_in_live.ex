@@ -40,6 +40,9 @@ defmodule AttendanceTrackerWeb.CheckInLive do
      |> assign(:pin_form, to_form(%{"pin" => ""}))
      |> assign(:camera_participant, nil)
      |> assign(:camera_error, nil)
+     |> assign(:info_participant, nil)
+     |> assign(:info_authorized, false)
+     |> assign(:info_pin_form, to_form(%{"pin" => ""}))
      |> assign(:checked_in_count, Tracker.check_in_count(session))
      |> assign(:participant_count, length(participants))
      |> assign(:infos, Tracker.list_active_infos())
@@ -188,7 +191,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
       <div
         id="participants"
         phx-update="stream"
-        class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
+        class="grid auto-rows-fr grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6"
       >
         <div
           id="participants-empty"
@@ -209,7 +212,7 @@ defmodule AttendanceTrackerWeb.CheckInLive do
           <% end %>
         </div>
 
-        <div :for={{id, participant} <- @streams.participants} id={id}>
+        <div :for={{id, participant} <- @streams.participants} id={id} class="h-full">
           <.participant_card
             participant={participant}
             admin_mode={@admin_unlocked}
@@ -295,6 +298,57 @@ defmodule AttendanceTrackerWeb.CheckInLive do
         </div>
       </div>
 
+      <div
+        :if={@info_participant}
+        id="info-modal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      >
+        <div class="w-full max-w-sm rounded-2xl bg-base-100 p-6 shadow-xl">
+          <h2 class="text-lg font-bold">{Participant.full_name(@info_participant)}</h2>
+
+          <%= if @admin_unlocked or @info_authorized do %>
+            <dl class="mt-4 space-y-2 text-sm">
+              <div class="flex justify-between gap-4">
+                <dt class="opacity-70">{gettext("Emergency number")}</dt>
+                <dd id="info-emergency-number" class="text-right font-medium">
+                  {@info_participant.emergency_number || "–"}
+                </dd>
+              </div>
+              <div class="flex justify-between gap-4">
+                <dt class="opacity-70">{gettext("Checked in")}</dt>
+                <dd id="info-checked-in" class="text-right font-medium">
+                  {check_in_time(List.first(@info_participant.check_ins))}
+                </dd>
+              </div>
+            </dl>
+
+            <div class="mt-6 flex justify-end">
+              <.button type="button" phx-click="close_info">{gettext("Close")}</.button>
+            </div>
+          <% else %>
+            <p class="mt-1 text-sm opacity-70">
+              {gettext("Enter the admin PIN to view these details.")}
+            </p>
+
+            <.form for={@info_pin_form} id="info-pin-form" phx-submit="submit_info_pin" class="mt-4">
+              <.input
+                field={@info_pin_form[:pin]}
+                type="password"
+                label={gettext("Admin PIN")}
+                inputmode="numeric"
+                autocomplete="off"
+              />
+              <div class="mt-4 flex justify-end gap-2">
+                <.button type="button" phx-click="close_info">{gettext("Cancel")}</.button>
+                <.button variant="primary" phx-disable-with={gettext("Showing...")}>
+                  {gettext("Show")}
+                </.button>
+              </div>
+            </.form>
+          <% end %>
+        </div>
+      </div>
+
       <.info_mode
         infos={@infos}
         idle_timeout_ms={@idle_timeout_ms}
@@ -351,14 +405,14 @@ defmodule AttendanceTrackerWeb.CheckInLive do
     <% checked_in = List.first(@participant.check_ins) %>
     <% membership = List.first(@participant.training_members) %>
     <% hidden = not is_nil(membership) and membership.hidden %>
-    <div class="relative">
+    <div class="relative h-full">
       <button
         id={"check-in-btn-#{@participant.id}"}
         phx-click={if(checked_in, do: "prompt_check_out", else: "check_in")}
         phx-value-id={@participant.id}
         title={if(checked_in, do: gettext("Tap to undo the check-in"))}
         class={[
-          "group relative flex w-full cursor-pointer flex-col items-center gap-1 rounded-2xl border-2 p-2 transition-all duration-200",
+          "group relative flex h-full w-full cursor-pointer flex-col items-center gap-1 rounded-2xl border-2 p-2 transition-all duration-200",
           if(checked_in,
             do:
               "border-emerald-500 bg-emerald-50 hover:-translate-y-0.5 hover:border-amber-400 hover:shadow-lg active:scale-95 dark:bg-emerald-950/30",
@@ -378,35 +432,10 @@ defmodule AttendanceTrackerWeb.CheckInLive do
           <div :if={@admin_mode} class="absolute -top-1 -left-1">
             <.source_badge participant={@participant} />
           </div>
-
-          <div
-            :if={checked_in}
-            id={"checked-in-badge-#{@participant.id}"}
-            class="absolute -right-1 -bottom-1"
-          >
-            <div class="rounded-full bg-emerald-500 p-1 text-white group-hover:hidden">
-              <.icon name="hero-check" class="size-4" />
-            </div>
-            <div class="hidden rounded-full bg-amber-500 p-1 text-white group-hover:block">
-              <.icon name="hero-arrow-uturn-left" class="size-4" />
-            </div>
-          </div>
         </div>
 
-        <span class="text-center text-xs leading-tight font-semibold">{Participant.full_name(
-          @participant
-        )}</span>
-
-        <span
-          :if={@admin_mode && @participant.emergency_number}
-          id={"emergency-number-#{@participant.id}"}
-          class="flex items-center gap-1 text-xs opacity-60"
-        >
-          <.icon name="hero-phone" class="size-3" /> {@participant.emergency_number}
-        </span>
-
-        <span :if={checked_in} class="text-xs font-medium text-emerald-600 dark:text-emerald-400">
-          {Calendar.strftime(checked_in.inserted_at, "%H:%M")}
+        <span class="flex h-8 items-center justify-center overflow-hidden text-center text-xs leading-tight font-semibold">
+          {Participant.full_name(@participant)}
         </span>
       </button>
 
@@ -416,31 +445,43 @@ defmodule AttendanceTrackerWeb.CheckInLive do
         phx-click="open_camera"
         phx-value-id={@participant.id}
         title={gettext("Take a photo")}
-        class="absolute top-2 right-2 cursor-pointer rounded-full bg-base-100/80 p-1.5 opacity-40 shadow-sm transition-opacity hover:opacity-100"
+        class="absolute top-2 left-2 cursor-pointer rounded-full bg-base-100/80 p-1.5 opacity-40 shadow-sm transition-opacity hover:opacity-100"
       >
         <.icon name="hero-camera" class="size-4" />
       </button>
 
-      <button
-        :if={@admin_mode && @training_id && membership}
-        id={"hide-btn-#{@participant.id}"}
-        phx-click="toggle_hidden"
-        phx-value-id={@participant.id}
-        title={
-          if hidden,
-            do: gettext("Show in this training"),
-            else: gettext("Hide from this training")
-        }
-        class={[
-          "absolute top-2 left-2 cursor-pointer rounded-full p-1.5 shadow-sm transition-opacity",
-          if(hidden,
-            do: "bg-amber-500 text-white opacity-90 hover:opacity-100",
-            else: "bg-base-100/80 opacity-40 hover:opacity-100"
-          )
-        ]}
-      >
-        <.icon name={if hidden, do: "hero-eye", else: "hero-eye-slash"} class="size-4" />
-      </button>
+      <div class="absolute top-2 right-2 flex flex-col items-end gap-1">
+        <button
+          id={"info-btn-#{@participant.id}"}
+          phx-click="open_info"
+          phx-value-id={@participant.id}
+          title={gettext("Show details")}
+          class="cursor-pointer rounded-full bg-base-100/80 p-1.5 opacity-40 shadow-sm transition-opacity hover:opacity-100"
+        >
+          <.icon name="hero-information-circle" class="size-4" />
+        </button>
+
+        <button
+          :if={@admin_mode && @training_id && membership}
+          id={"hide-btn-#{@participant.id}"}
+          phx-click="toggle_hidden"
+          phx-value-id={@participant.id}
+          title={
+            if hidden,
+              do: gettext("Show in this training"),
+              else: gettext("Hide from this training")
+          }
+          class={[
+            "cursor-pointer rounded-full p-1.5 shadow-sm transition-opacity",
+            if(hidden,
+              do: "bg-amber-500 text-white opacity-90 hover:opacity-100",
+              else: "bg-base-100/80 opacity-40 hover:opacity-100"
+            )
+          ]}
+        >
+          <.icon name={if hidden, do: "hero-eye", else: "hero-eye-slash"} class="size-4" />
+        </button>
+      </div>
     </div>
     """
   end
@@ -550,6 +591,43 @@ defmodule AttendanceTrackerWeb.CheckInLive do
     {:noreply, assign(socket, :camera_participant, nil)}
   end
 
+  def handle_event("open_info", %{"id" => id}, socket) do
+    participant = Tracker.get_participant_with_check_ins(socket.assigns.session, id)
+
+    {:noreply,
+     socket
+     |> assign(:info_participant, participant)
+     |> assign(:info_authorized, socket.assigns.admin_unlocked)
+     |> assign(:info_pin_form, to_form(%{"pin" => ""}))}
+  end
+
+  # The code is valid for a single popup: `info_authorized` is reset on close.
+  def handle_event("submit_info_pin", %{"pin" => pin}, socket) do
+    ip = socket.assigns.client_ip
+
+    case PinThrottle.check_admin(ip) do
+      :ok ->
+        if Tracker.admin_pin_valid?(pin) do
+          PinThrottle.clear_admin(ip)
+          {:noreply, assign(socket, :info_authorized, true)}
+        else
+          PinThrottle.record_admin_failure(ip)
+          {:noreply, assign(socket, :info_pin_form, pin_form_with_error())}
+        end
+
+      {:error, retry_after} ->
+        {:noreply, assign(socket, :info_pin_form, pin_form_with_throttle_error(retry_after))}
+    end
+  end
+
+  def handle_event("close_info", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:info_participant, nil)
+     |> assign(:info_authorized, false)
+     |> assign(:info_pin_form, to_form(%{"pin" => ""}))}
+  end
+
   def handle_event("camera_error", %{"message" => message}, socket) do
     {:noreply,
      assign(
@@ -630,6 +708,9 @@ defmodule AttendanceTrackerWeb.CheckInLive do
   defp pin_form_with_error do
     to_form(%{"pin" => ""}, errors: [pin: {gettext("Wrong PIN"), []}])
   end
+
+  defp check_in_time(nil), do: gettext("Not checked in")
+  defp check_in_time(check_in), do: Calendar.strftime(check_in.inserted_at, "%H:%M")
 
   defp pin_form_with_throttle_error(retry_after) do
     to_form(%{"pin" => ""},

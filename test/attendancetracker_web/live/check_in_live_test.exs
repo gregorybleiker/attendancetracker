@@ -28,18 +28,37 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
     refute html =~ "Gone Person"
   end
 
-  test "shows the Notfallnummer on the participant tile only in admin mode", %{conn: conn} do
+  test "the emergency number lives in the info popup, not on the tile", %{conn: conn} do
     with_number = participant_fixture(%{name: "Has Number", emergency_number: "0151 234567"})
-    without = participant_fixture(%{name: "No Number", emergency_number: nil})
 
     {:ok, view, _html} = live(conn, ~p"/")
 
-    refute has_element?(view, "#emergency-number-#{with_number.id}")
+    refute render(view) =~ "0151 234567"
 
-    {:ok, admin_view, _html} = live(log_in(conn), ~p"/")
+    # not in admin mode: the admin code is required to open the popup
+    view |> element("#info-btn-#{with_number.id}") |> render_click()
+    assert has_element?(view, "#info-pin-form")
 
-    assert has_element?(admin_view, "#emergency-number-#{with_number.id}", "0151 234567")
-    refute has_element?(admin_view, "#emergency-number-#{without.id}")
+    view |> form("#info-pin-form", %{pin: "1234"}) |> render_submit()
+    assert has_element?(view, "#info-emergency-number", "0151 234567")
+
+    view |> element("#info-modal button", "Close") |> render_click()
+    refute has_element?(view, "#info-modal")
+
+    # the code was only good for that one open
+    view |> element("#info-btn-#{with_number.id}") |> render_click()
+    assert has_element?(view, "#info-pin-form")
+  end
+
+  test "admin mode opens the info popup without the code", %{conn: conn} do
+    without = participant_fixture(%{name: "No Number", emergency_number: nil})
+
+    {:ok, view, _html} = live(log_in(conn), ~p"/")
+
+    view |> element("#info-btn-#{without.id}") |> render_click()
+
+    assert has_element?(view, "#info-emergency-number", "–")
+    refute has_element?(view, "#info-pin-form")
   end
 
   test "tapping a photo checks the participant in", %{conn: conn} do
@@ -49,7 +68,7 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
 
     view |> element("#check-in-btn-#{participant.id}") |> render_click()
 
-    assert has_element?(view, "#checked-in-badge-#{participant.id}")
+    assert has_element?(view, "#check-in-btn-#{participant.id}.bg-emerald-50")
     assert render(view) =~ "1 / 1 present"
   end
 
@@ -90,7 +109,7 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
 
       assert render(view) =~ "Wrong PIN"
       assert has_element?(view, "#check-out-modal")
-      assert has_element?(view, "#checked-in-badge-#{participant.id}")
+      assert has_element?(view, "#check-in-btn-#{participant.id}.bg-emerald-50")
       assert render(view) =~ "1 / 1 present"
     end
 
@@ -104,7 +123,7 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
       view |> form("#pin-form", %{pin: "1234"}) |> render_submit()
 
       refute has_element?(view, "#check-out-modal")
-      refute has_element?(view, "#checked-in-badge-#{participant.id}")
+      refute has_element?(view, "#check-in-btn-#{participant.id}.bg-emerald-50")
       assert render(view) =~ "0 / 1 present"
     end
 
@@ -125,7 +144,7 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
       # the correct PIN is refused too, so the check-in stays
       html = view |> form("#pin-form", %{pin: "1234"}) |> render_submit()
       assert html =~ "Too many attempts"
-      assert has_element?(view, "#checked-in-badge-#{participant.id}")
+      assert has_element?(view, "#check-in-btn-#{participant.id}.bg-emerald-50")
     end
 
     test "cancel keeps the check-in and closes the modal", %{conn: conn} do
@@ -138,7 +157,7 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
       view |> element("#check-out-modal button", "Cancel") |> render_click()
 
       refute has_element?(view, "#check-out-modal")
-      assert has_element?(view, "#checked-in-badge-#{participant.id}")
+      assert has_element?(view, "#check-in-btn-#{participant.id}.bg-emerald-50")
     end
 
     test "once unlocked, further toggles skip the PIN prompt", %{conn: conn} do
@@ -158,7 +177,7 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
       view |> element("#check-in-btn-#{other.id}") |> render_click()
 
       refute has_element?(view, "#check-out-modal")
-      refute has_element?(view, "#checked-in-badge-#{other.id}")
+      refute has_element?(view, "#check-in-btn-#{other.id}.bg-emerald-50")
       assert render(view) =~ "0 / 2 present"
     end
   end
@@ -215,7 +234,7 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
 
       assert has_element?(view, "#session-date[value='#{Date.to_iso8601(other_date)}']")
       assert render(view) =~ "0 / 1 present"
-      refute has_element?(view, "#checked-in-badge-#{participant.id}")
+      refute has_element?(view, "#check-in-btn-#{participant.id}.bg-emerald-50")
     end
 
     test "pre-selects the training in progress", %{conn: conn} do
@@ -293,7 +312,7 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
       |> render_change(%{"training_id" => to_string(other.id)})
 
       assert render(view) =~ "0 / 1 present"
-      refute has_element?(view, "#checked-in-badge-#{participant.id}")
+      refute has_element?(view, "#check-in-btn-#{participant.id}.bg-emerald-50")
       assert has_element?(view, "#session-select option[value='#{other.id}'][selected]")
 
       # Switching back restores the check-in
@@ -302,7 +321,7 @@ defmodule AttendanceTrackerWeb.CheckInLiveTest do
       |> render_change(%{"training_id" => to_string(current.id)})
 
       assert render(view) =~ "1 / 1 present"
-      assert has_element?(view, "#checked-in-badge-#{participant.id}")
+      assert has_element?(view, "#check-in-btn-#{participant.id}.bg-emerald-50")
     end
 
     defp other_weekday(today_weekday), do: rem(today_weekday, 7) + 1

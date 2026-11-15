@@ -11,7 +11,7 @@ msgstr ""
 "Language: de\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:170
+#: lib/attendancetracker_web/live/check_in_live.ex:173
 #, elixir-autogen, elixir-format
 msgid "%{checked} / %{total} present"
 msgstr "%{checked} / %{total} anwesend"
@@ -39,7 +39,7 @@ msgstr "Aktiv"
 msgid "Ad-hoc training"
 msgstr "Ad-hoc-Training"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:199
+#: lib/attendancetracker_web/live/check_in_live.ex:202
 #: lib/attendancetracker_web/live/event_live/show.ex:70
 #, elixir-autogen, elixir-format
 msgid "Add one"
@@ -61,7 +61,8 @@ msgid "Admin"
 msgstr "Administration"
 
 #: lib/attendancetracker_web/live/admin_live.ex:41
-#: lib/attendancetracker_web/live/check_in_live.ex:238
+#: lib/attendancetracker_web/live/check_in_live.ex:241
+#: lib/attendancetracker_web/live/check_in_live.ex:337
 #: lib/attendancetracker_web/live/login_live.ex:21
 #, elixir-autogen, elixir-format
 msgid "Admin PIN"
@@ -103,8 +104,9 @@ msgstr "Verbindung wird wiederhergestellt"
 
 #: lib/attendancetracker_web/live/admin_duplicates_live.ex:80
 #: lib/attendancetracker_web/live/admin_infos_live.ex:107
-#: lib/attendancetracker_web/live/check_in_live.ex:243
-#: lib/attendancetracker_web/live/check_in_live.ex:293
+#: lib/attendancetracker_web/live/check_in_live.ex:246
+#: lib/attendancetracker_web/live/check_in_live.ex:296
+#: lib/attendancetracker_web/live/check_in_live.ex:342
 #: lib/attendancetracker_web/live/event_live/form.ex:33
 #: lib/attendancetracker_web/live/participant_live/form.ex:74
 #: lib/attendancetracker_web/live/training_live/form.ex:38
@@ -112,12 +114,12 @@ msgstr "Verbindung wird wiederhergestellt"
 msgid "Cancel"
 msgstr "Abbrechen"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:284
+#: lib/attendancetracker_web/live/check_in_live.ex:287
 #, elixir-autogen, elixir-format
 msgid "Capture photo"
 msgstr "Foto aufnehmen"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:262
+#: lib/attendancetracker_web/live/check_in_live.ex:265
 #, elixir-autogen, elixir-format
 msgid "Center the face in the preview, then capture. The photo is used on the check-in tile."
 msgstr "Richte das Gesicht in der Vorschau aus und nimm dann auf. Das Foto wird auf der Check-in-Kachel verwendet."
@@ -137,7 +139,7 @@ msgstr "Check-in"
 msgid "Check-in"
 msgstr "Check-in"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:244
+#: lib/attendancetracker_web/live/check_in_live.ex:247
 #, elixir-autogen, elixir-format
 msgid "Checking..."
 msgstr "Wird geprüft..."
@@ -167,7 +169,7 @@ msgstr "Neue Sitzungs-PIN bestätigen"
 msgid "Connector"
 msgstr "Schnittstelle"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:558
+#: lib/attendancetracker_web/live/check_in_live.ex:636
 #, elixir-autogen, elixir-format
 msgid "Could not access the camera: %{message}"
 msgstr "Kamerazugriff fehlgeschlagen: %{message}"
@@ -177,7 +179,7 @@ msgstr "Kamerazugriff fehlgeschlagen: %{message}"
 msgid "Could not reach the user management: %{reason}"
 msgstr "Mitgliederverwaltung nicht erreichbar: %{reason}"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:579
+#: lib/attendancetracker_web/live/check_in_live.ex:657
 #, elixir-autogen, elixir-format
 msgid "Could not save the photo, please try again."
 msgstr "Das Foto konnte nicht gespeichert werden. Bitte erneut versuchen."
@@ -234,7 +236,7 @@ msgstr "Ende"
 msgid "Enter the admin PIN to continue."
 msgstr "Admin-PIN eingeben, um fortzufahren."
 
-#: lib/attendancetracker_web/live/check_in_live.ex:231
+#: lib/attendancetracker_web/live/check_in_live.ex:234
 #, elixir-autogen, elixir-format
 msgid "Enter the admin PIN to remove this check-in."
 msgstr "Admin-PIN eingeben, um diesen Check-in zu entfernen."
@@ -341,7 +343,7 @@ msgstr "Neue Sitzungs-PIN"
 msgid "New training"
 msgstr "Neues Training"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:198
+#: lib/attendancetracker_web/live/check_in_live.ex:201
 #: lib/attendancetracker_web/live/event_check_in_live.ex:106
 #: lib/attendancetracker_web/live/event_live/show.ex:69
 #, elixir-autogen, elixir-format
@@ -513,6 +515,7 @@ msgstr "Sitzungsablauf"
 msgid "Session expiry updated"
 msgstr "Sitzungsablauf aktualisiert"
 
+#: lib/attendancetracker_web/live/check_in_live.ex:344
 #: lib/attendancetracker_web/live/participant_live/index.ex:44
 #: lib/attendancetracker_web/live/training_live/show.ex:42
 #, elixir-autogen, elixir-format
@@ -542,17 +545,17 @@ msgstr "Start"
 msgid "Start session"
 msgstr "Sitzung starten"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:418
+#: lib/attendancetracker_web/live/check_in_live.ex:479
 #, elixir-autogen, elixir-format
 msgid "Take a photo"
 msgstr "Foto aufnehmen"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:259
+#: lib/attendancetracker_web/live/check_in_live.ex:262
 #, elixir-autogen, elixir-format
 msgid "Take a photo of %{name}"
 msgstr "Foto von %{name} aufnehmen"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:359
+#: lib/attendancetracker_web/live/check_in_live.ex:413
 #, elixir-autogen, elixir-format
 msgid "Tap to undo the check-in"
 msgstr "Tippen, um den Check-in rückgängig zu machen"
@@ -610,12 +613,12 @@ msgstr "Training erfolgreich erstellt"
 msgid "Training updated successfully"
 msgstr "Training erfolgreich aktualisiert"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:245
+#: lib/attendancetracker_web/live/check_in_live.ex:248
 #, elixir-autogen, elixir-format
 msgid "Undo check-in"
 msgstr "Check-in rückgängig machen"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:228
+#: lib/attendancetracker_web/live/check_in_live.ex:231
 #, elixir-autogen, elixir-format
 msgid "Undo check-in for %{name}?"
 msgstr "Check-in für %{name} rückgängig machen?"
@@ -658,7 +661,7 @@ msgid "Weekday"
 msgstr "Wochentag"
 
 #: lib/attendancetracker_web/live/admin_live.ex:656
-#: lib/attendancetracker_web/live/check_in_live.ex:631
+#: lib/attendancetracker_web/live/check_in_live.ex:709
 #, elixir-autogen, elixir-format
 msgid "Wrong PIN"
 msgstr "Falsche PIN"
@@ -1037,8 +1040,8 @@ msgstr "Teilnehmer zusammengeführt"
 msgid "Participants that only have a first or last name and likely match a participant with a full name."
 msgstr "Teilnehmer, die nur einen Vor- oder Nachnamen haben und wahrscheinlich zu einem Teilnehmer mit vollem Namen passen."
 
-#: lib/attendancetracker_web/live/check_in_live.ex:163
-#: lib/attendancetracker_web/live/check_in_live.ex:207
+#: lib/attendancetracker_web/live/check_in_live.ex:166
+#: lib/attendancetracker_web/live/check_in_live.ex:210
 #: lib/attendancetracker_web/live/event_live/show.ex:48
 #: lib/attendancetracker_web/live/event_live/show.ex:78
 #, elixir-autogen, elixir-format
@@ -1106,12 +1109,12 @@ msgstr "Noch keine Mitglieder."
 msgid "Source"
 msgstr "Quelle"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:201
+#: lib/attendancetracker_web/live/check_in_live.ex:204
 #, elixir-autogen, elixir-format
 msgid "No members in this training yet."
 msgstr "Noch keine Mitglieder in diesem Training."
 
-#: lib/attendancetracker_web/live/check_in_live.ex:163
+#: lib/attendancetracker_web/live/check_in_live.ex:166
 #, elixir-autogen, elixir-format
 msgid "Show only members"
 msgstr "Nur Mitglieder anzeigen"
@@ -1417,7 +1420,7 @@ msgstr "Ohne Titel"
 msgid "When the kiosk has been idle it switches to a full-screen slideshow of the info slides. Tap the screen to return to check-in."
 msgstr "Wenn der Kiosk inaktiv war, wechselt er zu einer Vollbild-Diashow der Infofolien. Tippen Sie auf den Bildschirm, um zum Check-in zurückzukehren."
 
-#: lib/attendancetracker_web/live/check_in_live.ex:184
+#: lib/attendancetracker_web/live/check_in_live.ex:187
 #: lib/attendancetracker_web/live/event_check_in_live.ex:58
 #, elixir-autogen, elixir-format
 msgid "Show info"
@@ -1425,17 +1428,52 @@ msgstr "Info anzeigen"
 
 #: lib/attendancetracker_web/controllers/session_controller.ex:82
 #: lib/attendancetracker_web/live/admin_live.ex:661
-#: lib/attendancetracker_web/live/check_in_live.ex:638
+#: lib/attendancetracker_web/live/check_in_live.ex:719
 #, elixir-autogen, elixir-format
 msgid "Too many attempts. Try again in %{seconds} seconds."
 msgstr "Zu viele Versuche. Bitte in %{seconds} Sekunden erneut versuchen."
 
-#: lib/attendancetracker_web/live/check_in_live.ex:432
+#: lib/attendancetracker_web/live/check_in_live.ex:450
 #, elixir-autogen, elixir-format
 msgid "Hide from this training"
 msgstr "Aus diesem Training ausblenden"
 
-#: lib/attendancetracker_web/live/check_in_live.ex:431
+#: lib/attendancetracker_web/live/check_in_live.ex:449
 #, elixir-autogen, elixir-format
 msgid "Show in this training"
 msgstr "In diesem Training anzeigen"
+
+#: lib/attendancetracker_web/live/check_in_live.ex:318
+#, elixir-autogen, elixir-format
+msgid "Checked in"
+msgstr "Eingecheckt"
+
+#: lib/attendancetracker_web/live/check_in_live.ex:326
+#, elixir-autogen, elixir-format
+msgid "Close"
+msgstr "Schliessen"
+
+#: lib/attendancetracker_web/live/check_in_live.ex:312
+#, elixir-autogen, elixir-format
+msgid "Emergency number"
+msgstr "Notfallnummer"
+
+#: lib/attendancetracker_web/live/check_in_live.ex:330
+#, elixir-autogen, elixir-format
+msgid "Enter the admin PIN to view these details."
+msgstr "Admin-PIN eingeben, um diese Details anzuzeigen."
+
+#: lib/attendancetracker_web/live/check_in_live.ex:712
+#, elixir-autogen, elixir-format
+msgid "Not checked in"
+msgstr "Nicht eingecheckt"
+
+#: lib/attendancetracker_web/live/check_in_live.ex:468
+#, elixir-autogen, elixir-format
+msgid "Show details"
+msgstr "Details anzeigen"
+
+#: lib/attendancetracker_web/live/check_in_live.ex:343
+#, elixir-autogen, elixir-format
+msgid "Showing..."
+msgstr "Wird angezeigt..."

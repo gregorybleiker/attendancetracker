@@ -14,9 +14,9 @@ config :attendancetracker, AttendanceTracker.Repo,
 # watchers to your application. For example, we can use it
 # to bundle .js and .css sources.
 config :attendancetracker, AttendanceTrackerWeb.Endpoint,
-  # Binding to loopback ipv4 address prevents access from other machines.
-  # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
-  http: [ip: {127, 0, 0, 1}],
+  # Bind on all interfaces so the dev server is reachable from other machines,
+  # e.g. http://gbl-medion:4000 (not just loopback).
+  http: [ip: {0, 0, 0, 0}],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
@@ -25,6 +25,22 @@ config :attendancetracker, AttendanceTrackerWeb.Endpoint,
     esbuild: {Esbuild, :install_and_run, [:attendancetracker, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:attendancetracker, ~w(--watch)]}
   ]
+
+# Serve HTTPS on 4001 too when a self-signed cert exists (`mix phx.gen.cert`).
+# LAN origins need a secure context for the camera (`getUserMedia`); the cert
+# is gitignored, so a fresh clone simply starts HTTP-only.
+cert_dir = Path.expand("../priv/cert", __DIR__)
+
+if File.exists?(Path.join(cert_dir, "selfsigned.pem")) do
+  config :attendancetracker, AttendanceTrackerWeb.Endpoint,
+    https: [
+      ip: {0, 0, 0, 0},
+      port: 4001,
+      cipher_suite: :strong,
+      certfile: Path.join(cert_dir, "selfsigned.pem"),
+      keyfile: Path.join(cert_dir, "selfsigned_key.pem")
+    ]
+end
 
 # ## SSL Support
 #
