@@ -337,6 +337,14 @@ downloads. `ReportController.download/2` fetches
 `training,date,participants` (names joined with `"; "`), RFC-4180 quoting
 plus a UTF-8 BOM so spreadsheet tools pick the right encoding.
 
+The same controller exports an event's participants: `ReportController.export_event/2`
+(`GET /events/:id/export`) fetches `Tracker.list_event_participants/1` and
+replies with one row per selected participant
+(`first_name,last_name,birthday,gender,emergency_number`).
+It is linked from the events list and the participant picker header as
+**Export CSV** — a plain `<.link href=…>` because only a controller can send
+the download.
+
 The page also has a **"Not in Webling"** section listing participants that are
 not Webling-managed but have attended at least one training
 (`Tracker.list_local_participants_with_attendance/0`, filtered to

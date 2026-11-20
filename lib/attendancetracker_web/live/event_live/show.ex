@@ -23,6 +23,9 @@ defmodule AttendanceTrackerWeb.EventLive.Show do
           <.button navigate={~p"/events"}>
             <.icon name="hero-arrow-left" />
           </.button>
+          <.button href={~p"/events/#{@event}/export"}>
+            <.icon name="hero-arrow-down-tray" /> {gettext("Export CSV")}
+          </.button>
           <.button variant="primary" navigate={~p"/events/#{@event}/edit"}>
             <.icon name="hero-pencil-square" /> {gettext("Edit event")}
           </.button>

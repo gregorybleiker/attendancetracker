@@ -150,7 +150,10 @@ defmodule AttendanceTracker.Directory do
   participant (source `"webling"`) for every new candidate and flags the
   name-matched existing participants as Webling members.
 
-  Member-training relationships are **additive**: a membership is added when the
+  Birthday and gender are synced onto the created participants, and onto
+  matched existing participants when the remote member carries a value (so a
+  missing remote value never clears a locally known one). Member-training
+  relationships are **additive**: a membership is added when the
   remote data lists the member in a training, but no membership is ever removed
   — memberships that exist locally but are not in the remote data are left
   untouched (see `link_memberships/1`).
@@ -175,6 +178,8 @@ defmodule AttendanceTracker.Directory do
                    first_name: candidate.first_name,
                    last_name: candidate.last_name,
                    emergency_number: candidate.phone,
+                   birthday: Map.get(candidate, :birthday),
+                   gender: Map.get(candidate, :gender),
                    active: true
                  },
                  "webling"
@@ -189,6 +194,8 @@ defmodule AttendanceTracker.Directory do
       Enum.reduce(existing, 0, fn candidate, linked ->
         case Map.get(participants_by_name(), normalise_name(candidate.name)) do
           %Participant{} = participant ->
+            participant = sync_details(participant, candidate)
+
             if Participant.webling?(participant) do
               linked
             else
@@ -235,6 +242,28 @@ defmodule AttendanceTracker.Directory do
     end)
     |> Enum.reverse()
   end
+
+  # Updates an existing participant's synced details (birthday, gender) from a
+  # matched remote member, leaving fields untouched when the remote value is
+  # blank so a missing remote value never clears a locally known one.
+  defp sync_details(%Participant{} = participant, candidate) do
+    attrs =
+      %{}
+      |> maybe_put(:birthday, Map.get(candidate, :birthday))
+      |> maybe_put(:gender, Map.get(candidate, :gender))
+
+    if attrs == %{} do
+      participant
+    else
+      case Tracker.update_participant(participant, attrs) do
+        {:ok, updated} -> updated
+        {:error, _changeset} -> participant
+      end
+    end
+  end
+
+  defp maybe_put(attrs, _key, value) when value in [nil, ""], do: attrs
+  defp maybe_put(attrs, key, value), do: Map.put(attrs, key, value)
 
   # Links every candidate to the trainings named in their training field,
   # resolving names to the trainings created or reused during the import.
@@ -321,6 +350,8 @@ defmodule AttendanceTracker.Directory do
         first_name: first,
         last_name: last,
         phone: clean(member[:phone]),
+        birthday: clean_date(member[:birthday]),
+        gender: clean(member[:gender]),
         trainings: member_trainings(member)
       }
     end
@@ -344,6 +375,9 @@ defmodule AttendanceTracker.Directory do
   end
 
   defp clean(_value), do: nil
+
+  defp clean_date(%Date{} = date), do: Date.to_iso8601(date)
+  defp clean_date(value), do: clean(value)
 
   defp participants_by_name do
     Tracker.list_participants()

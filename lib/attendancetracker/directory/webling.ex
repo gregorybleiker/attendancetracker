@@ -10,7 +10,8 @@ defmodule AttendanceTracker.Directory.Webling do
   don't exist yet.
 
   Configuration keys (all strings): `base_url`, `apikey`, `training_field`,
-  `exit_field`, `first_name_property`, `last_name_property`, `phone_property`.
+  `exit_field`, `first_name_property`, `last_name_property`, `phone_property`,
+  `birthday_property`, `gender_property`.
   """
 
   @behaviour AttendanceTracker.Directory.Source
@@ -36,7 +37,9 @@ defmodule AttendanceTracker.Directory.Webling do
       %{key: :exit_field, label: "Exit field", default: "Austritt", secret: false},
       %{key: :first_name_property, label: "First-name field", default: "Vorname", secret: false},
       %{key: :last_name_property, label: "Last-name field", default: "Name", secret: false},
-      %{key: :phone_property, label: "Phone field", default: "Telefon", secret: false}
+      %{key: :phone_property, label: "Phone field", default: "Telefon", secret: false},
+      %{key: :birthday_property, label: "Birthday field", default: "Geburtstag", secret: false},
+      %{key: :gender_property, label: "Gender field", default: "Geschlecht", secret: false}
     ]
   end
 
@@ -141,11 +144,70 @@ defmodule AttendanceTracker.Directory.Webling do
       first_name: property(properties, config, "first_name_property"),
       last_name: property(properties, config, "last_name_property"),
       phone: property(properties, config, "phone_property"),
+      birthday: birthday_property(properties, config),
+      gender: property(properties, config, "gender_property"),
       trainings: training_names(properties, config)
     }
   end
 
   defp normalise_member(_object, _config), do: nil
+
+  defp birthday_property(properties, config) do
+    field = get_config(config, "birthday_property", default("birthday_property"))
+    value = if field, do: Map.get(properties, field)
+
+    case parse_date(value) do
+      {:ok, %Date{} = date} -> Date.to_iso8601(date)
+      _ -> nil
+    end
+  end
+
+  defp parse_date(value) when is_binary(value) do
+    value = String.trim(value)
+
+    [&parse_iso_date/1, &parse_iso_datetime/1, &parse_european_date/1]
+    |> Enum.find_value(:error, fn parser ->
+      case parser.(value) do
+        {:ok, %Date{} = date} -> {:ok, date}
+        _ -> nil
+      end
+    end)
+  end
+
+  defp parse_date(_value), do: :error
+
+  defp parse_iso_date(value) do
+    case Date.from_iso8601(value) do
+      {:ok, date} -> {:ok, date}
+      _ -> :error
+    end
+  end
+
+  defp parse_iso_datetime(value) do
+    case DateTime.from_iso8601(value) do
+      {:ok, datetime, _offset} -> {:ok, DateTime.to_date(datetime)}
+      _ -> parse_naive_datetime(value)
+    end
+  end
+
+  defp parse_naive_datetime(value) do
+    case NaiveDateTime.from_iso8601(value) do
+      {:ok, naive} -> {:ok, NaiveDateTime.to_date(naive)}
+      _ -> :error
+    end
+  end
+
+  defp parse_european_date(value) do
+    with [day, month, year] <- value |> String.split(~r{[.\-/]}) |> Enum.map(&String.trim/1),
+         {day, ""} <- Integer.parse(day),
+         {month, ""} <- Integer.parse(month),
+         {year, ""} <- Integer.parse(year),
+         {:ok, date} <- Date.new(year, month, day) do
+      {:ok, date}
+    else
+      _ -> :error
+    end
+  end
 
   defp property(properties, config, key) do
     field = get_config(config, key, default(key))

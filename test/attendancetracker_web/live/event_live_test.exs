@@ -12,13 +12,14 @@ defmodule AttendanceTrackerWeb.EventLiveTest do
 
   describe "Index" do
     test "lists events", %{conn: conn} do
-      event_fixture(%{name: "Summer camp", date: ~D[2026-07-01]})
+      event = event_fixture(%{name: "Summer camp", date: ~D[2026-07-01]})
 
       {:ok, view, html} = live(conn, ~p"/events")
 
       assert html =~ "Events"
       assert html =~ "Summer camp"
       assert has_element?(view, "#events")
+      assert has_element?(view, ~s(#events-#{event.id} a[href="/events/#{event.id}/export"]))
     end
 
     test "deletes an event", %{conn: conn} do
@@ -71,6 +72,13 @@ defmodule AttendanceTrackerWeb.EventLiveTest do
   end
 
   describe "Show (participant selection)" do
+    test "offers a CSV export of the selected participants", %{conn: conn} do
+      event = event_fixture()
+      {:ok, view, _html} = live(conn, ~p"/events/#{event}")
+
+      assert has_element?(view, ~s(a[href="/events/#{event.id}/export"]))
+    end
+
     test "shows only selected participants by default and reveals all on demand", %{conn: conn} do
       event = event_fixture()
       ada = participant_fixture(%{name: "Ada Lovelace"})

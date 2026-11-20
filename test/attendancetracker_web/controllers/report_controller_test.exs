@@ -3,6 +3,8 @@ defmodule AttendanceTrackerWeb.ReportControllerTest do
 
   import AttendanceTracker.TrackerFixtures
 
+  alias AttendanceTracker.Tracker
+
   setup %{conn: conn} do
     %{conn: log_in(conn)}
   end
@@ -78,5 +80,47 @@ defmodule AttendanceTrackerWeb.ReportControllerTest do
     conn = get(conn, ~p"/reporting/download?year=abc")
 
     assert redirected_to(conn) == ~p"/reporting"
+  end
+
+  describe "event export" do
+    test "downloads the event's selected participants as one CSV", %{conn: conn} do
+      event = event_fixture(%{name: "Summer Camp"})
+
+      ada =
+        participant_fixture(%{
+          name: "Ada Lovelace",
+          birthday: ~D[1990-12-10],
+          gender: "f",
+          emergency_number: "+41 79 123 45 67"
+        })
+
+      grace = participant_fixture(%{name: "Grace Hopper"})
+      unselected = participant_fixture(%{name: "Not Selected"})
+
+      {:ok, _} = Tracker.add_event_participant(event, ada)
+      {:ok, _} = Tracker.add_event_participant(event, grace)
+
+      conn = get(conn, ~p"/events/#{event}/export")
+
+      assert get_resp_header(conn, "content-type") == ["text/csv; charset=utf-8"]
+
+      assert [~s(attachment; filename="summer-camp.csv")] =
+               get_resp_header(conn, "content-disposition")
+
+      body = response(conn, 200)
+      assert body =~ "first_name,last_name,birthday,gender,emergency_number"
+      assert body =~ "Ada,Lovelace,1990-12-10,f,+41 79 123 45 67"
+      assert body =~ "Grace,Hopper,,,"
+      refute body =~ unselected.first_name
+    end
+
+    test "falls back to the event id when the name has no usable characters", %{conn: conn} do
+      event = event_fixture(%{name: "***"})
+
+      conn = get(conn, ~p"/events/#{event}/export")
+
+      assert [filename] = get_resp_header(conn, "content-disposition")
+      assert filename =~ "event-#{event.id}.csv"
+    end
   end
 end

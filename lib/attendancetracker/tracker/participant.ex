@@ -6,6 +6,8 @@ defmodule AttendanceTracker.Tracker.Participant do
     field :first_name, :string
     field :last_name, :string
     field :emergency_number, :string
+    field :birthday, :date
+    field :gender, :string
     field :active, :boolean, default: true
 
     # Where the participant came from: "local" (created here) or "webling"
@@ -39,7 +41,7 @@ defmodule AttendanceTracker.Tracker.Participant do
   @doc false
   def changeset(participant, attrs) do
     participant
-    |> cast(attrs, [:first_name, :last_name, :emergency_number, :active])
+    |> cast(attrs, [:first_name, :last_name, :emergency_number, :birthday, :gender, :active])
     |> validate_name()
   end
 

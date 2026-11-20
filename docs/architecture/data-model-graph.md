@@ -85,6 +85,8 @@ erDiagram
         string first_name
         string last_name
         string emergency_number
+        date birthday
+        string gender
         boolean active
         string source "local | webling"
     }

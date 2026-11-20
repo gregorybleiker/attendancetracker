@@ -35,6 +35,9 @@ defmodule AttendanceTrackerWeb.EventLive.Index do
           <.link navigate={~p"/events/#{event}"}>{gettext("Participants")}</.link>
         </:action>
         <:action :let={{_id, event}}>
+          <.link href={~p"/events/#{event}/export"}>{gettext("Export CSV")}</.link>
+        </:action>
+        <:action :let={{_id, event}}>
           <.link navigate={~p"/events/#{event}/edit"}>{gettext("Edit")}</.link>
         </:action>
         <:action :let={{id, event}}>

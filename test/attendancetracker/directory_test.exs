@@ -113,6 +113,34 @@ defmodule AttendanceTracker.DirectoryTest do
     assert training.ends_at == ~T[21:30:00]
   end
 
+  test "import_members syncs birthday and gender for created members" do
+    {:ok, _} = Directory.save_settings("fake", %{"token" => "x"})
+
+    {:ok, preview} = Directory.preview()
+    {:ok, _} = Directory.import_members(preview)
+
+    grace =
+      Tracker.list_participants()
+      |> Enum.find(&(AttendanceTracker.Tracker.Participant.full_name(&1) == "Grace Hopper"))
+
+    assert grace.birthday == ~D[1986-06-02]
+    assert grace.gender == "f"
+  end
+
+  test "import_members syncs birthday and gender onto matched existing members" do
+    ada = participant_fixture(%{name: "Ada Lovelace"})
+    refute ada.birthday
+
+    {:ok, _} = Directory.save_settings("fake", %{"token" => "x"})
+
+    {:ok, preview} = Directory.preview()
+    {:ok, _} = Directory.import_members(preview)
+
+    ada = Tracker.get_participant!(ada.id)
+    assert ada.birthday == ~D[1985-05-01]
+    assert ada.gender == "f"
+  end
+
   test "import_members links members to the trainings in their training field" do
     training_fixture(%{name: "Kids Judo"})
     {:ok, _} = Directory.save_settings("fake", %{"token" => "x"})

@@ -2,6 +2,7 @@ defmodule AttendanceTrackerWeb.ReportController do
   use AttendanceTrackerWeb, :controller
 
   alias AttendanceTracker.Tracker
+  alias AttendanceTracker.Tracker.Event
   alias AttendanceTracker.Tracker.Participant
   alias AttendanceTracker.Tracker.Training
   alias AttendanceTracker.Tracker.TrainingSession
@@ -27,6 +28,18 @@ defmodule AttendanceTrackerWeb.ReportController do
         |> put_flash(:error, "Please select a valid year.")
         |> redirect(to: ~p"/reporting")
     end
+  end
+
+  def export_event(conn, %{"id" => id}) do
+    event = Tracker.get_event!(id)
+
+    conn
+    |> put_resp_content_type("text/csv")
+    |> put_resp_header(
+      "content-disposition",
+      ~s(attachment; filename="#{event_filename(event)}")
+    )
+    |> send_resp(200, event_csv(event))
   end
 
   defp parse_year(param) when is_binary(param) do
@@ -63,6 +76,42 @@ defmodule AttendanceTrackerWeb.ReportController do
   end
 
   defp training_name(%TrainingSession{}), do: gettext("Ad-hoc training")
+
+  defp event_csv(%Event{} = event) do
+    rows =
+      for %Participant{} = participant <- Tracker.list_event_participants(event) do
+        [
+          participant.first_name,
+          participant.last_name,
+          participant.birthday,
+          participant.gender,
+          participant.emergency_number
+        ]
+      end
+
+    lines =
+      Enum.map_join(
+        [["first_name", "last_name", "birthday", "gender", "emergency_number"] | rows],
+        "\r\n",
+        fn row ->
+          Enum.map_join(row, ",", &csv_escape/1)
+        end
+      )
+
+    @bom <> lines <> "\r\n"
+  end
+
+  defp event_filename(%Event{} = event) do
+    slug =
+      event.name
+      |> to_string()
+      |> String.downcase()
+      |> String.replace(~r/[^a-z0-9]+/, "-")
+      |> String.trim("-")
+
+    base = if slug == "", do: "event-#{event.id}", else: slug
+    "#{base}.csv"
+  end
 
   defp csv_escape(value) do
     value = to_string(value)

@@ -25,6 +25,8 @@ defmodule AttendanceTracker.Directory.WeblingTest do
               "Vorname" => "Ada",
               "Name" => "Lovelace",
               "Telefon" => "079 123",
+              "Geburtstag" => "1990-12-10",
+              "Geschlecht" => "f",
               "Training" => "Kids Judo"
             }
           },
@@ -45,8 +47,34 @@ defmodule AttendanceTracker.Directory.WeblingTest do
     assert ada.first_name == "Ada"
     assert ada.last_name == "Lovelace"
     assert ada.phone == "079 123"
+    assert ada.birthday == "1990-12-10"
+    assert ada.gender == "f"
     assert ada.trainings == ["Kids Judo"]
     assert bob.trainings == ["Erwachsene"]
+    assert bob.birthday == nil
+  end
+
+  test "accepts European and datetime birthday formats" do
+    Req.Test.stub(__MODULE__, fn conn ->
+      Req.Test.json(conn, %{
+        "objects" => [
+          %{"properties" => %{"Vorname" => "A", "Name" => "One", "Geburtstag" => "10.12.1990"}},
+          %{
+            "properties" => %{
+              "Vorname" => "B",
+              "Name" => "Two",
+              "Geburtstag" => "1990-12-10T00:00:00"
+            }
+          },
+          %{"properties" => %{"Vorname" => "C", "Name" => "Three", "Geburtstag" => "nonsense"}}
+        ]
+      })
+    end)
+
+    assert {:ok, [a, b, c]} = Webling.fetch_members(%{"apikey" => "key"})
+    assert a.birthday == "1990-12-10"
+    assert b.birthday == "1990-12-10"
+    assert c.birthday == nil
   end
 
   test "excludes members whose exit field is not empty" do
@@ -117,6 +145,8 @@ defmodule AttendanceTracker.Directory.WeblingTest do
               "firstname" => "Tim",
               "lastname" => "Muster",
               "mobile" => "076 000",
+              "dob" => "01.02.2000",
+              "sex" => "m",
               "Kurs" => "Kids Judo",
               "Ausgetreten" => ""
             }
@@ -139,13 +169,17 @@ defmodule AttendanceTracker.Directory.WeblingTest do
       "exit_field" => "Ausgetreten",
       "first_name_property" => "firstname",
       "last_name_property" => "lastname",
-      "phone_property" => "mobile"
+      "phone_property" => "mobile",
+      "birthday_property" => "dob",
+      "gender_property" => "sex"
     }
 
     assert {:ok, [member]} = Webling.fetch_members(config)
     assert member.first_name == "Tim"
     assert member.last_name == "Muster"
     assert member.phone == "076 000"
+    assert member.birthday == "2000-02-01"
+    assert member.gender == "m"
     assert member.trainings == ["Kids Judo"]
   end
 

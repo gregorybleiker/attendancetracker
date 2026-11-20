@@ -75,6 +75,7 @@ defmodule AttendanceTrackerWeb.Router do
     end
 
     get "/reporting/download", ReportController, :download
+    get "/events/:id/export", ReportController, :export_event
   end
 
   # Other scopes may use custom stacks.

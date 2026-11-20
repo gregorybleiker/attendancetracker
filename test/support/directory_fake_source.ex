@@ -20,8 +20,22 @@ defmodule AttendanceTracker.Directory.FakeSource do
 
     {:ok,
      [
-       %{first_name: "Ada", last_name: "Lovelace", phone: "079 111", trainings: ["Kids Judo"]},
-       %{first_name: "Grace", last_name: "Hopper", phone: "079 222", trainings: ["Kung Fu"]}
+       %{
+         first_name: "Ada",
+         last_name: "Lovelace",
+         phone: "079 111",
+         birthday: "1985-05-01",
+         gender: "f",
+         trainings: ["Kids Judo"]
+       },
+       %{
+         first_name: "Grace",
+         last_name: "Hopper",
+         phone: "079 222",
+         birthday: "1986-06-02",
+         gender: "f",
+         trainings: ["Kung Fu"]
+       }
      ]}
   end
 end

@@ -14,14 +14,16 @@ defmodule AttendanceTracker.Directory.Source do
 
   @typedoc """
   A normalised member. `first_name`/`last_name` make up the participant name
-  (at least one is required); `phone` and `trainings` are optional. `trainings`
-  lists the trainings the member is enrolled in, so the importer can create any
-  that don't exist yet.
+  (at least one is required); `phone`, `birthday` (an ISO 8601 `YYYY-MM-DD`
+  date), `gender` and `trainings` are optional. `trainings` lists the trainings
+  the member is enrolled in, so the importer can create any that don't exist yet.
   """
   @type member :: %{
           required(:first_name) => String.t() | nil,
           required(:last_name) => String.t() | nil,
           optional(:phone) => String.t() | nil,
+          optional(:birthday) => String.t() | nil,
+          optional(:gender) => String.t() | nil,
           optional(:trainings) => [String.t()]
         }
 

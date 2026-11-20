@@ -106,6 +106,11 @@ Key points:
   still appear under "show all"); checking the participant in resets it to
   `false`. See [Web layer](/architecture/web-layer.md).
 
+- **`Participant`** (`participants`) holds `first_name`/`last_name` (at least
+  one required), an optional `emergency_number`, `birthday` (date) and `gender`,
+  plus `active` and `source` (`"local"` or `"webling"`). `birthday` and `gender`
+  are synced from user management (see [Imports](/architecture/imports.md)).
+
 - **`Event`** (`events`) is a one-off, single-day counterpart of `Training`:
   `name`, `date`, and optional `starts_at`/`ends_at`. `EventParticipant`
   (`event_participants`, unique on `[:event_id, :participant_id]`) is the join
